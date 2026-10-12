@@ -20,6 +20,7 @@ are the same credential used by more than one repo.
 | 9 | **Play Data safety form** and the microphone / notifications declarations; no audio or files leave the phone (speech is recognised on the device); the app sends project text (to OpenAI, to write and price briefs), a device identifier and purchase history | Play Console → App content | to fill |
 | 10 | **AWS role policy** for `RavigaDeployRole` (currently AdministratorAccess per the backend contract); the Connect AWS screen describes the role in plain words | backend CloudFormation template | to decide |
 | 11 | **Anything you registered under the old app id** (the old name after `com.raviga.`): items 1, 3 and 4 were not created as far as this repo knows, but if any were, create them again for `com.raviga.app`. App ids can't be renamed in Play Console or Firebase | Play Console, Firebase, RevenueCat | check |
+| 12 | **OpenAI Zero Data Retention**: until OpenAI approves it, OpenAI may keep the text of notes and briefs up to 30 days for abuse checks; the privacy page and `/config`'s provider line say so meanwhile (shared) | OpenAI account; backend provider line | to apply |
 
 ## Verified against the backend dev stage (2026-10-09)
 
