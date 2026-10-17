@@ -14,7 +14,7 @@ the iOS app (folder "Raviga iOS") and the backend (folder "Raviga Backend").
 
 ## Sources of truth
 
-- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.8, local-first, prices in US dollars,
+- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.8.1, local-first, prices in US dollars,
   English-only speech, at the time of writing).
   Drafts never reach the server: they live in `data/drafts` (sealed on the phone) and go through
   `DraftRepository`; only text goes to the stateless `/ai/*` and `/quotes` jobs; `POST /projects`
@@ -23,8 +23,9 @@ the iOS app (folder "Raviga iOS") and the backend (folder "Raviga Backend").
   snake_case enums, `202 {job}` for job starts, bare `Job` from `GET /jobs/{id}`).
 - Design: `Raviga iOS/docs/DESIGN.md` ("Workshop", direction A). Tokens in `ui/theme`,
   status vocabulary in `ui/status/StatusCopy.kt`, Android notes in `docs/DESIGN.md`. Fonts and
-  pictures are the iOS files (pictures converted with `cwebp -q 88 -alpha_q 100 -m 6` into
-  `res/drawable-nodpi/illo_*.webp`); when iOS changes one, convert and copy it again.
+  pictures are the iOS files (pictures converted with `tools/to_webp.py`, the same settings as
+  `cwebp -q 88 -alpha_q 100 -m 6`, into `res/drawable-nodpi/illo_*.webp`); when iOS changes one,
+  convert and copy it again.
 
 ## Conventions
 
@@ -58,3 +59,7 @@ adb shell am start -n com.raviga.app.debug/com.raviga.app.MainActivity
 - Release check: `./gradlew assembleRelease` builds the R8 APK for local testing; `bundleRelease`
   refuses to run until the prod URL, RevenueCat key, `google-services.json` and upload key exist.
 - Package `com.raviga.app`; debug builds use `com.raviga.app.debug`.
+- Mac tools: native only (Rosetta is being retired). Never run bare `python3`, `cwebp`, `magick` or
+  `terminal-notifier`: they resolve to Intel copies in `/usr/local`. Use `.venv/bin/python`
+  (`/usr/bin/python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt`),
+  `tools/to_webp.py` for pictures and `sips` for screenshots.
