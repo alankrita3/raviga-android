@@ -6,7 +6,9 @@ viewport, r24.txt for the 24 notification viewport) and renders AppIcon.png, a 1
 PNG for iOS, from the same geometry. Paste the paths into res/drawable/ic_launcher_foreground.xml,
 ic_splash_mark.xml and ic_notification.xml.
 
-    python3 docs/icon/make_mark.py app/src/main/res/font/bricolage_bold.ttf <out dir>
+    .venv/bin/python docs/icon/make_mark.py app/src/main/res/font/bricolage_bold.ttf <out dir>
+
+(.venv is the native helper venv: see tools/requirements.txt.)
 """
 import math, sys
 from fontTools.ttLib import TTFont

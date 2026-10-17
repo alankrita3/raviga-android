@@ -36,3 +36,6 @@ secrets.properties
 
 # Logs
 *.log
+
+# Native Python helpers (tools/requirements.txt)
+.venv/
