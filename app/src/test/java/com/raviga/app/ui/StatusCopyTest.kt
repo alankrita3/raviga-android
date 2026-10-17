@@ -49,6 +49,28 @@ class StatusCopyTest {
         assertEquals("Cancelled, credits returned", StatusCopy.rowLine(ProjectSummary(id = "p", status = ProjectStatus.CANCELLED)))
     }
 
+    /** Contract v0.8.1: the hourly job once moved updatedAt on RA-Q88NBG, so "Accepted on" read 17 Oct instead of 9 Oct. */
+    @Test
+    fun `accepted date comes from statusChangedAt, then history, then updatedAt`() {
+        val accepted = "2026-10-09T11:45:06Z"
+        val bumped = "2026-10-17T08:15:28Z"
+        val expected = "Accepted on ${com.raviga.app.util.Time.shortDate(accepted)}"
+        val summary = ProjectSummary(id = "p", status = ProjectStatus.ACCEPTED, updatedAt = bumped, statusChangedAt = accepted)
+        assertEquals(expected, StatusCopy.rowLine(summary))
+        // An older summary without the field falls back to updatedAt.
+        assertEquals(expected, StatusCopy.rowLine(summary.copy(statusChangedAt = null, updatedAt = accepted)))
+        // A full project without the field uses its last history entry.
+        val project = com.raviga.app.data.api.Project(
+            id = "p", status = ProjectStatus.ACCEPTED, updatedAt = bumped,
+            history = listOf(
+                com.raviga.app.data.api.HistoryEntry(ProjectStatus.DELIVERED, at = "2026-10-09T11:44:25Z"),
+                com.raviga.app.data.api.HistoryEntry(ProjectStatus.ACCEPTED, at = accepted, by = "client"),
+            ),
+        )
+        assertEquals(expected, StatusCopy.rowLine(project))
+        assertEquals(expected, StatusCopy.rowLine(project.copy(statusChangedAt = accepted, history = emptyList())))
+    }
+
     @Test
     fun `unknown error codes fall back to the server message`() {
         assertEquals("GitHub is unavailable", StatusCopy.errorLine("github_unavailable", "GitHub is unavailable"))

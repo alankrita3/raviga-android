@@ -306,6 +306,8 @@ data class Project(
     val status: String = ProjectStatus.DRAFT,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    /** When the project entered its current status (contract v0.8.1); `updatedAt` also moves on other changes. */
+    val statusChangedAt: String? = null,
     /** The brief, held only from submit until the project closes (contract v0.6). */
     val document: ProjectDocument? = null,
     val quote: Quote? = null,
@@ -336,6 +338,8 @@ data class ProjectSummary(
     val status: String = ProjectStatus.DRAFT,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    /** When the project entered its current status (contract v0.8.1). */
+    val statusChangedAt: String? = null,
     val credits: Int? = null,
     val estimatedDeliveryDate: String? = null,
     val unreadComments: Int = 0,

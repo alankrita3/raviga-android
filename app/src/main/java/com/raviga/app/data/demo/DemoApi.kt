@@ -348,7 +348,12 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val advanced = s.projects.values.filter { it.status != ProjectStatus.DRAFT }.map { p -> val (n, a) = advance(next, p); next = n; a }
         next to ProjectsResponse(
             advanced.sortedByDescending { it.updatedAt ?: "" }.map {
-                ProjectSummary(it.id, it.ref, it.title, it.status, it.createdAt, it.updatedAt, it.quote?.credits, it.timeline?.estimatedDeliveryDate, it.unreadComments)
+                ProjectSummary(
+                    id = it.id, ref = it.ref, title = it.title, status = it.status, createdAt = it.createdAt, updatedAt = it.updatedAt,
+                    statusChangedAt = it.statusChangedAt ?: it.history.lastOrNull()?.at ?: it.updatedAt,
+                    credits = it.quote?.credits, estimatedDeliveryDate = it.timeline?.estimatedDeliveryDate,
+                    unreadComments = it.unreadComments, contentDeletedAt = it.contentDeletedAt,
+                )
             },
         )
     }

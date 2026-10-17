@@ -32,18 +32,23 @@ object StatusCopy {
         else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
     }
 
-    fun rowLine(summary: ProjectSummary): String = rowLine(summary.status, summary.updatedAt, summary.estimatedDeliveryDate)
+    // Status dates come from statusChangedAt (contract v0.8.1); older shapes fall back to the last history entry, then updatedAt.
+    fun rowLine(summary: ProjectSummary): String =
+        rowLine(summary.status, summary.updatedAt, summary.estimatedDeliveryDate, summary.statusChangedAt ?: summary.updatedAt)
 
-    fun rowLine(project: Project): String = rowLine(project.status, project.updatedAt, project.timeline?.estimatedDeliveryDate)
+    fun rowLine(project: Project): String = rowLine(
+        project.status, project.updatedAt, project.timeline?.estimatedDeliveryDate,
+        project.statusChangedAt ?: project.history.lastOrNull()?.at ?: project.updatedAt,
+    )
 
-    fun rowLine(status: String, updatedAt: String?, estimatedDeliveryDate: String?): String = when (status) {
+    fun rowLine(status: String, updatedAt: String?, estimatedDeliveryDate: String?, statusChangedAt: String? = updatedAt): String = when (status) {
         ProjectStatus.DRAFT -> "Draft, edited ${Time.relative(updatedAt)}"
         ProjectStatus.SUBMITTED -> "Submitted, awaiting review"
         ProjectStatus.CHANGES_REQUESTED -> "The team left comments"
         ProjectStatus.APPROVED -> if (estimatedDeliveryDate != null) "Approved, in build. Ready by ${Time.shortDate(estimatedDeliveryDate)}" else "Approved, in build"
         ProjectStatus.DELIVERED -> "Delivered, review the repo"
         ProjectStatus.REVISION_REQUESTED -> "Revision requested"
-        ProjectStatus.ACCEPTED -> "Accepted on ${Time.shortDate(updatedAt)}"
+        ProjectStatus.ACCEPTED -> "Accepted on ${Time.shortDate(statusChangedAt)}"
         ProjectStatus.REJECTED -> "Not accepted, credits returned"
         ProjectStatus.CANCELLED -> "Cancelled, credits returned"
         else -> detailTitle(status)

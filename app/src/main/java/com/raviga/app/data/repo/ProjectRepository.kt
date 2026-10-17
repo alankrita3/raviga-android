@@ -117,6 +117,7 @@ class ProjectRepository(
             status = project.status,
             createdAt = project.createdAt,
             updatedAt = project.updatedAt,
+            statusChangedAt = project.statusChangedAt ?: project.history.lastOrNull()?.at,
             credits = project.quote?.credits,
             estimatedDeliveryDate = project.timeline?.estimatedDeliveryDate,
             unreadComments = project.unreadComments,
