@@ -319,7 +319,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun me(): Me = readState { meOf(it) }
 
-    override suspend fun putPushToken(body: PushTokenRequest) = mutate { it.copy(pushToken = body.token) to Unit }
+    override suspend fun putPushToken(body: PushTokenRequest) = mutate { it.copy(pushToken = body.fid ?: body.token) to Unit }
 
     override suspend fun deletePushToken() = mutate { it.copy(pushToken = null) to Unit }
 

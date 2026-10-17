@@ -14,7 +14,7 @@ the iOS app (folder "Raviga iOS") and the backend (folder "Raviga Backend").
 
 ## Sources of truth
 
-- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.8.1, local-first, prices in US dollars,
+- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.8.2, local-first, prices in US dollars,
   English-only speech, at the time of writing).
   Drafts never reach the server: they live in `data/drafts` (sealed on the phone) and go through
   `DraftRepository`; only text goes to the stateless `/ai/*` and `/quotes` jobs; `POST /projects`

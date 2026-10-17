@@ -50,7 +50,8 @@ data class RecoveryKeyResponse(val recoveryKey: String)
 data class LinkCodeResponse(val code: String, val expiresAt: String? = null)
 
 @Serializable
-data class PushTokenRequest(val token: String)
+/** Exactly one of [fid] (contract v0.8.2, the Firebase Installation ID) or [token] (older builds' FCM token). */
+data class PushTokenRequest(val fid: String? = null, val token: String? = null)
 
 @Serializable
 data class Me(

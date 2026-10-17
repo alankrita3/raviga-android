@@ -96,6 +96,16 @@ class DtoDecodingTest {
         assertEquals("Project RA-A1B2C3", com.raviga.app.ui.status.StatusCopy.projectTitle(c, null))
     }
 
+    /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */
+    @Test
+    fun `push registration sends only the fid`() {
+        val app = Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }
+        val fid = app.encodeToString(com.raviga.app.data.api.PushTokenRequest.serializer(), com.raviga.app.data.api.PushTokenRequest(fid = "cX1fid"))
+        assertEquals("""{"fid":"cX1fid"}""", fid)
+        val legacy = app.encodeToString(com.raviga.app.data.api.PushTokenRequest.serializer(), com.raviga.app.data.api.PushTokenRequest(token = "tok"))
+        assertEquals("""{"token":"tok"}""", legacy)
+    }
+
     @Test
     fun `job envelope and bare job decode`() {
         val envelope = json.decodeFromString(JobEnvelope.serializer(), """{"job":{"jobId":"jb_1","type":"generate","status":"queued","projectId":"pr_1","progress":0,"progressMessage":null}}""")

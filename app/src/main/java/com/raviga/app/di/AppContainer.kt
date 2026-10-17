@@ -16,7 +16,7 @@ import com.raviga.app.data.local.SessionStore
 import com.raviga.app.data.repo.CreditsRepository
 import com.raviga.app.data.repo.ProjectRepository
 import com.raviga.app.data.repo.SessionRepository
-import com.raviga.app.push.PushTokenRegistrar
+import com.raviga.app.push.PushRegistrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -121,7 +121,7 @@ class AppContainer(private val app: Application) {
     val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects)
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
     val credits = CreditsRepository(api, json, cache, billing)
-    val push = PushTokenRegistrar(app, prefs, session, appScope)
+    val push = PushRegistrar(app, prefs, session, appScope)
 
     val files = com.raviga.app.data.files.FileImporter(app)
     val extractor = com.raviga.app.data.files.TextExtractor(app)

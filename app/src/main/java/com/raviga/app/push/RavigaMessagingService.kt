@@ -15,8 +15,12 @@ import com.raviga.app.ui.status.StatusCopy
  */
 class RavigaMessagingService : FirebaseMessagingService() {
 
-    override fun onNewToken(token: String) {
-        (application as RavigaApp).container.push.onNewToken(token)
+    override fun onRegistered(fid: String) {
+        (application as RavigaApp).container.push.onRegistered(fid)
+    }
+
+    override fun onUnregistered(fid: String) {
+        (application as RavigaApp).container.push.onUnregistered()
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

@@ -163,9 +163,9 @@ class SessionRepository(
 
     // ----- Push -----
 
-    suspend fun registerPushToken(token: String) = apiCall(json) { api.putPushToken(PushTokenRequest(token)) }
+    suspend fun registerPushFid(fid: String) = apiCall(json) { api.putPushToken(PushTokenRequest(fid = fid)) }
 
-    suspend fun unregisterPushToken() = apiCall(json) { api.deletePushToken() }
+    suspend fun unregisterPush() = apiCall(json) { api.deletePushToken() }
 
     // ----- Recovery (section 3.3) -----
 
