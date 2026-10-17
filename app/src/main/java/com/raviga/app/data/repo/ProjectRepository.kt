@@ -120,6 +120,7 @@ class ProjectRepository(
             credits = project.quote?.credits,
             estimatedDeliveryDate = project.timeline?.estimatedDeliveryDate,
             unreadComments = project.unreadComments,
+            contentDeletedAt = project.contentDeletedAt,
         )
         _summaries.update { list ->
             (listOf(summary) + list.filterNot { it.id == project.id }).sortedByDescending { it.updatedAt ?: "" }

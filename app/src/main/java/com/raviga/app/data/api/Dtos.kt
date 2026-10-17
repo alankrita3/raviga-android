@@ -339,6 +339,8 @@ data class ProjectSummary(
     val credits: Int? = null,
     val estimatedDeliveryDate: String? = null,
     val unreadComments: Int = 0,
+    /** Set once the server deleted the brief and title (accepted, cancelled, rejected). */
+    val contentDeletedAt: String? = null,
 )
 
 @Serializable
