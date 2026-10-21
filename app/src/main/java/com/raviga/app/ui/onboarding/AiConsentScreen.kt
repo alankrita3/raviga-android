@@ -43,7 +43,8 @@ fun AiConsentScreen(nav: NavController) {
     val container = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     val config by container.session.config.collectAsStateWithLifecycle()
-    var allow by remember { mutableStateOf(true) }
+    // Off until the client turns it on, as the screen says (consent is an affirmative act; same as iOS).
+    var allow by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val providers = config.ai.providers.ifEmpty { listOf("our AI providers") }
@@ -72,15 +73,8 @@ fun AiConsentScreen(nav: NavController) {
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
             Spacer(Modifier.height(16.dp))
             Text("Before we send this to AI", style = RaType.title, color = Ink.ink)
-            Spacer(Modifier.height(20.dp))
-            Block("What is sent", "Only the text of your notes and brief, to write and price it. Never your recordings or files. We don't store it.")
-            // The backend's provider line carries the full disclosure (retention, no training); show it as sent.
-            Block("Who processes it", providers.joinToString("\n"))
-            Block(
-                "How long it is kept",
-                "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to our AI, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
-            )
-            Block("When it is sent", "Only after you turn this on and continue. You can turn it off later in Settings.")
+            Spacer(Modifier.height(8.dp))
+            // R-028 (as iOS): the switch comes first, so it is never hidden behind the Continue bar on a short phone.
             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Allow AI processing", style = RaType.bodyMedium, color = Ink.ink)
@@ -96,7 +90,16 @@ fun AiConsentScreen(nav: NavController) {
                 )
             }
             Hairline()
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(20.dp))
+            Block("What is sent", "Only the text of your notes and brief, to write and price it. Never your recordings or files. We don't store it.")
+            // The backend's provider line carries the full disclosure (retention, no training); show it as sent.
+            Block("Who processes it", providers.joinToString("\n"))
+            Block(
+                "How long it is kept",
+                "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to our AI, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
+            )
+            Block("When it is sent", "Only after you turn this on and continue. You can turn it off later in Settings.")
+            Spacer(Modifier.height(12.dp))
         }
     }
 }

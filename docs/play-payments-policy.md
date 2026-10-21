@@ -51,7 +51,11 @@ hold up if we sold each project as a one-off payment rather than as "credits".
 3. **Play's alternative billing in India (section 8).** Offer our checkout next to Play Billing for a lower fee.
    This needs enrolment and both payment paths in the app.
 
-## Recommendation
+## Decision (founder, 2026-10-21, final)
+
+Option 1: credits stay in-app through RevenueCat and Play Billing, as built. No app change.
+
+## Recommendation (as written before the decision)
 
 Launch with **option 1** and build the fee into the price of a credit. It needs no code change and carries no
 review risk.
