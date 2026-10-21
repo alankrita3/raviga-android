@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -132,6 +133,8 @@ fun Chip(
     tone: ChipTone = ChipTone.Plain,
     dot: Color? = null,
     icon: ImageVector? = null,
+    textStyle: androidx.compose.ui.text.TextStyle = RaType.chip,
+    singleLine: Boolean = false,
 ) {
     val (fg, bg) = when (tone) {
         ChipTone.Plain -> Ink.ink to Ink.wash
@@ -155,8 +158,54 @@ fun Chip(
                 Spacer(Modifier.width(6.dp))
             }
         }
-        Text(text, style = RaType.chip, color = fg)
+        Text(text, style = textStyle, color = fg, maxLines = if (singleLine) 1 else Int.MAX_VALUE, softWrap = !singleLine)
     }
+}
+
+/** One chip for [ChipRows]. */
+data class ChipSpec(val text: String, val dot: Color? = null, val icon: ImageVector? = null, val tone: ChipTone = ChipTone.Plain)
+
+/**
+ * Chips in fixed rows that never wrap: when a row is wider than the screen, every chip's text
+ * shrinks by the same amount (to [minScale] at most) so the rows keep their shape (Welcome on a
+ * narrow phone; same fix as iOS).
+ */
+@Composable
+fun ChipRows(rows: List<List<ChipSpec>>, modifier: Modifier = Modifier, minScale: Float = 0.8f) {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // Text draws with the theme's style merged under ours (its letter spacing included), so measure the same.
+    val base = androidx.compose.material3.LocalTextStyle.current.merge(RaType.chip)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val available = constraints.maxWidth.toFloat()
+        // Text shaped at a smaller size isn't exactly proportional; leave room instead of landing on the edge.
+        val slack = with(density) { 8.dp.toPx() }
+        val needed = remember(rows, available, density, base) {
+            rows.minOf { row ->
+                val text = row.sumOf { measurer.measure(it.text, base, maxLines = 1).size.width }.toFloat()
+                val chrome = with(density) { (row.fold(0.dp) { acc, c -> acc + chipChrome(c) } + 8.dp * (row.size - 1)).toPx() }
+                (available - chrome - slack) / text
+            }
+        }
+        val scale = needed.coerceIn(minScale, 1f)
+        // Past minScale (very large font settings) the chips wrap their words rather than cut them off.
+        val oneLine = needed >= minScale
+        val style = if (scale < 1f) RaType.chip.copy(fontSize = RaType.chip.fontSize * scale, lineHeight = RaType.chip.lineHeight * scale, letterSpacing = base.letterSpacing * scale) else RaType.chip
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            rows.forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { Chip(it.text, tone = it.tone, dot = it.dot, icon = it.icon, textStyle = style, singleLine = oneLine) }
+                }
+            }
+        }
+    }
+}
+
+/** A chip's width besides its text: 11dp padding each side, plus the icon or dot and its gap. */
+private fun chipChrome(chip: ChipSpec): Dp = 22.dp + when {
+    chip.icon != null -> 13.dp + 6.dp
+    chip.dot != null -> 7.dp + 6.dp
+    else -> 0.dp
 }
 
 /** Chips laid out in rows, wrapping when the width runs out. */

@@ -13,7 +13,7 @@ where the platform differs. The fonts and pictures are the same files iOS ships.
 | Bricolage Grotesque (Bold opsz 48, SemiBold opsz 24, Medium opsz 32) and Figtree (400/500/600/700, Italic 400) | `res/font/bricolage_*.ttf`, `res/font/figtree_*.ttf`: the static instances iOS made, OFL; licence in `assets/licenses/OFL.txt`, shown under Settings > Fonts |
 | 8pt grid, 20pt gutter (24 on Welcome), 12pt between tiles | `ui/theme/Dimens.kt` (`Ra`), in dp |
 | buttons 56 tall radius 18; fields surface radius 16 with a rule border (teal 1.5 when focused); tiles radius 24; pictures radius 20 (24 for headers, 18 for thumbnails, 32 bottom corners on Welcome); mic 72; status mark 8 | `Ra.*`; `PrimaryButton`/`SecondaryButton`/`TertiaryButton`, `RaTextField`, `BoxedEditor`, `Modifier.tile()` |
-| chips (plain / teal / marigold, dot or icon) | `Chip`, `ChipRow` (FlowRow) in `ui/components/Workshop.kt` |
+| chips (plain / teal / marigold, dot or icon) | `Chip`, `ChipRow` (FlowRow) in `ui/components/Workshop.kt`; `ChipRows` for fixed rows that never wrap: a row too wide shrinks every chip's text alike (to 80% at most, single line; past that, large font settings, the words wrap) |
 | pictures | `res/drawable-nodpi/illo_*.webp` (the iOS `Illo*.imageset` files through `tools/to_webp.py`, Pillow's libwebp at cwebp's `-q 88 -alpha_q 100 -m 6`, byte-identical to cwebp's output, about 0.8 MB for all eleven); `Picture` enum, `Illustration` (cropped around a focus point), `HeroIllustration` (full bleed, Welcome), `SpotIllustration` (the transparent ones) |
 | hairline 1px | `Ra.hairline = 1.dp` |
 | app icon (interim, until the founder picks a logo): Bricolage Bold "R" in ink, teal full stop on the baseline, on paper | `res/drawable/ic_launcher_foreground.xml` (adaptive, also the monochrome layer) on `ic_launcher_background.xml`, `ic_splash_mark.xml`, and `ic_notification.xml` (the R alone, white); vector paths from `docs/icon/make_mark.py`, which also draws the 1024 PNG iOS uses |
@@ -25,7 +25,7 @@ Sheets and dialogs sit on `surface`; the describe chooser sheet stays on `paper`
 
 | Picture | Where |
 |---|---|
-| Welcome | `WelcomeScreen` page 1, full bleed under the status bar, 46% of the screen (240 to 440 dp) so the four promises fit above the button |
+| Welcome | `WelcomeScreen` page 1, full bleed under the status bar. The words and the four promises are measured first and the picture takes what is left of the page (200 dp to 46% of the screen, at most 440 dp), so nothing hides behind the page dots on a short phone (R-026, checked on a OnePlus 7, 1080×2340; same fix as iOS) |
 | Describe, Quote, AIBuild, Delivered | Welcome pages 2 to 5 ("Step N of 4"), 34% of the screen (200 to 320 dp), one scene per step. Describe (one person speaking, typing and uploading) is used only there. AIBuild (clay robots building the app, an engineer approving) is used only there; Building is on the status screen only |
 | HomeEmpty | empty `HomeScreen`, 220 dp |
 | Speak / Type / Upload | chooser tiles (`DescribeChoices`), 84 dp thumbnails |

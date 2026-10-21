@@ -37,12 +37,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.raviga.app.ui.LocalAppContainer
-import com.raviga.app.ui.components.Chip
-import com.raviga.app.ui.components.ChipRow
+import com.raviga.app.ui.components.ChipRows
+import com.raviga.app.ui.components.ChipSpec
 import com.raviga.app.ui.components.HeroIllustration
 import com.raviga.app.ui.components.Illustration
 import com.raviga.app.ui.components.Picture
@@ -128,26 +130,49 @@ fun WelcomeScreen(nav: NavController) {
     }
 }
 
+/**
+ * The picture gives way to the words: the text and the four promises are measured first and the
+ * picture takes what is left of the page (between [MIN_HERO] and [heroMax]), so nothing hides
+ * below the page dots on a short phone. Taller text than that (large font settings) scrolls.
+ */
 @Composable
-private fun Intro(heroHeight: Dp) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        HeroIllustration(Picture.Welcome, height = heroHeight, focusY = 0.1f)
-        Column(Modifier.padding(horizontal = Ra.gutterWide).padding(top = 26.dp, bottom = 16.dp)) {
-            Text("Say what you want built.", style = RaType.hero, color = Ink.ink)
-            Spacer(Modifier.height(14.dp))
-            Text(
-                "Describe it in your own words: say it, type it, or upload a document. We write the brief, quote it and build it.",
-                style = RaType.body,
-                color = Ink.graphite,
-            )
-            Spacer(Modifier.height(18.dp))
-            ChipRow(perRow = 2) {
-                Chip("You approve the quote", dot = Ink.marigold)
-                Chip("Super fast delivery", icon = Icons.Outlined.Bolt)
-                Chip("Working project delivered", icon = Icons.Outlined.Check)
-                Chip("Code handed to you", dot = Ink.teal)
+private fun Intro(heroMax: Dp) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val page = constraints.maxHeight
+        SubcomposeLayout(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { c ->
+            val width = Constraints(minWidth = c.maxWidth, maxWidth = c.maxWidth)
+            val words = subcompose("words") { IntroWords() }.map { it.measure(width) }
+            val wordsHeight = words.sumOf { it.height }
+            val hero = (page - wordsHeight).coerceIn(MIN_HERO.roundToPx(), heroMax.roundToPx())
+            val picture = subcompose("hero") { HeroIllustration(Picture.Welcome, height = hero.toDp(), focusY = 0.1f) }.map { it.measure(width) }
+            layout(c.maxWidth, picture.sumOf { it.height } + wordsHeight) {
+                var y = 0
+                (picture + words).forEach { it.place(0, y); y += it.height }
             }
         }
+    }
+}
+
+private val MIN_HERO = 200.dp
+
+@Composable
+private fun IntroWords() {
+    Column(Modifier.padding(horizontal = Ra.gutterWide).padding(top = 26.dp, bottom = 16.dp)) {
+        Text("Say what you want built.", style = RaType.hero, color = Ink.ink)
+        Spacer(Modifier.height(14.dp))
+        Text(
+            "Describe it in your own words: say it, type it, or upload a document. We write the brief, quote it and build it.",
+            style = RaType.body,
+            color = Ink.graphite,
+        )
+        Spacer(Modifier.height(18.dp))
+        // Two fixed rows in the founder's order; on a narrow phone the text shrinks a little instead of wrapping.
+        ChipRows(
+            listOf(
+                listOf(ChipSpec("You approve the quote", dot = Ink.marigold), ChipSpec("Super fast delivery", icon = Icons.Outlined.Bolt)),
+                listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Code handed to you", dot = Ink.teal)),
+            ),
+        )
     }
 }
 
