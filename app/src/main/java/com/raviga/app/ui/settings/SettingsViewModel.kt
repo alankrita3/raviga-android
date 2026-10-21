@@ -68,6 +68,16 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    // ----- Usage analytics (contract v0.9) -----
+    fun setAnalytics(granted: Boolean) = run {
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true, error = null) }
+            runCatching { container.session.setAnalytics(granted) }
+                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
     // ----- export / delete -----
     fun export() {
         viewModelScope.launch {
@@ -98,6 +108,8 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
                 container.session.deleteMe()
                 // Drafts were only ever here; they go too.
                 container.draftStore.wipe()
+                // Contract v0.9 section 22: collection off and the SDK's data dropped.
+                container.analytics.clearAfterDeletion()
             }
                 .onSuccess { _state.update { it.copy(deleted = true) } }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }

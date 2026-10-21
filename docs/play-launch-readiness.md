@@ -33,12 +33,15 @@ Sources:
 | Financial info → Purchase history | Credit purchases through Play Billing and RevenueCat | App functionality, account management | Required to buy credits |
 | Device or other IDs | The app's install ID, the Firebase Installation ID (push), the RevenueCat user ID (the client ID), ML Kit's identifier | App functionality; analytics (ML Kit diagnostics only) | Required |
 | App info and performance → Diagnostics | Device model, OS version, app version and locale sent at registration; ML Kit's latency and error codes | App functionality; analytics (ML Kit) | Required |
+| App activity → App interactions | Contract v0.9 usage funnel through Google Analytics for Firebase: onboarding_complete, brief_started, brief_generated, quote_viewed, project_submitted, credits_purchased, delivery_accepted, plus automatic sessions and screen class names. Values are enums and counts only; never text, titles, file names or ids | Analytics | **Optional**: off until the client turns it on (consent screen or Settings); not for ads, not shared |
+| Device or other IDs (analytics) | Analytics' app instance id. No advertising id, no Android ID (SSAID off), no user id | Analytics | Optional, same switch |
 
 **Not collected:**
 - Audio: speech is recognised on the phone, and no audio leaves it.
 - Files and docs: read on the phone; only the extracted text goes up, declared above as user content.
 - Photos and videos, location, contacts, calendar, health, SMS or email, installed apps, web browsing, search history.
 - Crash logs: there's no crash-reporting SDK.
+- Advertising id: never. AD_ID and the Privacy Sandbox ad id, attribution and install-referrer permissions are removed from the manifest, and `play-services-ads-identifier` is excluded from both Analytics and RevenueCat.
 - Name, email, phone and address: the app never asks for them. A client could type them into notes; that text is
   covered above.
 
@@ -85,4 +88,9 @@ Sources:
 - Permissions: INTERNET, ACCESS_NETWORK_STATE, POST_NOTIFICATIONS, RECORD_AUDIO, VIBRATE, WAKE_LOCK, BILLING and
   the FCM receive permission. There is no AD_ID, QUERY_ALL_PACKAGES, location, foreground service or other
   restricted permission.
-- No analytics, crash-reporting or ads SDK is included.
+- Analytics (v0.9, added 2026-10-21): Firebase Analytics ships with collection off in the manifest and turns on only
+  while the client's consent is on. Verified on the OnePlus: "App measurement disabled via the manifest" at start;
+  the switch sends `{"analytics":true}` and the SDK logs "enabled: true"; brief_started, brief_generated and
+  quote_viewed carry only enums and counts; turning it off sends `{"analytics":false}` and logs "enabled: false".
+- No crash-reporting or ads SDK. Correction to the first draft: RevenueCat had been pulling in
+  `play-services-ads-identifier` 17.0.1. It is now excluded, so no ad-id code ships.

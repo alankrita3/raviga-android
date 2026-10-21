@@ -62,6 +62,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
     private var quotedOnce = false
+    /** The quote already counted as viewed (contract v0.9 quote_viewed), so a re-collect doesn't log it twice. */
+    private var viewedQuoteId: String? = null
     private val serverId = MutableStateFlow(projectId.takeIf { it.startsWith("pr_") })
 
     /**
@@ -81,6 +83,10 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
             container.drafts.draft(projectId).collect { d ->
                 _state.update { it.copy(draft = d) }
                 d?.serverProjectId?.let { serverId.value = it }
+                d?.quote?.takeIf { d.quoteIsCurrent && it.id != viewedQuoteId }?.let { q ->
+                    viewedQuoteId = q.id
+                    container.analytics.quoteViewed(q.bracketId, q.credits)
+                }
                 maybeQuote()
             }
         }
@@ -159,6 +165,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 now
             }.onSuccess { project ->
                 submitKey = null
+                // POST /projects only (contract v0.9); a resubmit is a different call and not counted.
+                if (!s.isResubmit) container.analytics.projectSubmitted(project.quote?.bracketId ?: draft.quote?.bracketId, project.quote?.credits ?: draft.quote?.credits ?: 0)
                 runCatching { container.credits.refresh() }
                 runCatching { container.session.refreshMe() }
                 _state.update { it.copy(submitting = false, submittedProjectId = project.id) }

@@ -96,6 +96,23 @@ class DtoDecodingTest {
         assertEquals("Project RA-A1B2C3", com.raviga.app.ui.status.StatusCopy.projectTitle(c, null))
     }
 
+    /** Captured from the raviga-* dev GET /config on 2026-10-21 (contract v0.9: analytics). */
+    @Test
+    fun `v09 config carries the analytics line and consent decodes analytics`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v09.json")!!)
+        assertTrue(config.analytics.providers.single().startsWith("Google Analytics for Firebase"))
+        assertEquals(2, config.analytics.retentionMonths)
+        assertEquals(config.analytics, com.raviga.app.data.demo.DemoApi.demoConfig().analytics)
+        val consent = json.decodeFromString(
+            com.raviga.app.data.api.ConsentState.serializer(),
+            """{"terms":null,"privacy":null,"aiProcessing":{"granted":true},"analytics":{"granted":false,"updatedAt":null},"current":false}""",
+        )
+        assertTrue(consent.aiGranted)
+        assertEquals(false, consent.analyticsGranted)
+        val app = Json { explicitNulls = false; encodeDefaults = true }
+        assertEquals("""{"analytics":true}""", app.encodeToString(com.raviga.app.data.api.ConsentRequest.serializer(), com.raviga.app.data.api.ConsentRequest(analytics = true)))
+    }
+
     /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */
     @Test
     fun `push registration sends only the fid`() {

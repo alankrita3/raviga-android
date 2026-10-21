@@ -26,3 +26,7 @@
 # PDFBox (on-device PDF text): optional JPEG 2000 codec is not bundled.
 -dontwarn com.gemalto.jp2.**
 -dontwarn org.bouncycastle.**
+
+# Contract v0.9: no advertising id. play-services-ads-identifier is excluded on purpose; Analytics only
+# references it on a path turned off by google_analytics_adid_collection_enabled=false.
+-dontwarn com.google.android.gms.ads.identifier.**

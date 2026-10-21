@@ -82,9 +82,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -96,6 +93,12 @@ android {
     }
     lint {
         abortOnError = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -127,7 +130,14 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
-    implementation(libs.revenuecat.purchases)
+    // Contract v0.9 section 22: usage analytics, off until the client consents. Never the advertising id.
+    implementation(libs.firebase.analytics) {
+        exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+    }
+    // RevenueCat reads the advertising id only if this optional module is present (contract v0.9: never).
+    implementation(libs.revenuecat.purchases) {
+        exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+    }
     // Documents are read on the phone (local-first): text PDFs via PDFBox, scans via
     // ML Kit's on-device recogniser (model delivered by Play services; text never leaves).
     implementation(libs.pdfbox.android)

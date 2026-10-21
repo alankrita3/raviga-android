@@ -185,6 +185,7 @@ fun PrivacyScreen(nav: NavController) {
     val context = LocalContext.current
     val legal = state.config.legal
     val aiOn = state.me?.consent?.aiGranted == true
+    val analyticsOn = state.me?.consent?.analyticsGranted == true
     var confirmDelete by remember { mutableStateOf(false) }
     val saveExport = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip"),
@@ -211,6 +212,16 @@ fun PrivacyScreen(nav: NavController) {
                     )
                 }
                 Switch(checked = aiOn, enabled = !state.busy, onCheckedChange = { vm.setAiProcessing(it) }, colors = switchColors())
+            }
+            Hairline(Modifier.padding(horizontal = Ra.gutter))
+            Row(Modifier.fillMaxWidth().padding(horizontal = Ra.gutter, vertical = Ra.rowPadding), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    // Contract v0.9, wording shared with iOS.
+                    Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
+                    Text(if (analyticsOn) "Allowed" else "Not allowed", style = RaType.body, color = Ink.ink)
+                    Text(state.config.analytics.providers.joinToString(", "), style = RaType.secondary, color = Ink.graphite)
+                }
+                Switch(checked = analyticsOn, enabled = !state.busy, onCheckedChange = { vm.setAnalytics(it) }, colors = switchColors())
             }
             Hairline(Modifier.padding(horizontal = Ra.gutter))
             Column(Modifier.padding(horizontal = Ra.gutter)) {

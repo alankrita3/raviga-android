@@ -92,7 +92,12 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
     }
 
     fun cancel() = action { container.projects.cancel(projectId) }
-    fun accept() = action { container.projects.accept(projectId) }
+    fun accept() = action {
+        // The server deletes the quote's detail on accept, so read the bracket from the copy held before.
+        val before = container.projects.cachedProject(projectId)
+        container.projects.accept(projectId)
+        container.analytics.deliveryAccepted(before?.quote?.bracketId, before?.revisions?.used ?: 0)
+    }
     fun requestRevision(message: String) = action { container.projects.requestRevision(projectId, message) }
 
     private fun action(block: suspend () -> Unit) {

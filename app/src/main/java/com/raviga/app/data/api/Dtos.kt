@@ -81,14 +81,18 @@ data class ConsentState(
     val terms: ConsentVersion? = null,
     val privacy: ConsentVersion? = null,
     val aiProcessing: AiConsent? = null,
+    /** v0.9: usage analytics (section 22). Optional, never gates anything, off until granted. */
+    val analytics: AiConsent? = null,
     val current: Boolean = false,
 ) {
     val aiGranted: Boolean get() = aiProcessing?.granted == true
+    val analyticsGranted: Boolean get() = analytics?.granted == true
 }
 
 @Serializable
 data class ConsentVersion(val version: String, val acceptedAt: String? = null)
 
+/** A granted flag with its time; used for AI processing and (v0.9) analytics. */
 @Serializable
 data class AiConsent(val granted: Boolean = false, val updatedAt: String? = null)
 
@@ -97,6 +101,7 @@ data class ConsentRequest(
     val termsVersion: String? = null,
     val privacyVersion: String? = null,
     val aiProcessing: Boolean? = null,
+    val analytics: Boolean? = null,
 )
 
 // ---------- Config (section 6) ----------
@@ -111,6 +116,7 @@ data class AppConfig(
     val retention: RetentionConfig = RetentionConfig(),
     val limits: LimitsConfig = LimitsConfig(),
     val ai: AiConfig = AiConfig(),
+    val analytics: AnalyticsConfig = AnalyticsConfig(),
     val delivery: DeliveryConfig = DeliveryConfig(),
     val legal: LegalConfig = LegalConfig(),
 ) {
@@ -216,6 +222,10 @@ object FileTypes {
 
 @Serializable
 data class AiConfig(val providers: List<String> = emptyList())
+
+/** v0.9: the line(s) the consent screen shows next to the analytics switch, and how long Analytics keeps data. */
+@Serializable
+data class AnalyticsConfig(val providers: List<String> = emptyList(), val retentionMonths: Int? = null)
 
 @Serializable
 data class DeliveryConfig(

@@ -1,6 +1,6 @@
 [versions]
 agp = "8.7.3"
-kotlin = "2.0.21"
+kotlin = "2.3.21"
 coreKtx = "1.15.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
@@ -58,6 +58,7 @@ mlkit-text-recognition = { group = "com.google.android.gms", name = "play-servic
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 revenuecat-purchases = { group = "com.revenuecat.purchases", name = "purchases", version.ref = "purchases" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }

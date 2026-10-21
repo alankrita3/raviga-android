@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import com.raviga.app.ui.settings.switchColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +55,9 @@ fun TermsScreen(nav: NavController) {
     val me by container.session.me.collectAsStateWithLifecycle()
     // Agreed to an older version before: this is an update, and afterwards the client goes back to what they were doing.
     val updating = me?.consent?.terms != null
+    // Contract v0.9: usage analytics is its own choice, off until the client turns it on.
+    val analyticsGranted = me?.consent?.analyticsGranted == true
+    var analyticsOn by remember(analyticsGranted) { mutableStateOf(analyticsGranted) }
 
     ScreenScaffold(
         bottomBar = {
@@ -60,7 +66,12 @@ fun TermsScreen(nav: NavController) {
                 PrimaryButton(if (busy) "One moment" else "Agree and continue", enabled = !busy, onClick = {
                     busy = true; error = null
                     scope.launch {
-                        runCatching { container.session.acceptLegal() }
+                        runCatching {
+                            container.session.acceptLegal()
+                            if (analyticsOn != analyticsGranted) container.session.setAnalytics(analyticsOn)
+                            container.syncAnalytics()
+                            if (!updating) container.analytics.onboardingComplete()
+                        }
                             .onSuccess {
                                 if (nav.previousBackStackEntry != null) nav.popBackStack()
                                 else nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
@@ -112,6 +123,17 @@ fun TermsScreen(nav: NavController) {
                 "Your rights",
                 "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance. Under India's DPDP Act you may also complain to the Data Protection Board after using our grievance process.",
             )
+            // Contract v0.9, wording shared with iOS: its own block, the switch off until the client turns it on.
+            Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
+            Spacer(Modifier.height(6.dp))
+            Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Allow usage analytics", style = RaType.body, color = Ink.ink)
+                    Text(config.analytics.providers.joinToString(", "), style = RaType.secondary, color = Ink.graphite)
+                }
+                Spacer(Modifier.width(12.dp))
+                Switch(checked = analyticsOn, enabled = !busy, onCheckedChange = { analyticsOn = it }, colors = switchColors())
+            }
             Block(
                 "Grievance officer",
                 "${grievanceName(legal.grievance.officerName, legal.companyName)}. Write to ${legal.grievance.email}. We reply within ${legal.grievance.responseDays} days.",

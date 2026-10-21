@@ -35,6 +35,7 @@ class DraftRepository(
     private val store: DraftStore,
     private val ai: AiRepository,
     private val projects: ProjectRepository,
+    private val analytics: com.raviga.app.data.analytics.Analytics? = null,
 ) {
     val drafts: StateFlow<Map<String, LocalDraft>> = store.drafts
 
@@ -87,7 +88,16 @@ class DraftRepository(
             durationSec = durationSec,
             createdAt = Time.nowIso(),
         )
+        val first = get(id)?.inputs?.isEmpty() == true
         touch(id) { it.copy(inputs = it.inputs + input) }
+        if (first) {
+            val inputKind = when (kind) {
+                "voice" -> com.raviga.app.data.analytics.Analytics.InputKind.VOICE
+                "file" -> com.raviga.app.data.analytics.Analytics.InputKind.FILE
+                else -> com.raviga.app.data.analytics.Analytics.InputKind.TEXT
+            }
+            analytics?.briefStarted(inputKind)
+        }
         return input
     }
 
@@ -108,6 +118,7 @@ class DraftRepository(
         val current = draft.document
         if (current == null) {
             val result = ai.draft(draft.inputs.map { it.ai() }, draft.title, onProgress)
+            analytics?.briefGenerated(draft.inputs.size, result.document.sections.count { it.body.isNotBlank() })
             commit(id, result.document, "draft", inputsUsed = draft.inputs.map { it.id }, notices = result.notices)
         } else {
             val fresh = draft.newInputs

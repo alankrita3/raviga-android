@@ -337,6 +337,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             c = c.copy(privacy = ConsentVersion(it, now))
         }
         body.aiProcessing?.let { c = c.copy(aiProcessing = AiConsent(it, now)) }
+        body.analytics?.let { c = c.copy(analytics = AiConsent(it, now)) }
         c = c.copy(current = c.terms?.version == config.legal.termsVersion && c.privacy?.version == config.legal.privacyVersion)
         s.copy(consent = c) to c
     }
@@ -766,6 +767,10 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             retention = RetentionConfig(deletionGraceDays = 7, exportLinkHours = 24, jobHours = 24, aiResultMinutes = 15),
             limits = LimitsConfig(),
             ai = AiConfig(listOf("OpenAI (writes and prices briefs from text only; may keep it up to 30 days for abuse checks, never trains on it)")),
+            analytics = AnalyticsConfig(
+                listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
+                retentionMonths = 2,
+            ),
             delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1"),
             legal = LegalConfig(
                 companyName = "Raviga Apps Private Limited",

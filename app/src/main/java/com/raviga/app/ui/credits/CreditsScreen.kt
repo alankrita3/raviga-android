@@ -92,6 +92,8 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(buying = pack.productId, error = null, notice = null) }
             val outcome = runCatching { container.credits.purchase(activity, pack) }.getOrElse { PurchaseOutcome.Failed(it.userLine()) }
+            // Confirmed means the balance synced (contract v0.9); bonus credits included.
+            if (outcome == PurchaseOutcome.Success) container.analytics.creditsPurchased(pack.productId, pack.total)
             _state.update {
                 it.copy(
                     buying = null,

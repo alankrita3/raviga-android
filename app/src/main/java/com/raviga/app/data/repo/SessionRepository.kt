@@ -117,6 +117,13 @@ class SessionRepository(
         updateMe { it.copy(consent = consent) }
     }
 
+    /** v0.9: usage analytics. Never gates anything; AnalyticsGate follows the result. */
+    suspend fun setAnalytics(granted: Boolean): ConsentState {
+        val consent = apiCall(json) { api.putConsent(ConsentRequest(analytics = granted)) }
+        updateMe { it.copy(consent = consent) }
+        return consent
+    }
+
     suspend fun setAiProcessing(granted: Boolean): ConsentState {
         val consent = apiCall(json) { api.putConsent(ConsentRequest(aiProcessing = granted)) }
         prefs.setAiAccepted(_config.value.legal.privacyVersion, allowed = granted)

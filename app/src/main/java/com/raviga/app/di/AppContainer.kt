@@ -118,10 +118,13 @@ class AppContainer(private val app: Application) {
         json,
         com.raviga.app.data.drafts.KeystoreSealer(),
     )
-    val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects)
+    /** Contract v0.9 section 22. Collection follows consent.analytics.granted (init below); never in demo mode. */
+    val analytics = com.raviga.app.data.analytics.Analytics(com.raviga.app.data.analytics.FirebaseAnalyticsSink(app))
+    val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects, analytics)
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
     val credits = CreditsRepository(api, json, cache, billing)
     val push = PushRegistrar(app, prefs, session, appScope)
+
 
     val files = com.raviga.app.data.files.FileImporter(app)
     val extractor = com.raviga.app.data.files.TextExtractor(app)
@@ -146,7 +149,13 @@ class AppContainer(private val app: Application) {
 
     init {
         appScope.launch { session.config.collect { com.raviga.app.ui.status.StatusCopy.supportEmail = it.legal.supportEmail } }
+        // The only switch for analytics collection: on while this client has granted it, off otherwise
+        // (no client, withdrawn, signed out, deleted).
+        appScope.launch { session.me.collect { syncAnalytics() } }
     }
+
+    /** Applies this client's analytics consent to collection now (also called before logging onboarding_complete). */
+    fun syncAnalytics() = analytics.setEnabled(!isDemo && session.me.value?.consent?.analyticsGranted == true)
 
     init {
         // Everything tied to a client follows the stored clientId: RevenueCat's app user,
