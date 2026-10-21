@@ -87,7 +87,7 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
   content used inside the app. Raviga sells a real-world service delivered outside the app. Review may
   push back. Options: position credits as a prepaid digital balance consumed in-app for AI drafting and
   quoting (true today), or move project payment to an external invoice. Decide before submission; no code
-  depends on it beyond the Credits screen copy.
+  depends on it beyond the Credits screen copy. Policy, fees and a recommendation: `docs/play-payments-policy.md`.
 - The microphone is only used while the Capture screen is listening, and speech is recognised on the phone.
   The Data safety form can say no audio or files are collected; the text of notes and briefs is sent to
   OpenAI to write and price briefs (kept up to 30 days for abuse checks, per the backend's provider line),
