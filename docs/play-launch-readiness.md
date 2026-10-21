@@ -48,11 +48,17 @@ Sources:
 ## 2. Pre-launch checklist (Android)
 
 **Console and accounts (founder)**
-1. Register the developer account as an **organization** (Raviga Apps Private Limited; needs a D-U-N-S number).
-   Google applies the 12-tester, 14-day closed-test rule to *personal* accounts created after 13 Nov 2023
-   ([source](https://support.google.com/googleplay/android-developer/answer/14151465)).
+1. **Decided (founder, 2026-10-21):** publish on the existing Google Play account "Miraquill Quotes & Poetry";
+   the PM creates the app.
+   - The listing's developer name will read "Miraquill Quotes & Poetry".
+   - Google requires the privacy policy to name either that entity or the app
+     ([User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311)).
+     The live policy names "Raviga", so that's met.
+   - The 12-tester, 14-day closed test applies only if this is a *personal* account created after 13 Nov 2023
+     ([source](https://support.google.com/googleplay/android-developer/answer/14151465)).
 2. Create the app "Raviga" (`com.raviga.app`): HANDOFF item 1.
-3. Set up the payments profile and merchant account, including tax (GST) details.
+3. Payments profile: the existing account's own. Buyers' Play receipts will show that merchant, while the in-app terms name
+   Raviga Apps Private Limited as the seller. That consistency is a business question for the founder, not a Play policy block.
 4. Create the in-app products `credits_10/25/50/100` (HANDOFF item 2). `credits_100` at $999.99 can't be sold in
    South Korea, where the cap is US$400.
 5. Set up Play App Signing and an upload key (HANDOFF item 5).

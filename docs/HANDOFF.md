@@ -66,6 +66,8 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
   a draft cannot be recovered on another phone or after a reinstall; only submitted projects move with the
   recovery key. Voice needs Android 12+ with an offline speech model (most phones sold in India since 2022);
   older phones type or upload instead, because the only alternative would send audio to Google's cloud.
+  Decided (founder, 2026-10-21, final): voice stays off on phones without an on-device recogniser (checked on a
+  OnePlus 7, Android 12, which has none); they type or upload.
 - Reading PDFs on the phone adds about 6.5 MB to the app (PDFBox); scans use ML Kit through Play services.
 - 1 credit = $10 (contract v0.7; a typical clinic booking app quotes about 30 credits); brackets micro/starter/standard/pro/enterprise; two included revision rounds; quotes
   valid 14 days; auto-accept 14 days after delivery; the server deletes a brief when its project closes. All of these live in the backend
