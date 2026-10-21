@@ -26,6 +26,8 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         val deleted: Boolean = false,
         val recoveryKey: String? = null,
         val recovered: Boolean = false,
+        /** The restored account still has to agree to the current terms (a Play reviewer's demo account). */
+        val recoveredNeedsTerms: Boolean = false,
         val github: String = "",
     )
 
@@ -132,11 +134,15 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
             runCatching { container.session.recover(key) }
-                .onSuccess {
+                .onSuccess { restored ->
                     container.dismissSignedOut()
                     runCatching { container.projects.refreshAll() }
                     runCatching { container.credits.refresh() }
-                    _state.update { s -> s.copy(recovered = true, recoveryKey = container.session.recoveryKey) }
+                    // The restored account may not have agreed to the current terms (a Play reviewer's demo account
+                    // never has): the screen then goes to Terms instead of Home, rather than waiting for the first
+                    // refused AI call. Uses the account recover() returned, not the stored copy (reset on client change).
+                    val needsTerms = container.session.needsLegal(restored, container.session.config.value)
+                    _state.update { s -> s.copy(recovered = true, recoveredNeedsTerms = needsTerms, recoveryKey = container.session.recoveryKey) }
                 }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }

@@ -306,7 +306,7 @@ fun RecoveryScreen(nav: NavController) {
 
     LaunchedEffect(state.recoveryKey) { if (state.recoveryKey != null) vm.markRecoveryKeyShown() }
     LaunchedEffect(state.recovered) {
-        if (state.recovered) nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
+        if (state.recovered) nav.navigate(if (state.recoveredNeedsTerms) Routes.TERMS else Routes.HOME) { popUpTo(0) { inclusive = true } }
     }
 
     ScreenScaffold(topBar = { RaTopBar(title = "Move to another phone", onBack = { nav.popBackStack() }) }) { padding ->
@@ -346,7 +346,7 @@ fun RecoveryScreen(nav: NavController) {
             Spacer(Modifier.height(12.dp))
             Text("Enter the key from your other phone. This phone then shows that phone's submitted projects and credits instead of its own. Drafts on this phone stay here.", style = RaType.body, color = Ink.graphite)
             Spacer(Modifier.height(12.dp))
-            RaTextField(value = otherKey, onValueChange = { otherKey = it }, placeholder = "rark-…", singleLine = true, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false))
+            RaTextField(value = otherKey, onValueChange = { otherKey = it }, placeholder = "rark_…", singleLine = true, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false))
             InlineNotice(state.error)
             Spacer(Modifier.height(16.dp))
             PrimaryButton("Move projects here", enabled = otherKey.isNotBlank() && !state.busy, loading = state.busy, onClick = { confirmMove = true })
