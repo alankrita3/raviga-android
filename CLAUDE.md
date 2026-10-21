@@ -16,7 +16,7 @@ Project manager: the Raviga PM session directs work across backend, iOS and Andr
 
 ## Sources of truth
 
-- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.9, local-first, prices in US dollars,
+- API: `Raviga Backend/docs/api-contract.md` (canonical; v0.9.1, local-first, prices in US dollars,
   English-only speech, at the time of writing).
   Drafts never reach the server: they live in `data/drafts` (sealed on the phone) and go through
   `DraftRepository`; only text goes to the stateless `/ai/*` and `/quotes` jobs; `POST /projects`

@@ -113,6 +113,20 @@ class DtoDecodingTest {
         assertEquals("""{"analytics":true}""", app.encodeToString(com.raviga.app.data.api.ConsentRequest.serializer(), com.raviga.app.data.api.ConsentRequest(analytics = true)))
     }
 
+    /** Captured from the raviga-* dev GET /config on 2026-10-21 (contract v0.9.1: new legal versions, two AI providers). */
+    @Test
+    fun `v091 config has the new legal versions and both AI providers, as the demo does`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v091.json")!!)
+        assertEquals("2026-10-21", config.legal.termsVersion)
+        assertEquals("2026-10-21", config.legal.privacyVersion)
+        assertEquals(2, config.ai.providers.size)
+        assertTrue(config.ai.providers[1].startsWith("Anthropic"))
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(config.ai.providers, demo.ai.providers)
+        assertEquals(config.legal.termsVersion, demo.legal.termsVersion)
+        assertEquals(config.legal.privacyVersion, demo.legal.privacyVersion)
+    }
+
     /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */
     @Test
     fun `push registration sends only the fid`() {

@@ -61,7 +61,7 @@ Kotlin, Jetpack Compose, Material 3, single activity, hand-wired dependencies.
 
 ```
 com.raviga.app
-├── data/api        Retrofit interface + DTOs for api-contract.md v0.9, errors, job polling
+├── data/api        Retrofit interface + DTOs for api-contract.md v0.9.1, errors, job polling
 ├── data/demo       In-process demo backend (DemoApi) and its heuristic brief writer
 ├── data/drafts     Drafts on the phone: sealed JSON files under a Keystore AES-GCM key
 ├── data/files      On-device document reading (PDFBox, ML Kit OCR, Word/RTF/text) and export

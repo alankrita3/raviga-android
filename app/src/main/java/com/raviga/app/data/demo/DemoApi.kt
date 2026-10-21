@@ -766,7 +766,12 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             acceptance = AcceptanceConfig(14),
             retention = RetentionConfig(deletionGraceDays = 7, exportLinkHours = 24, jobHours = 24, aiResultMinutes = 15),
             limits = LimitsConfig(),
-            ai = AiConfig(listOf("OpenAI (writes and prices briefs from text only; may keep it up to 30 days for abuse checks, never trains on it)")),
+            ai = AiConfig(
+                listOf(
+                    "OpenAI (writes and prices briefs from text only; may keep it up to 30 days for abuse checks, never trains on it)",
+                    "Anthropic (Claude, used by our team to build submitted projects; deleted within 30 days, never trains on it)",
+                ),
+            ),
             analytics = AnalyticsConfig(
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
                 retentionMonths = 2,
@@ -777,9 +782,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 companyAddress = "Raviga Apps Private Limited, India",
                 // The dev legal site (contract v0.8); demo mode opens the same pages.
                 termsUrl = "https://d1mi85jr39d7la.cloudfront.net/terms-of-use",
-                termsVersion = "2026-10-10",
+                termsVersion = "2026-10-21",
                 privacyUrl = "https://d1mi85jr39d7la.cloudfront.net/privacy-policy",
-                privacyVersion = "2026-10-10",
+                privacyVersion = "2026-10-21",
                 grievance = Grievance("Alankrita Sood", "membersupport@miraquill.com", "Raviga Apps Private Limited, India", 15),
                 supportEmail = "support@miraquill.com",
             ),

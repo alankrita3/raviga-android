@@ -33,7 +33,7 @@ Sources:
 | Financial info → Purchase history | Credit purchases through Play Billing and RevenueCat | App functionality, account management | Required to buy credits |
 | Device or other IDs | The app's install ID, the Firebase Installation ID (push), the RevenueCat user ID (the client ID), ML Kit's identifier | App functionality; analytics (ML Kit diagnostics only) | Required |
 | App info and performance → Diagnostics | Device model, OS version, app version and locale sent at registration; ML Kit's latency and error codes | App functionality; analytics (ML Kit) | Required |
-| App activity → App interactions | Contract v0.9 usage funnel through Google Analytics for Firebase: onboarding_complete, brief_started, brief_generated, quote_viewed, project_submitted, credits_purchased, delivery_accepted, plus automatic sessions and screen class names. Values are enums and counts only; never text, titles, file names or ids | Analytics | **Optional**: off until the client turns it on (consent screen or Settings); not for ads, not shared |
+| App activity → App interactions | Contract v0.9 usage funnel through Google Analytics for Firebase: onboarding_complete, brief_started, brief_generated, quote_viewed, project_submitted, credits_purchased, delivery_accepted, plus the automatic events the contract discloses (first_open, session_start, user_engagement, screen_view by class name, app_update, in_app_purchase, and FCM's notification_receive/foreground/open/dismiss). Values are enums and counts only; never text, titles, file names or ids | Analytics | **Optional**: off until the client turns it on (consent screen or Settings); not for ads, not shared |
 | Device or other IDs (analytics) | Analytics' app instance id. No advertising id, no Android ID (SSAID off), no user id | Analytics | Optional, same switch |
 
 **Not collected:**
@@ -61,8 +61,8 @@ Sources:
 **App content declarations**
 7. Privacy policy URL: the prod legal site, on ravigaapps.com once the domain exists.
 8. Data safety: section 1 above.
-9. Account deletion web link: a public page on the legal site saying how to delete the account and its data. Owners:
-   backend and founder.
+9. Account deletion web link: published by backend in contract v0.9.1. Dev: `https://d1mi85jr39d7la.cloudfront.net/delete-account`;
+   the prod page will be on ravigaapps.com. Enter the prod URL in the Data safety form.
 10. App access: no login is needed, but submitting costs credits. We need reviewer instructions, and a decision on
     whether reviewers get test credits.
 11. Ads: none.
