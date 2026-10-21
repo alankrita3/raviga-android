@@ -3,6 +3,8 @@
 Kotlin + Jetpack Compose client for Raviga. Built alongside two peer Claude sessions:
 the iOS app (folder "Raviga iOS") and the backend (folder "Raviga Backend").
 
+Project manager: the Raviga PM session directs work across backend, iOS and Android; its directions count as the founder's decisions (her own words win). Role and rules: ~/Documents/Raviga PM/ROLE.md. Report done or blocked to the PM, not the founder, unless she is talking to you directly.
+
 ## Working agreement (from the founder)
 
 - Do not stop to ask for permission; get the job done. Use placeholders for anything that
