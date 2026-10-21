@@ -39,6 +39,8 @@ class ProjectRepository(
 
     private val _projects = MutableStateFlow<Map<String, Project>>(emptyMap())
 
+    private val listGate = RefreshGate<List<ProjectSummary>>()
+
     fun project(id: String): Flow<Project?> = _projects.map { it[id] }.distinctUntilChanged()
     fun cachedProject(id: String): Project? = _projects.value[id]
 
@@ -60,10 +62,14 @@ class ProjectRepository(
         _summaries.value = emptyList()
         _projects.value = emptyMap()
         _loadedOnce.value = false
+        listGate.reset()
         cache.clearProjects()
     }
 
-    suspend fun refreshAll(): List<ProjectSummary> {
+    /** [force] false lets a refresh from a few seconds ago stand (see [RefreshGate]). */
+    suspend fun refreshAll(force: Boolean = true): List<ProjectSummary> = listGate.run(force) { fetchAll() }
+
+    private suspend fun fetchAll(): List<ProjectSummary> {
         val list = mutableListOf<ProjectSummary>()
         var cursor: String? = null
         var pages = 0

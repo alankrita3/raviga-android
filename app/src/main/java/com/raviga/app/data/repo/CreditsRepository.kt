@@ -32,19 +32,23 @@ class CreditsRepository(
 
     val isDemoBilling: Boolean get() = api is DemoApi && !billing.isAvailable
 
+    private val gate = RefreshGate<CreditsResponse>()
+
     suspend fun warmFromCache() {
         cache.read(CacheStore.CREDITS, CreditsResponse.serializer())?.let { _credits.value = it }
     }
 
     fun reset() {
         _credits.value = null
+        gate.reset()
     }
 
-    suspend fun refresh(): CreditsResponse {
+    /** [force] false lets a refresh from a few seconds ago stand (see [RefreshGate]). */
+    suspend fun refresh(force: Boolean = true): CreditsResponse = gate.run(force) {
         val response = apiCall(json) { api.credits() }
         _credits.value = response
         cache.write(CacheStore.CREDITS, CreditsResponse.serializer(), response)
-        return response
+        response
     }
 
     /** Asks the backend to reconcile with RevenueCat, then reloads the ledger. */

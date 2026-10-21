@@ -85,7 +85,7 @@ fun HomeScreen(nav: NavController) {
         )
     }
 
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh(force = false) }
 
     // Android 13+: ask for notifications once, after the client has seen the home screen.
     val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }

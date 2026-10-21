@@ -90,7 +90,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
     fun dismissSignedOut() = container.dismissSignedOut()
 
     init {
-        refresh()
+        // No refresh here: HomeScreen refreshes on resume, which also covers the first showing.
         viewModelScope.launch {
             container.events.collect { event ->
                 if (event is AppEvent.ProjectUpdated) runCatching { container.projects.refreshAll() }
@@ -99,14 +99,15 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun refresh() {
+    /** [force] false on resume: a refresh from the last few seconds (start-up) stands. Retry forces. */
+    fun refresh(force: Boolean = true) {
         viewModelScope.launch {
             _refreshing.value = true
             container.drafts.load()
-            runCatching { container.projects.refreshAll() }
+            runCatching { container.projects.refreshAll(force) }
                 .onSuccess { _error.value = null }
                 .onFailure { if (rows.value.isEmpty()) _error.value = it.userLine() }
-            runCatching { container.credits.refresh() }
+            runCatching { container.credits.refresh(force) }
             _refreshing.value = false
         }
     }

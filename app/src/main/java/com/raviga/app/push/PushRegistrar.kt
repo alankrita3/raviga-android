@@ -7,6 +7,8 @@ import com.raviga.app.data.local.PrefsStore
 import com.raviga.app.data.repo.SessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -23,6 +25,9 @@ class PushRegistrar(
 ) {
     private var sentThisProcess = false
     private var registeredThisProcess = false
+
+    /** The start-up sync and onRegistered arrive together; one at a time keeps it to one PUT. */
+    private val syncLock = Mutex()
 
     val isFirebaseConfigured: Boolean get() = FirebaseApp.getApps(context).isNotEmpty()
 
@@ -51,7 +56,9 @@ class PushRegistrar(
         scope.launch { runCatching { syncIfNeeded() } }
     }
 
-    suspend fun syncIfNeeded() {
+    suspend fun syncIfNeeded() = syncLock.withLock { syncLocked() }
+
+    private suspend fun syncLocked() {
         if (!isFirebaseConfigured || !session.isRegistered) return
         if (!registeredThisProcess) {
             // Delivers the ID through onRegistered, including the first time on a fresh install.

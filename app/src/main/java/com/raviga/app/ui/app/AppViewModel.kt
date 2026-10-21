@@ -76,8 +76,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 val me = session.ensureRegistered()
                 launch { runCatching { container.push.syncIfNeeded() } }
-                launch { runCatching { container.projects.refreshAll() } }
-                launch { runCatching { container.credits.refresh() } }
+                launch { runCatching { container.projects.refreshAll(force = false) } }
+                launch { runCatching { container.credits.refresh(force = false) } }
                 val config = session.config.value
                 val start = when {
                     !prefs.welcomeDone -> Routes.WELCOME
