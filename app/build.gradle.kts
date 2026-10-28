@@ -29,6 +29,11 @@ val secrets = Properties().apply {
 }
 fun secret(key: String, default: String): String = secrets.getProperty(key) ?: default
 
+// `-Praviga.internalTest=true`: a release bundle for Play's internal testing track only, before prod
+// exists. It talks to the dev stage (API_BASE_URL_DEBUG) and may lack the RevenueCat key; it is still
+// signed with the upload key and never falls back to the in-app demo backend.
+val internalTest: Boolean = (findProperty("raviga.internalTest") as String?) == "true"
+
 android {
     namespace = "com.raviga.app"
     compileSdk = 36
@@ -72,6 +77,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (internalTest) buildConfigField("String", "API_BASE_URL", "\"${secret("API_BASE_URL_DEBUG", "")}\"")
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -157,8 +163,9 @@ dependencies {
 // A Play upload must never ship the demo backend, an unsigned bundle or a store
 // without products. assembleRelease stays unguarded for local R8 checks.
 val releaseMissing: String = listOfNotNull(
-    "API_BASE_URL in secrets.properties".takeIf { secret("API_BASE_URL", "").isBlank() },
-    "REVENUECAT_API_KEY in secrets.properties".takeIf { secret("REVENUECAT_API_KEY", "").isBlank() },
+    "API_BASE_URL in secrets.properties".takeIf { !internalTest && secret("API_BASE_URL", "").isBlank() },
+    "API_BASE_URL_DEBUG (the dev stage) in secrets.properties".takeIf { internalTest && secret("API_BASE_URL_DEBUG", "").isBlank() },
+    "REVENUECAT_API_KEY in secrets.properties".takeIf { !internalTest && secret("REVENUECAT_API_KEY", "").isBlank() },
     "app/google-services.json".takeIf { !file("google-services.json").exists() },
     "keystore.properties".takeIf { !keystorePropertiesFile.exists() },
 ).joinToString("; ")
