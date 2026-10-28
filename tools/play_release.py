@@ -8,10 +8,12 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal]
     .venv/bin/python tools/play_release.py products            # list one-time products
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
+    .venv/bin/python tools/play_release.py add-region credits_50 KR     # add one country, priced at the USD conversion or its cap
 
 Releases are created as drafts: Play allows only drafts until the app is first published, and rolling out stays a
-deliberate step in Play Console. Products: prices are converted from USD per region; a country whose cap is below the
-converted price is left out (never sold cheaper), as Play requires.
+deliberate step in Play Console. Products: prices are converted from USD per region. Where the converted price is over
+Play's maximum for that country, the pack is sold at that country's maximum (founder's rule, 2026-10-28): it sells
+everywhere, slightly cheaper where the cap bites (India's ₹84,000 for the $999.99 pack, for example).
 """
 import argparse, json, os, re, sys
 
@@ -71,12 +73,24 @@ def products(s):
               f"US ${us.get('units')}.{str(us.get('nanos', 0))[:2]}", f"{sum(c.get('availability') == 'AVAILABLE' for c in cfg)} regions")
 
 
+def money(display: str, currency: str) -> dict:
+    """'₹84,000.00', 'CA$1,380.00', 'BDT 110,000.00' or '¥155,000' (from Play's error text) as Money."""
+    digits = re.sub(r"[^0-9.,]", "", display)
+    if digits.count(".") > 1:
+        digits = digits.replace(".", "").replace(",", ".")
+    amount = float(digits.replace(",", ""))
+    return {"currencyCode": currency, "units": str(int(amount)), "nanos": int(round((amount - int(amount)) * 1e9))}
+
+
+CAP = re.compile(r"Price for ([A-Z]{2}) must be between .*? and (.*?), found")
+
+
 def product(s, pid, title, usd):
     units, _, cents = f"{float(usd):.2f}".partition(".")
     conv = check(s.post(f"{API}/pricing:convertRegionPrices",
                         json={"price": {"currencyCode": "USD", "units": units, "nanos": int(cents) * 10_000_000}}))
     regions = {code: v["price"] for code, v in conv["convertedRegionPrices"].items()}
-    left_out = []
+    capped = []
     for _ in range(len(regions) + 1):
         body = {"packageName": PKG, "productId": pid,
                 "listings": [{"languageCode": "en-US", "title": title, "description": DESCRIPTION}],
@@ -87,14 +101,35 @@ def product(s, pid, title, usd):
                                      "newRegionsConfig": {**conv["convertedOtherRegionsPrice"], "availability": "AVAILABLE"}}]}
         r = s.patch(f"{API}/onetimeproducts/{pid}", json=body, params={
             "allowMissing": "true", "regionsVersion.version": conv["regionVersion"]["version"], "updateMask": "listings,purchaseOptions"})
-        m = re.search(r"Price for ([A-Z]{2}) must be between", r.text) if r.status_code == 400 else None
-        if m and m.group(1) in regions:
-            regions.pop(m.group(1)); left_out.append(m.group(1)); continue
+        m = CAP.search(r.text) if r.status_code == 400 else None
+        if m and m.group(1) in regions and m.group(1) not in capped:
+            regions[m.group(1)] = money(m.group(2), regions[m.group(1)]["currencyCode"]); capped.append(m.group(1)); continue
         check(r)
         break
     check(s.post(f"{API}/oneTimeProducts/{pid}/purchaseOptions:batchUpdateStates", json={"requests": [
         {"activatePurchaseOptionRequest": {"packageName": PKG, "productId": pid, "purchaseOptionId": "default"}}]}))
-    print(f"{pid} {title!r} ${usd}: active in {len(regions)} regions; left out (over the local cap): {left_out or 'none'}")
+    print(f"{pid} {title!r} ${usd}: active in {len(regions)} regions; sold at the local maximum in {len(capped)}: {' '.join(sorted(capped)) or 'none'}")
+
+
+def add_region(s, pid, code):
+    """Adds one country to an existing product, priced from its US price (or at that country's cap); others untouched."""
+    prod = check(s.get(f"{API}/oneTimeProducts/{pid}"))
+    po = prod["purchaseOptions"][0]
+    cfg = po["regionalPricingAndAvailabilityConfigs"]
+    if any(c["regionCode"] == code for c in cfg):
+        sys.exit(f"{pid} already has {code}")
+    us = next(c["price"] for c in cfg if c["regionCode"] == "US")
+    conv = check(s.post(f"{API}/pricing:convertRegionPrices", json={"price": us}))
+    price = conv["convertedRegionPrices"][code]["price"]
+    for _ in range(2):
+        po["regionalPricingAndAvailabilityConfigs"] = cfg + [{"regionCode": code, "price": price, "availability": "AVAILABLE"}]
+        r = s.patch(f"{API}/onetimeproducts/{pid}", json=prod,
+                    params={"regionsVersion.version": prod["regionsVersion"]["version"], "updateMask": "purchaseOptions"})
+        m = CAP.search(r.text) if r.status_code == 400 else None
+        if m and m.group(1) == code:
+            price = money(m.group(2), price["currencyCode"]); continue
+        check(r); break
+    print(f"{pid}: added {code} at {price['currencyCode']} {price['units']}.{str(price.get('nanos', 0)).zfill(9)[:2]}")
 
 
 def main():
@@ -104,10 +139,12 @@ def main():
     u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal")
     sub.add_parser("products")
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
+    r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
     args = a.parse_args()
     s = session()
     {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track), "products": lambda: products(s),
-     "product": lambda: product(s, args.id, args.title, args.usd)}[args.cmd]()
+     "product": lambda: product(s, args.id, args.title, args.usd),
+     "add-region": lambda: add_region(s, args.id, args.region)}[args.cmd]()
 
 
 if __name__ == "__main__":
