@@ -79,8 +79,12 @@ Sources:
 **Store listing (public; founder approves)**
 15. Name "Raviga", short description (≤80 characters), full description (≤4,000), category Business, contact email
     and website.
-16. 512×512 icon (waits on the real logo; the interim "R." exists), 1024×500 feature graphic, and 2 to 8 phone
+16. 512×512 icon: ready, `docs/icon/play-icon-512.png` (option A); still needed: a 1024×500 feature graphic and 2 to 8 phone
     screenshots.
+
+**Payments (account)**
+- BillDesk KYC (shown in Play Console, checked 2026-10-28): sales to users outside India pause on **15 Mar 2027** unless
+  the account's KYC with BillDesk is completed. Founder action, raised through the PM.
 
 **Build and release**
 17. `bundleRelease`. It is blocked until items 5 and 6 exist (`checkReleaseReadiness` enforces this).

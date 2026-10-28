@@ -4,4 +4,8 @@
     <color name="paper">#FFFBFAF7</color>
     <color name="ink">#FF17181C</color>
     <color name="accent">#FF0F5B57</color>
+    <!-- The app icon (founder's option A): navy "r", blue square, cream ground. -->
+    <color name="mark_navy">#FF14183A</color>
+    <color name="mark_blue">#FF6F8CFF</color>
+    <color name="mark_cream">#FFF6F3EE</color>
 </resources>

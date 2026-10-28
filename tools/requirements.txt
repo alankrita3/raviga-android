@@ -1,6 +1,5 @@
-# Native (arm64) helpers for this repo: docs/icon/make_mark.py, tools/to_webp.py, the backlog sheet.
+# Native (arm64) helpers for this repo: tools/to_webp.py and reading the backlog sheet.
 # /usr/bin/python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
-fonttools==4.60.2
 pillow==11.3.0
 google-auth==2.50.0
 requests==2.32.5
