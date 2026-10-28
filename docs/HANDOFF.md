@@ -22,6 +22,19 @@ are the same credential used by more than one repo.
 | 11 | **Anything you registered under the old app id** (the old name after `com.raviga.`): items 1, 3 and 4 were not created as far as this repo knows, but if any were, create them again for `com.raviga.app`. App ids can't be renamed in Play Console or Firebase | Play Console, Firebase, RevenueCat | check |
 | 12 | **OpenAI Zero Data Retention**: until OpenAI approves it, OpenAI may keep the text of notes and briefs up to 30 days for abuse checks; the privacy page and `/config`'s provider line say so meanwhile (shared) | OpenAI account; backend provider line | to apply |
 
+## Google Play (2026-10-28)
+
+- Developer account: organization, "Raviga Apps" (renamed from "Miraquill Quotes & Poetry"; this also shows on Mirakee's
+  listing). App "Raviga" (`com.raviga.app`, Play app id 4972798470571758057), free, English (US).
+- Internal testing: a draft release, versionCode 1, built with `./gradlew bundleRelease -Praviga.internalTest=true` (dev
+  server, upload key in `~/.raviga-android-signing/`). Play keeps the app signing key (Play App Signing).
+- In-app products (consumables): `credits_10` $99.99, `credits_25` $249.99, `credits_50` $499.99 (not in South Korea, whose
+  cap is below the converted price). `credits_100` at $999.99 is **not created**: it's over the price cap in 40+ countries,
+  India included. Your decision: withdraw it there, sell at each local cap, change the pack, or drop it.
+- API access: `tools/play_release.py` with Raviga's own service account (raviga-play-publisher@raviga-e6b92). Its key lives
+  in `~/.config/raviga/`, outside the repo; it can release to testing tracks and manage products for Raviga only.
+- BillDesk KYC must be completed by 15 Mar 2027 for sales outside India (payments contact: team@mirakee.com).
+
 ## Verified against the backend dev stage (2026-10-09)
 
 The whole lifecycle ran from the Android app on an emulator against the real dev API: register →

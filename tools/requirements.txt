@@ -1,4 +1,4 @@
-# Native (arm64) helpers for this repo: tools/to_webp.py and reading the backlog sheet.
+# Native (arm64) helpers for this repo: tools/to_webp.py, tools/play_release.py (Play API) and reading the backlog sheet.
 # /usr/bin/python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
 pillow==11.3.0
 google-auth==2.50.0
