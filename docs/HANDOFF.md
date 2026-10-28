@@ -28,11 +28,13 @@ are the same credential used by more than one repo.
   listing). App "Raviga" (`com.raviga.app`, Play app id 4972798470571758057), free, English (US).
 - Internal testing: a draft release, versionCode 1, built with `./gradlew bundleRelease -Praviga.internalTest=true` (dev
   server, upload key in `~/.raviga-android-signing/`). Play keeps the app signing key (Play App Signing).
-- In-app products (consumables), all ACTIVE in 174 regions: `credits_10` $99.99, `credits_25` $249.99, `credits_50`
+- In-app products (consumables), all ACTIVE: `credits_10` $99.99, `credits_25` $249.99, `credits_50`
   $499.99, `credits_100` $999.99. Your rule (2026-10-28): where Play's local maximum is below the converted price, the pack
   sells at that maximum. That applies to `credits_100` in 76 countries (India ₹84,000, UK £810, Germany €940, Japan ¥155,000,
-  Canada CA$1,380) and `credits_50` in South Korea (₩600,000, the same as `credits_100` there). India's prices for the
-  smaller packs are Play's conversions (₹11,200 / 28,100 / 56,200), above /config's hints; that's still open.
+  Canada CA$1,380). Korea: 10 and 25 only (her call 10-28). There the cap made `credits_50` and `credits_100` the same
+  ₩600,000, about 59% off for the 100 pack, so both are not sold in Korea (`NOT_SOLD` in `tools/play_release.py` keeps a re-run
+  from adding Korea back). Sold in: 174 / 174 / 173 / 173 regions. India's prices for the smaller packs are Play's conversions
+  (₹11,200 / 28,100 / 56,200), above /config's hints; that's still open.
 - API access: `tools/play_release.py` with Raviga's own service account (raviga-play-publisher@raviga-e6b92). Its key lives
   in `~/.config/raviga/`, outside the repo; it can release to testing tracks and manage products for Raviga only.
 - BillDesk KYC must be completed by 15 Mar 2027 for sales outside India (payments contact: team@mirakee.com).

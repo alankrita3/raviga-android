@@ -8,12 +8,15 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal]
     .venv/bin/python tools/play_release.py products            # list one-time products
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
-    .venv/bin/python tools/play_release.py add-region credits_50 KR     # add one country, priced at the USD conversion or its cap
+    .venv/bin/python tools/play_release.py add-region credits_10 FR     # add one country, priced at the USD conversion or its cap
+    .venv/bin/python tools/play_release.py withdraw-region credits_50 KR  # stop selling one pack in one country
 
 Releases are created as drafts: Play allows only drafts until the app is first published, and rolling out stays a
 deliberate step in Play Console. Products: prices are converted from USD per region. Where the converted price is over
 Play's maximum for that country, the pack is sold at that country's maximum (founder's rule, 2026-10-28): it sells
 everywhere, slightly cheaper where the cap bites (India's ₹84,000 for the $999.99 pack, for example).
+Exceptions are in NOT_SOLD and are never added back: Korea gets 10 and 25 only (her call 10-28; there the cap made the
+50 and 100 packs cost the same, the 100 pack about 59% off).
 """
 import argparse, json, os, re, sys
 
@@ -26,6 +29,8 @@ API = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications
 UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PKG}"
 KEY = os.environ.get("RAVIGA_PLAY_KEY", os.path.expanduser("~/.config/raviga/raviga-play-publisher.json"))
 DESCRIPTION = "Credits to pay for building your Raviga projects."
+# Founder's exclusions, per pack: countries where it is not sold at all.
+NOT_SOLD = {"credits_50": {"KR"}, "credits_100": {"KR"}}  # Korea: 10 and 25 only (her call 10-28)
 
 
 def session() -> requests.Session:
@@ -89,7 +94,7 @@ def product(s, pid, title, usd):
     units, _, cents = f"{float(usd):.2f}".partition(".")
     conv = check(s.post(f"{API}/pricing:convertRegionPrices",
                         json={"price": {"currencyCode": "USD", "units": units, "nanos": int(cents) * 10_000_000}}))
-    regions = {code: v["price"] for code, v in conv["convertedRegionPrices"].items()}
+    regions = {code: v["price"] for code, v in conv["convertedRegionPrices"].items() if code not in NOT_SOLD.get(pid, set())}
     capped = []
     for _ in range(len(regions) + 1):
         body = {"packageName": PKG, "productId": pid,
@@ -106,13 +111,32 @@ def product(s, pid, title, usd):
             regions[m.group(1)] = money(m.group(2), regions[m.group(1)]["currencyCode"]); capped.append(m.group(1)); continue
         check(r)
         break
+    for code in NOT_SOLD.get(pid, set()):
+        withdraw_region(s, pid, code, quiet=True)
     check(s.post(f"{API}/oneTimeProducts/{pid}/purchaseOptions:batchUpdateStates", json={"requests": [
         {"activatePurchaseOptionRequest": {"packageName": PKG, "productId": pid, "purchaseOptionId": "default"}}]}))
     print(f"{pid} {title!r} ${usd}: active in {len(regions)} regions; sold at the local maximum in {len(capped)}: {' '.join(sorted(capped)) or 'none'}")
 
 
+def withdraw_region(s, pid, code, quiet=False):
+    """Stops selling an existing product in one country (NO_LONGER_AVAILABLE); every other region is sent back as is."""
+    prod = check(s.get(f"{API}/oneTimeProducts/{pid}"))
+    cfg = prod["purchaseOptions"][0]["regionalPricingAndAvailabilityConfigs"]
+    hit = [c for c in cfg if c["regionCode"] == code]
+    if not hit or hit[0].get("availability") == "NO_LONGER_AVAILABLE":
+        if not quiet:
+            print(f"{pid}: not sold in {code} already")
+        return
+    hit[0]["availability"] = "NO_LONGER_AVAILABLE"
+    check(s.patch(f"{API}/onetimeproducts/{pid}", json=prod,
+                  params={"regionsVersion.version": prod["regionsVersion"]["version"], "updateMask": "purchaseOptions"}))
+    print(f"{pid}: withdrawn from {code}")
+
+
 def add_region(s, pid, code):
     """Adds one country to an existing product, priced from its US price (or at that country's cap); others untouched."""
+    if code in NOT_SOLD.get(pid, set()):
+        sys.exit(f"{pid} is not sold in {code} (NOT_SOLD, the founder's call)")
     prod = check(s.get(f"{API}/oneTimeProducts/{pid}"))
     po = prod["purchaseOptions"][0]
     cfg = po["regionalPricingAndAvailabilityConfigs"]
@@ -140,11 +164,13 @@ def main():
     sub.add_parser("products")
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
     r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
+    w = sub.add_parser("withdraw-region"); w.add_argument("id"); w.add_argument("region")
     args = a.parse_args()
     s = session()
     {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track), "products": lambda: products(s),
      "product": lambda: product(s, args.id, args.title, args.usd),
-     "add-region": lambda: add_region(s, args.id, args.region)}[args.cmd]()
+     "add-region": lambda: add_region(s, args.id, args.region),
+     "withdraw-region": lambda: withdraw_region(s, args.id, args.region)}[args.cmd]()
 
 
 if __name__ == "__main__":
