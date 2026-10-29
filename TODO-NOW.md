@@ -5,7 +5,8 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 
 ## In flight
 
-- Nothing. Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots); waiting for her approval.
+- Nothing. Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots), accepted by the PM
+  2026-10-29; the copy still waits for her approval.
 
 ## Blocked, and on whom
 
@@ -19,10 +20,10 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
   (`bundleRelease -Praviga.internalTest=true`).
 - **Founder:** BillDesk KYC for sales outside India, due 15 Mar 2027 (Play Console banner; contact team@mirakee.com).
 - **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle),
-  a feature graphic (navy recommended) and the screenshots. Dev keeps the demo project RA-Q3FJ24 (awaiting review); the
-  team can reject it, or keep it for the reviewer walkthrough.
+  a feature graphic (navy recommended) and the screenshots. The dev demo project RA-Q3FJ24 is rejected ("screenshot demo");
+  store reviewers get a prod demo account later.
 - **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
-  Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). Fix: System
+  Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). The PM is asking her: System
   Settings → Privacy & Security → Local Network → Terminal on, then `adb kill-server` and `adb connect`. USB works meanwhile.
 - **Hardware:** the themed icon needs an Android 13+ phone; voice dictation needs a phone with an on-device recogniser.
   The OnePlus 7 runs Android 12 and has neither.
