@@ -12,6 +12,7 @@ import com.raviga.app.data.api.RegisterDeviceResponse
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -123,8 +124,41 @@ class DtoDecodingTest {
         assertTrue(config.ai.providers[1].startsWith("Anthropic"))
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.ai.providers, demo.ai.providers)
+    }
+
+    /** Captured from the raviga-* dev GET /config on 2026-10-29 (contract v0.9.2); name and address scrubbed for the repo. */
+    @Test
+    fun `v092 config has the new legal versions, the same shape, and the demo matches`() {
+        val raw = fixture("config-v092.json")!!
+        assertTrue(raw.contains("officerName") && raw.contains("\"address\""))   // still sent, for older builds
+        val config = json.decodeFromString(AppConfig.serializer(), raw)
+        assertEquals("2026-10-29", config.legal.termsVersion)
+        assertEquals("2026-10-29", config.legal.privacyVersion)
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.legal.termsVersion, demo.legal.termsVersion)
         assertEquals(config.legal.privacyVersion, demo.legal.privacyVersion)
+        assertEquals(config.legal.grievance, demo.legal.grievance)
+        assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
+            com.raviga.app.ui.status.StatusCopy.grievanceLine(config.legal.grievance))
+    }
+
+    /** R-055: /config may still send a person's name and an address; the app decodes neither and shows one line. */
+    @Test
+    fun `grievance shows only the email and days, never a name or an address`() {
+        val raw = """{"companyName":"Raviga Apps Private Limited","companyAddress":"1 Example Street, Delhi",
+            "grievance":{"officerName":"Example Officer","email":"grievance@example.com","address":"1 Example Street, Delhi","responseDays":15},
+            "supportEmail":"support@example.com"}"""
+        val legal = json.decodeFromString(com.raviga.app.data.api.LegalConfig.serializer(), raw)
+        val line = com.raviga.app.ui.status.StatusCopy.grievanceLine(legal.grievance)
+        assertEquals("Questions or complaints: write to grievance@example.com. We reply within 15 days.", line)
+        val kept = json.encodeToString(com.raviga.app.data.api.LegalConfig.serializer(), legal)
+        for (personal in listOf("Example Officer", "Example Street", "officerName", "address")) {
+            assertFalse(personal, kept.contains(personal) || line!!.contains(personal))
+        }
+        assertEquals(null, com.raviga.app.ui.status.StatusCopy.grievanceLine(com.raviga.app.data.api.Grievance(email = "", responseDays = 15)))
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig().legal
+        assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
+            com.raviga.app.ui.status.StatusCopy.grievanceLine(demo.grievance))
     }
 
     /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */

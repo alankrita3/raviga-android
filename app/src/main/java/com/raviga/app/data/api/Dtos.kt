@@ -234,10 +234,12 @@ data class DeliveryConfig(
     val awsRegion: String = "ap-south-1",
 )
 
+// Contract v0.9.2 (R-055, founder, 2026-10-29): no person's name and no address in the app. The server still sends
+// companyAddress, grievance.officerName and grievance.address for older builds; they are not decoded, so nothing can
+// show them.
 @Serializable
 data class LegalConfig(
     val companyName: String = "Raviga Apps Private Limited",
-    val companyAddress: String = "",
     val termsUrl: String = "",
     val termsVersion: String = "",
     val privacyUrl: String = "",
@@ -248,9 +250,7 @@ data class LegalConfig(
 
 @Serializable
 data class Grievance(
-    val officerName: String = "",
     val email: String = "",
-    val address: String = "",
     val responseDays: Int = 30,
 )
 

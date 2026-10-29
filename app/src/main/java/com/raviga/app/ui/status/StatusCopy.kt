@@ -1,6 +1,7 @@
 package com.raviga.app.ui.status
 
 import androidx.compose.ui.graphics.Color
+import com.raviga.app.data.api.Grievance
 import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectStatus
 import com.raviga.app.data.api.ProjectSummary
@@ -65,6 +66,11 @@ object StatusCopy {
 
     /** From `/config` legal.supportEmail; set by the container whenever config loads. */
     @Volatile var supportEmail: String = ""
+
+    /** R-055: the grievance route in one line, email and days only (consent screen and Privacy and data). */
+    fun grievanceLine(grievance: Grievance): String? =
+        if (grievance.email.isBlank()) null
+        else "Questions or complaints: write to ${grievance.email}. We reply within ${grievance.responseDays} days."
 
     fun mistakeSuffix(): String = if (supportEmail.isBlank()) "" else " If you think this is a mistake, write to $supportEmail."
 

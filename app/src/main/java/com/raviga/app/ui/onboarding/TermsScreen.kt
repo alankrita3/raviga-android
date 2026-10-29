@@ -1,5 +1,6 @@
 package com.raviga.app.ui.onboarding
 
+import com.raviga.app.ui.status.StatusCopy
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -134,10 +135,10 @@ fun TermsScreen(nav: NavController) {
                 Spacer(Modifier.width(12.dp))
                 Switch(checked = analyticsOn, enabled = !busy, onCheckedChange = { analyticsOn = it }, colors = switchColors())
             }
-            Block(
-                "Grievance officer",
-                "${grievanceName(legal.grievance.officerName, legal.companyName)}. Write to ${legal.grievance.email}. We reply within ${legal.grievance.responseDays} days.",
-            )
+            StatusCopy.grievanceLine(legal.grievance)?.let {
+                Text(it, style = RaType.secondary, color = Ink.graphite)
+                Spacer(Modifier.height(20.dp))
+            }
             Row(Modifier.padding(top = 4.dp)) {
                 InlineAction("Privacy policy", onClick = { openLink(context, legal.privacyUrl) })
                 Spacer(Modifier.width(12.dp))
@@ -155,11 +156,4 @@ private fun Block(title: String, body: String) {
     Spacer(Modifier.height(6.dp))
     Text(body, style = RaType.secondary, color = Ink.graphite)
     Spacer(Modifier.height(20.dp))
-}
-
-/** Config values still marked for the founder read as the role, never as "[FOUNDER]" (same rule as iOS). */
-private fun grievanceName(name: String, company: String): String = when {
-    name.isBlank() || name.contains("[FOUNDER]") || name.lowercase().contains("placeholder") -> "The Grievance Officer, $company"
-    name.contains(company) -> name
-    else -> "$name, $company"
 }

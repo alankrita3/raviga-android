@@ -70,7 +70,7 @@ fun SettingsScreen(nav: NavController) {
             RaRow(title = "Move to another phone", subtitle = "Recovery key", onClick = { nav.navigate(Routes.RECOVERY) })
             RaRow(
                 title = "Privacy and data",
-                subtitle = "AI processing, download or delete your data, grievance officer",
+                subtitle = "AI processing, download or delete your data, questions or complaints",
                 onClick = { nav.navigate(Routes.PRIVACY) },
             )
             RaRow(title = "Privacy policy", onClick = { openLink(context, legal.privacyUrl) }, chevron = false)
@@ -90,7 +90,7 @@ fun SettingsScreen(nav: NavController) {
             }
             Text("About", style = RaType.heading, color = Ink.ink, modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 32.dp, bottom = 4.dp))
             RaRow(title = "Raviga", subtitle = vm.versionName + if (vm.isDemo) ", demo backend on this phone" else "")
-            RaRow(title = legal.companyName, subtitle = legal.companyAddress.ifBlank { null })
+            RaRow(title = legal.companyName)
             val clientId = state.me?.clientId
             if (legal.supportEmail.isNotBlank()) RaRow(
                 title = "Support",

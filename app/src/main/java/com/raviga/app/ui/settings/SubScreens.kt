@@ -39,6 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import com.raviga.app.ui.status.StatusCopy
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -261,18 +264,20 @@ fun PrivacyScreen(nav: NavController) {
             Column(Modifier.padding(horizontal = Ra.gutter)) {
                 InlineNotice(state.error)
                 Spacer(Modifier.height(Ra.sectionGap))
-                SectionHeading("Grievance officer")
-                Spacer(Modifier.height(12.dp))
-                Text(legal.grievance.officerName.ifBlank { "To be appointed" }, style = RaType.body, color = Ink.ink)
-                if (legal.grievance.email.isNotBlank()) {
+                StatusCopy.grievanceLine(legal.grievance)?.let { line ->
+                    val email = legal.grievance.email
                     Text(
-                        legal.grievance.email, style = RaType.body, color = Ink.teal,
-                        modifier = Modifier.clickable { emailLink(context, legal.grievance.email, "Raviga grievance") }.padding(vertical = 4.dp),
+                        buildAnnotatedString {
+                            append(line)
+                            val at = line.indexOf(email)
+                            addStyle(SpanStyle(color = Ink.teal), at, at + email.length)
+                        },
+                        style = RaType.body, color = Ink.ink,
+                        modifier = Modifier.clickable { emailLink(context, email, "Raviga grievance") }.padding(vertical = 4.dp),
                     )
                 }
-                if (legal.grievance.address.isNotBlank()) Text(legal.grievance.address, style = RaType.secondary, color = Ink.graphite)
-                Spacer(Modifier.height(8.dp))
-                Text("We respond within ${legal.grievance.responseDays} days, as the Digital Personal Data Protection Act requires. ${legal.companyName} is the data fiduciary.", style = RaType.caption, color = Ink.graphite)
+                // Contract v0.9.2: the line sits next to the privacy policy link, as on the consent screen.
+                InlineAction("Privacy policy", onClick = { openLink(context, legal.privacyUrl) }, modifier = Modifier.padding(top = 4.dp))
                 Spacer(Modifier.height(32.dp))
             }
         }
