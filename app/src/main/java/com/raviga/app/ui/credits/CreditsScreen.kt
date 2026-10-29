@@ -12,6 +12,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.raviga.app.ui.nav.Routes
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -84,7 +90,8 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch { container.events.collect { if (it is AppEvent.CreditsUpdated) runCatching { container.credits.refresh() } } }
-        viewModelScope.launch { runCatching { container.credits.refresh() }.onFailure { e -> if (_state.value.credits == null) _state.update { it.copy(error = e.userLine()) } } }
+        // R-056: before Agree there is no account yet, so no balance to fetch (and nothing may leave the phone).
+        if (container.session.agreed) viewModelScope.launch { runCatching { container.credits.refresh() }.onFailure { e -> if (_state.value.credits == null) _state.update { it.copy(error = e.userLine()) } } }
     }
 
     fun buy(activity: Activity, pack: CreditPack) {
@@ -121,12 +128,27 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun CreditsScreen(nav: NavController) {
+fun CreditsScreen(nav: NavController, buy: String? = null) {
     val container = LocalAppContainer.current
     val vm: CreditsViewModel = viewModel { CreditsViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val balance = state.credits?.balance ?: container.session.me.value?.credits?.balance ?: 0
+
+    // After the first consent (R-056): carry on into the pack the client tapped, once the store knows this account.
+    var buyStarted by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(buy, state.packs) {
+        val pack = state.packs.firstOrNull { it.productId == buy } ?: return@LaunchedEffect
+        if (buyStarted) return@LaunchedEffect
+        repeat(20) {
+            if (container.credits.storeReady || state.demoBilling) {
+                buyStarted = true
+                context.findActivity()?.let { vm.buy(it, pack) }
+                return@LaunchedEffect
+            }
+            delay(250)
+        }
+    }
 
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
@@ -163,12 +185,17 @@ fun CreditsScreen(nav: NavController) {
                 val price = state.prices[pack.productId]
                     ?: pack.priceHintUsd?.let { Money.usd(it) }
                     ?: ""
-                val enabled = (state.billingAvailable || state.demoBilling) && state.buying == null
+                // Before Agree a tap goes to the first consent (R-056), then back here to buy this pack.
+                val agreed = container.session.agreed
+                val enabled = (!agreed || state.billingAvailable || state.demoBilling) && state.buying == null
                 Row(
                     Modifier
                         .padding(horizontal = Ra.gutter)
                         .padding(bottom = 10.dp)
-                        .tile(padding = 16.dp, onClick = if (enabled) ({ context.findActivity()?.let { vm.buy(it, pack) } }) else null),
+                        .tile(padding = 16.dp, onClick = if (enabled) ({
+                            if (!agreed) nav.navigate(Routes.consentFirst(Routes.creditsBuy(pack.productId)))
+                            else context.findActivity()?.let { vm.buy(it, pack) }
+                        }) else null),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {

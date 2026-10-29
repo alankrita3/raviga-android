@@ -113,7 +113,8 @@ fun WelcomeScreen(nav: NavController) {
                     scope.launch {
                         container.prefs.setWelcomeDone()
                         val me = container.session.me.value
-                        val next = if (container.session.needsLegal(me, container.session.config.value)) Routes.TERMS else Routes.HOME
+                        // R-056: a first-time client goes straight to Home; only updated terms ask here.
+                        val next = if (container.session.agreed && container.session.needsLegal(me, container.session.config.value)) Routes.TERMS else Routes.HOME
                         nav.navigate(next) { popUpTo(Routes.WELCOME) { inclusive = true } }
                     }
                 })

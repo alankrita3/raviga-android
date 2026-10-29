@@ -104,6 +104,13 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _refreshing.value = true
             container.drafts.load()
+            // R-056: before Agree there is no account to load; drafts are all there is.
+            if (!container.session.agreed) { _refreshing.value = false; return@launch }
+            // Agreed on the way to Restore, then backed out: the account comes now (register, consent, push).
+            if (!container.session.isRegistered) {
+                runCatching { container.session.completeConsent(container.session.ensureRegistered()) }
+                    .onSuccess { container.push.identityChanged() }
+            }
             runCatching { container.projects.refreshAll(force) }
                 .onSuccess { _error.value = null }
                 .onFailure { if (rows.value.isEmpty()) _error.value = it.userLine() }

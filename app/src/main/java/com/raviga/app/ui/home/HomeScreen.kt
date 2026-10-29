@@ -60,6 +60,7 @@ import com.raviga.app.ui.components.ProgressRule
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.components.StatusMark
 import com.raviga.app.ui.nav.Routes
+import com.raviga.app.ui.onboarding.navigateAfterConsent
 import com.raviga.app.ui.capture.DescribeChooserSheet
 import com.raviga.app.ui.status.StatusCopy
 import com.raviga.app.ui.theme.Ra
@@ -80,7 +81,7 @@ fun HomeScreen(nav: NavController) {
     if (chooser) {
         DescribeChooserSheet(
             projectTitle = null,
-            onPick = { tab -> chooser = false; nav.navigate(Routes.capture(tab = tab)) },
+            onPick = { tab -> chooser = false; nav.navigateAfterConsent(container.session.agreed, Routes.capture(tab = tab)) },
             onDismiss = { chooser = false },
         )
     }
@@ -137,7 +138,7 @@ fun HomeScreen(nav: NavController) {
                                 color = Ink.graphite,
                             )
                             Row {
-                                InlineAction("Use a recovery key", onClick = { vm.dismissSignedOut(); nav.navigate(Routes.RECOVERY) })
+                                InlineAction("Use a recovery key", onClick = { vm.dismissSignedOut(); nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) })
                                 InlineAction("Dismiss", onClick = { vm.dismissSignedOut() }, color = Ink.graphite)
                             }
                         }

@@ -22,6 +22,8 @@ class CreditsRepository(
     private val json: Json,
     private val cache: CacheStore,
     private val billing: BillingManager,
+    /** The in-process demo backend when there is one ([api] is wrapped by the consent guard, so not a DemoApi). */
+    private val demo: DemoApi? = null,
 ) {
     private val _credits = MutableStateFlow<CreditsResponse?>(null)
     val credits: StateFlow<CreditsResponse?> = _credits.asStateFlow()
@@ -30,7 +32,7 @@ class CreditsRepository(
     private val _prices = MutableStateFlow<Map<String, String>>(emptyMap())
     val prices: StateFlow<Map<String, String>> = _prices.asStateFlow()
 
-    val isDemoBilling: Boolean get() = api is DemoApi && !billing.isAvailable
+    val isDemoBilling: Boolean get() = demo != null && !billing.isAvailable
 
     private val gate = RefreshGate<CreditsResponse>()
 
@@ -70,7 +72,6 @@ class CreditsRepository(
      * means the store took the money and the backend has not caught up.
      */
     suspend fun purchase(activity: Activity, pack: CreditPack): PurchaseOutcome {
-        val demo = api as? DemoApi
         if (demo != null && !billing.isAvailable) {
             demo.demoPurchase(pack.productId)
             refresh()

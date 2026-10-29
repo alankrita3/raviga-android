@@ -42,7 +42,8 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     init {
         viewModelScope.launch { container.session.me.collect { me -> _state.update { it.copy(me = me, github = if (it.github.isBlank()) me?.deliveryTargets?.githubUsername.orEmpty() else it.github) } } }
         viewModelScope.launch { container.session.config.collect { c -> _state.update { it.copy(config = c) } } }
-        viewModelScope.launch { runCatching { container.session.refreshMe() } }
+        // No account yet (before Agree, or agreed on the way to Restore): nothing to refresh.
+        if (container.session.isRegistered) viewModelScope.launch { runCatching { container.session.refreshMe() } }
     }
 
     fun clearMessages() = _state.update { it.copy(error = null, notice = null) }
@@ -136,6 +137,9 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             runCatching { container.session.recover(key) }
                 .onSuccess { restored ->
                     container.dismissSignedOut()
+                    // Contract order: recover, consent (recover() puts it), then the push target.
+                    container.push.identityChanged()
+                    container.syncAnalytics()
                     runCatching { container.projects.refreshAll() }
                     runCatching { container.credits.refresh() }
                     // The restored account may not have agreed to the current terms (a Play reviewer's demo account
@@ -152,7 +156,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     suspend fun markRecoveryKeyShown() = container.prefs.setRecoveryKeyShown()
 
     // ----- demo controls -----
-    private val demo get() = container.api as? com.raviga.app.data.demo.DemoApi
+    private val demo get() = container.demoApi
 
     fun demoAdvance() = demoAction { demo?.demoAdvanceLatest() ?: "No submitted project to advance." }
     fun demoAddCredits() = demoAction { demo?.demoAddCredits(50); container.credits.refresh(); "50 demo credits added." }

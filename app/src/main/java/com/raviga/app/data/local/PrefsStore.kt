@@ -26,6 +26,9 @@ data class Prefs(
     val pushFid: String? = null,
     val pushFidSynced: Boolean = false,
     val recoveryKeyShown: Boolean = false,
+    /** R-056: the versions the person on this phone agreed to. Device-level: a restored account keeps it. */
+    val agreedTermsVersion: String? = null,
+    val agreedPrivacyVersion: String? = null,
 )
 
 class PrefsStore(private val context: Context) {
@@ -42,6 +45,8 @@ class PrefsStore(private val context: Context) {
             pushFid = p[PUSH_FID],
             pushFidSynced = p[PUSH_SYNCED] ?: false,
             recoveryKeyShown = p[RECOVERY_SHOWN] ?: false,
+            agreedTermsVersion = p[AGREED_TERMS],
+            agreedPrivacyVersion = p[AGREED_PRIVACY],
         )
     }
 
@@ -49,6 +54,10 @@ class PrefsStore(private val context: Context) {
 
     suspend fun setWelcomeDone() = context.dataStore.edit { it[WELCOME_DONE] = true }
     suspend fun setTermsAccepted(version: String) = context.dataStore.edit { it[TERMS_VERSION] = version }
+    suspend fun setAgreed(termsVersion: String, privacyVersion: String) = context.dataStore.edit {
+        it[AGREED_TERMS] = termsVersion
+        it[AGREED_PRIVACY] = privacyVersion
+    }
     suspend fun setAiAccepted(version: String, allowed: Boolean) = context.dataStore.edit {
         it[AI_VERSION] = version
         it[AI_ALLOWED] = allowed
@@ -86,6 +95,8 @@ class PrefsStore(private val context: Context) {
     private companion object {
         val WELCOME_DONE = booleanPreferencesKey("welcome_done")
         val TERMS_VERSION = stringPreferencesKey("terms_version_accepted")
+        val AGREED_TERMS = stringPreferencesKey("agreed_terms_version")
+        val AGREED_PRIVACY = stringPreferencesKey("agreed_privacy_version")
         val AI_VERSION = stringPreferencesKey("ai_version_accepted")
         val AI_ALLOWED = booleanPreferencesKey("ai_processing_allowed")
         val NOTIFICATIONS_ASKED = booleanPreferencesKey("notifications_asked")

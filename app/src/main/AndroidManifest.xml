@@ -66,6 +66,8 @@
         <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
         <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
         <meta-data android:name="google_analytics_ssaid_collection_enabled" android:value="false" />
+        <!-- R-056: no FCM registration at start-up; PushRegistrar calls register() once the account has the consent. -->
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <!-- Contract v0.8.2: FCM registers by Firebase Installation ID (register() / onRegistered). -->
         <meta-data
             android:name="firebase_messaging_installation_id_enabled"

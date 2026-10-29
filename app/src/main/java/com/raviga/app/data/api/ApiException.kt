@@ -58,6 +58,8 @@ open class ApiException(
         const val FILE_UNSUPPORTED = "file_unsupported"
         const val FILE_UNREADABLE = "file_unreadable"
         const val ACCOUNT_RESTRICTED = "account_restricted"
+        /** Local only, never from the server: [ConsentGuard] stopped a call before the person agreed (R-056). */
+        const val BEFORE_CONSENT = "before_consent"
         /** Client-side: a job was still running when we stopped waiting for it. */
         const val JOB_TIMEOUT = "job_timeout"
         /** Client-side: an AI result was gone (read or aged out) before we fetched it; rerun the call. */
@@ -65,6 +67,7 @@ open class ApiException(
 
         fun from(t: Throwable, json: Json): ApiException = when (t) {
             is ApiException -> t
+            is java.lang.reflect.UndeclaredThrowableException -> from(t.undeclaredThrowable ?: t, json)
             is HttpException -> {
                 val raw = runCatching { t.response()?.errorBody()?.string() }.getOrNull()
                 val body = raw?.let { runCatching { json.decodeFromString(ApiErrorEnvelope.serializer(), it).error }.getOrNull() }

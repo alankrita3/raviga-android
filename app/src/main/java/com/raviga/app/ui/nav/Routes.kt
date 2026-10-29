@@ -4,6 +4,10 @@ object Routes {
     const val SPLASH = "splash"
     const val WELCOME = "welcome"
     const val TERMS = "terms"
+
+    /** R-056: the first consent, shown at the first Type, Speak, Upload, Restore or Buy credits; then on to [next]. */
+    const val CONSENT_FIRST = "consent?next={next}"
+    fun consentFirst(next: String) = "consent?next=" + java.net.URLEncoder.encode(next, "UTF-8")
     const val HOME = "home"
     const val AI_CONSENT = "ai_consent"
     const val UPGRADE = "upgrade"
@@ -38,6 +42,9 @@ object Routes {
     fun goLive(projectId: String) = "golive/$projectId"
 
     const val CREDITS = "credits"
+    /** The credits screen, going straight on to buy [productId] (after the first consent). */
+    const val CREDITS_BUY = "credits/buy/{productId}"
+    fun creditsBuy(productId: String) = "credits/buy/$productId"
     const val SETTINGS = "settings"
     const val DELIVERY_TARGETS = "settings/targets"
     const val PRIVACY = "settings/privacy"

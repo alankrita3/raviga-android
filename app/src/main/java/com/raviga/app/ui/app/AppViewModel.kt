@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Bootstraps the session and decides the first screen: welcome, terms or
- * home. Keeps a cached session usable offline; registration is the only step
- * that truly needs the network.
+ * Bootstraps the session and decides the first screen: welcome, terms (only for updated terms) or home.
+ * Keeps a cached session usable offline. Before the person agrees (R-056) only GET /config is fetched; the
+ * first consent comes at the first Type, Speak, Upload, Restore or Buy credits, and registration after it.
  */
 class AppViewModel(private val container: AppContainer) : ViewModel() {
 
@@ -58,6 +58,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         if (!_state.value.ready) return
         viewModelScope.launch {
             val session = container.session
+            if (!session.agreed) { runCatching { session.refreshConfig() }; return@launch }
             runCatching { session.refreshConfig(); session.refreshMe() }.onSuccess { me ->
                 if (session.needsLegal(me, session.config.value)) _state.update { it.copy(legalDue = true) }
             }
@@ -73,8 +74,22 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             container.projects.warmFromCache()
             container.credits.warmFromCache()
             val prefs = container.prefs.current()
+            if (!session.agreed) {
+                // R-056: no identity yet, and none until Agree. Welcome and Home work from the phone; /config is public.
+                try {
+                    session.refreshConfig()
+                } catch (e: ApiException) {
+                    if (e.code == ApiException.UPGRADE_REQUIRED) {
+                        _state.update { it.copy(ready = true, upgradeRequired = true) }
+                        return@launch
+                    }
+                }
+                val start = if (!prefs.welcomeDone) Routes.WELCOME else Routes.HOME
+                _state.update { it.copy(ready = true, startRoute = start, restartAt = if (restart) start else null) }
+                return@launch
+            }
             try {
-                val me = session.ensureRegistered()
+                val me = session.completeConsent(session.ensureRegistered())
                 launch { runCatching { container.push.syncIfNeeded() } }
                 launch { runCatching { container.projects.refreshAll(force = false) } }
                 launch { runCatching { container.credits.refresh(force = false) } }

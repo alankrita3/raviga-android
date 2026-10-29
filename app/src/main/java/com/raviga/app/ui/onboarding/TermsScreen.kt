@@ -44,8 +44,9 @@ import com.raviga.app.ui.theme.Ink
 import com.raviga.app.ui.userLine
 import kotlinx.coroutines.launch
 
+/** [next]: set for the first consent (R-056), the action the client tapped; Agree carries on there. */
 @Composable
-fun TermsScreen(nav: NavController) {
+fun TermsScreen(nav: NavController, next: String? = null) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -68,14 +69,25 @@ fun TermsScreen(nav: NavController) {
                     busy = true; error = null
                     scope.launch {
                         runCatching {
-                            container.session.acceptLegal()
-                            if (analyticsOn != analyticsGranted) container.session.setAnalytics(analyticsOn)
+                            if (updating) {
+                                container.session.acceptLegal()
+                                if (analyticsOn != analyticsGranted) container.session.setAnalytics(analyticsOn)
+                            } else {
+                                // R-056: register (or, for Restore, let recover() do it), then the consent.
+                                container.session.agree(analytics = analyticsOn, restoring = next == Routes.RECOVERY)
+                            }
                             container.syncAnalytics()
-                            if (!updating) container.analytics.onboardingComplete()
+                            if (!updating) {
+                                container.analytics.onboardingComplete()
+                                container.push.identityChanged()
+                            }
                         }
                             .onSuccess {
-                                if (nav.previousBackStackEntry != null) nav.popBackStack()
-                                else nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
+                                when {
+                                    next != null -> nav.navigate(next) { popUpTo(Routes.CONSENT_FIRST) { inclusive = true } }
+                                    nav.previousBackStackEntry != null -> nav.popBackStack()
+                                    else -> nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
+                                }
                             }
                             .onFailure { error = it.userLine() }
                         busy = false

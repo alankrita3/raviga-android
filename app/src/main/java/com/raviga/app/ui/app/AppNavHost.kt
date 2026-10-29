@@ -76,7 +76,7 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
     LaunchedEffect(state.legalDue) {
         if (!state.legalDue) return@LaunchedEffect
         val here = nav.currentDestination?.route
-        if (here != Routes.TERMS && here != Routes.WELCOME) nav.navigate(Routes.TERMS) { launchSingleTop = true }
+        if (here != Routes.TERMS && here != Routes.CONSENT_FIRST && here != Routes.WELCOME) nav.navigate(Routes.TERMS) { launchSingleTop = true }
         app.legalShown()
     }
 
@@ -104,6 +104,9 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
     NavHost(navController = nav, startDestination = state.startRoute) {
         composable(Routes.WELCOME) { WelcomeScreen(nav) }
         composable(Routes.TERMS) { TermsScreen(nav) }
+        composable(Routes.CONSENT_FIRST, arguments = listOf(navArgument("next") { type = NavType.StringType })) { entry ->
+            TermsScreen(nav, next = entry.arguments?.getString("next"))
+        }
         composable(Routes.HOME) { HomeScreen(nav) }
         composable(Routes.AI_CONSENT) { AiConsentScreen(nav) }
         composable(
@@ -160,6 +163,7 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
         composable(Routes.DELIVERY) { entry -> DeliveryScreen(nav, entry.arguments?.getString("projectId").orEmpty()) }
         composable(Routes.GO_LIVE) { entry -> com.raviga.app.ui.status.GoLiveScreen(nav, entry.arguments?.getString("projectId").orEmpty()) }
         composable(Routes.CREDITS) { CreditsScreen(nav) }
+        composable(Routes.CREDITS_BUY) { entry -> CreditsScreen(nav, buy = entry.arguments?.getString("productId")) }
         composable(Routes.SETTINGS) { SettingsScreen(nav) }
         composable(Routes.DELIVERY_TARGETS) { DeliveryTargetsScreen(nav) }
         composable(Routes.PRIVACY) { PrivacyScreen(nav) }

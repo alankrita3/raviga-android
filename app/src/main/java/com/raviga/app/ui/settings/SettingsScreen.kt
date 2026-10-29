@@ -36,6 +36,7 @@ import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.Hairline
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.nav.Routes
+import com.raviga.app.ui.onboarding.navigateAfterConsent
 import com.raviga.app.ui.openLink
 import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
@@ -67,7 +68,7 @@ fun SettingsScreen(nav: NavController) {
                 subtitle = if (Notifications.canPost(context) && vm.pushConfigured) "On" else if (!vm.pushConfigured) "Not set up on this build" else "Off",
                 onClick = { nav.navigate(Routes.NOTIFICATIONS) },
             )
-            RaRow(title = "Move to another phone", subtitle = "Recovery key", onClick = { nav.navigate(Routes.RECOVERY) })
+            RaRow(title = "Move to another phone", subtitle = "Recovery key", onClick = { nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) })
             RaRow(
                 title = "Privacy and data",
                 subtitle = "AI processing, download or delete your data, questions or complaints",

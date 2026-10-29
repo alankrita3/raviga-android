@@ -95,20 +95,26 @@ class AppContainer(private val app: Application) {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    val api: RavigaApi = if (isDemo) {
-        DemoApi(cache, json)
-    } else {
-        Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(okHttp)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create()
-    }
+    /** R-056: nothing but GET /config leaves the phone until the person agrees (demo mode too). */
+    val consentGuard = com.raviga.app.data.api.ConsentGuard()
+
+    /** The in-process backend in demo mode; [api] wraps it like the real one. */
+    val demoApi: DemoApi? = if (isDemo) DemoApi(cache, json) else null
+
+    val api: RavigaApi = consentGuard.wrap(
+        demoApi ?: run {
+            Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(okHttp)
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(RavigaApi::class.java)
+        },
+    )
 
     val jobs = JobRunner(api, json)
 
-    val session = SessionRepository(api, json, jobs, sessionStore, prefs, cache)
+    val session = SessionRepository(api, json, jobs, sessionStore, prefs, cache, consentGuard)
     val projects = ProjectRepository(api, json, cache)
     val ai = com.raviga.app.data.repo.AiRepository(api, json, jobs)
 
@@ -122,7 +128,7 @@ class AppContainer(private val app: Application) {
     val analytics = com.raviga.app.data.analytics.Analytics(com.raviga.app.data.analytics.FirebaseAnalyticsSink(app))
     val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects, analytics)
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
-    val credits = CreditsRepository(api, json, cache, billing)
+    val credits = CreditsRepository(api, json, cache, billing, demoApi)
     val push = PushRegistrar(app, prefs, session, appScope)
 
 

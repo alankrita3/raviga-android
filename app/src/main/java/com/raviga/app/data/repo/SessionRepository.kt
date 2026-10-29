@@ -4,6 +4,7 @@ import com.raviga.app.data.api.ApiException
 import com.raviga.app.data.api.AppConfig
 import com.raviga.app.data.api.AwsConnectInfo
 import com.raviga.app.data.api.AwsTarget
+import com.raviga.app.data.api.ConsentGuard
 import com.raviga.app.data.api.ConsentRequest
 import com.raviga.app.data.api.ConsentState
 import com.raviga.app.data.api.DeleteMeResponse
@@ -39,6 +40,7 @@ class SessionRepository(
     private val sessionStore: SessionStore,
     private val prefs: PrefsStore,
     private val cache: CacheStore,
+    private val guard: ConsentGuard,
 ) {
     private val _me = MutableStateFlow<Me?>(null)
     val me: StateFlow<Me?> = _me.asStateFlow()
@@ -52,6 +54,15 @@ class SessionRepository(
     val recoveryKey: String? get() = sessionStore.recoveryKey
     val isRegistered: Boolean get() = sessionStore.isRegistered
 
+    /** R-056: the person on this phone has agreed (any version). Until then [guard] lets only GET /config out. */
+    val agreed: Boolean get() = guard.agreed
+
+    /** The account has the terms on record; push and analytics wait for this (contract v0.9.2 order). */
+    val consentRecorded: Boolean get() = _me.value?.consent?.terms != null
+
+    /** The analytics choice made on the consent screen, applied once the account has the consent. */
+    @Volatile private var pendingAnalytics: Boolean? = null
+
     /** Drops the previous client's [me]; [config] is the same for everyone. */
     fun resetMe() {
         _me.value = null
@@ -60,6 +71,9 @@ class SessionRepository(
     suspend fun warmFromCache() {
         cache.read(CacheStore.CONFIG, AppConfig.serializer())?.let { _config.value = it }
         cache.read(CacheStore.ME, Me.serializer())?.let { _me.value = it }
+        // Installs from before R-056 agreed on the server and kept the version; they never see the first consent again.
+        val p = prefs.current()
+        guard.agreed = p.agreedTermsVersion != null || p.termsVersionAccepted != null || _me.value?.consent?.terms != null
     }
 
     /** Registers the device on first run; afterwards just refreshes [config] and [me]. */
@@ -106,6 +120,42 @@ class SessionRepository(
 
     fun needsAiConsent(me: Me?): Boolean = me?.consent?.aiGranted != true
 
+    /**
+     * R-056: the first agreement on this phone. Recorded here first; then the phone registers and the consent goes
+     * up (contract order: register, consent, push). For Restore, recover() does both instead, so no spare account is
+     * made.
+     */
+    suspend fun agree(analytics: Boolean, restoring: Boolean) {
+        if (_config.value.legal.termsVersion.isBlank()) refreshConfig()
+        val legal = _config.value.legal
+        prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
+        pendingAnalytics = analytics
+        guard.agreed = true
+        if (!restoring) completeConsent(ensureRegistered())
+    }
+
+    /**
+     * Puts this phone's agreement on the account when the account lacks it (just registered, restored, or given a
+     * fresh account), but only for the versions the person saw: a newer version is the "updated terms" screen.
+     */
+    suspend fun completeConsent(me: Me): Me {
+        val legal = _config.value.legal
+        val p = prefs.current()
+        if (needsLegal(me, _config.value) && p.agreedTermsVersion == legal.termsVersion && p.agreedPrivacyVersion == legal.privacyVersion) {
+            val consent = apiCall(json) {
+                api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion))
+            }
+            prefs.setTermsAccepted(legal.termsVersion)
+            setMe(me.copy(consent = consent))
+        }
+        val wanted = pendingAnalytics
+        if (wanted != null && consentRecorded) {
+            pendingAnalytics = null
+            if (wanted != _me.value?.consent?.analyticsGranted) setAnalytics(wanted)
+        }
+        return _me.value ?: me
+    }
+
     suspend fun acceptLegal() {
         // After a deletion the device starts over without an identity.
         if (!sessionStore.isRegistered) ensureRegistered()
@@ -114,6 +164,8 @@ class SessionRepository(
             api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion))
         }
         prefs.setTermsAccepted(legal.termsVersion)
+        prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
+        guard.agreed = true
         updateMe { it.copy(consent = consent) }
     }
 
@@ -191,11 +243,14 @@ class SessionRepository(
         // The container drops the previous client's projects and credits when the id changes.
         sessionStore.set(response.clientId, response.accessToken, recoveryKey.trim())
         refreshConfig()
-        return refreshMe()
+        // R-056: the person agreed on this phone moments ago; the restored account gets that consent, no second screen.
+        return completeConsent(refreshMe())
     }
 
     /** Issues a fresh recovery key (the old one stops working) and remembers it locally. */
     suspend fun issueRecoveryKey(): String {
+        // Agreed on the way to Restore but asked for this phone's own key instead: make the account first.
+        if (!sessionStore.isRegistered) completeConsent(ensureRegistered())
         val key = apiCall(json) { api.issueRecoveryKey() }.recoveryKey
         sessionStore.recoveryKey = key
         return key
@@ -215,6 +270,7 @@ class SessionRepository(
         prefs.clear()
         cache.clearAll()
         _me.value = null
+        guard.agreed = false
         return response
     }
 

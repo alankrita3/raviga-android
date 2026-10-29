@@ -115,6 +115,7 @@ object StatusCopy {
         "not_found" -> "That no longer exists."
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
         "unauthenticated" -> "This phone is no longer linked. Move your projects here with a recovery key."
+        com.raviga.app.data.api.ApiException.BEFORE_CONSENT -> "Agree to the terms and privacy policy first."
         else -> fallback?.takeIf { it.isNotBlank() } ?: "Something went wrong. Try again."
     }
 }

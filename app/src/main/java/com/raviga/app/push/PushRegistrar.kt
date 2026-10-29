@@ -59,7 +59,8 @@ class PushRegistrar(
     suspend fun syncIfNeeded() = syncLock.withLock { syncLocked() }
 
     private suspend fun syncLocked() {
-        if (!isFirebaseConfigured || !session.isRegistered) return
+        // Contract v0.9.2 order: register, consent, then the FID. Nothing before the account has the consent (R-056).
+        if (!isFirebaseConfigured || !session.isRegistered || !session.consentRecorded) return
         if (!registeredThisProcess) {
             // Delivers the ID through onRegistered, including the first time on a fresh install.
             registeredThisProcess = runCatching { FirebaseMessaging.getInstance().register().await() }.isSuccess
