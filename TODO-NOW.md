@@ -5,12 +5,7 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 
 ## In flight
 
-- **R-052, Play store listing (drafts only, nothing in Play Console).**
-  - Done: `docs/store/play-listing.md` (name, short descriptions A and B, full descriptions with opening A or B,
-    category, contact details, counts); feature graphic drafts `feature-graphic-navy.png` and `-cream.png` in
-    `~/Downloads/raviga-play-screenshots/`.
-  - Left: 4 to 6 phone screenshots on the OnePlus against dev (Welcome → brief → quote → project), with a team.py demo
-    account; crop to 1080×2160 for Play's 2:1 rule; one-line captions in the same folder.
+- Nothing. Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots); waiting for her approval.
 
 ## Blocked, and on whom
 
@@ -23,10 +18,9 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 - **Backend + founder:** the prod stage (`API_BASE_URL`). Until then only internal-test bundles against dev exist
   (`bundleRelease -Praviga.internalTest=true`).
 - **Founder:** BillDesk KYC for sales outside India, due 15 Mar 2027 (Play Console banner; contact team@mirakee.com).
-- **Founder via PM (phone):** the OnePlus is off Wi-Fi adb (192.168.1.4 unreachable). The PM is asking her to plug it
-  in by USB; then `adb tcpip 5555` and the R-052 screenshots. No emulator.
-- **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle) and
-  a feature graphic (navy recommended).
+- **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle),
+  a feature graphic (navy recommended) and the screenshots. Dev keeps the demo project RA-Q3FJ24 (awaiting review); the
+  team can reject it, or keep it for the reviewer walkthrough.
 - **Hardware:** the themed icon needs an Android 13+ phone; voice dictation needs a phone with an on-device recogniser.
   The OnePlus 7 runs Android 12 and has neither.
 - **On hold (founder said "later"):** the queue screen and the suggested tech stack.
@@ -56,7 +50,7 @@ Still to do in Play Console (App content). Drafts are in `docs/play-launch-readi
 Store listing (public, founder approves the copy), drafted under R-052:
 - short and full description, category (Business), contact email and website: `docs/store/play-listing.md`;
 - 1024×500 feature graphic: two drafts in `~/Downloads/raviga-play-screenshots/`;
-- 2 to 8 phone screenshots: waiting for the OnePlus.
+- 2 to 8 phone screenshots: six in the same folder, with captions.
 
 Release:
 - a prod bundle needs the prod URL and the RevenueCat key (`checkReleaseReadiness`);
@@ -65,6 +59,4 @@ Release:
 
 ## Next step (mine)
 
-- **Next: R-052 step 3, OnePlus screenshots (waiting on USB).** When the PM says the phone is plugged in: (demo account from backend's team.py, paid runs
-  logged in the PM ledger first, mirakee-android told the phone is taken and free), then report to the PM.
 - When the PM says go: enter the App content answers from the drafts (anything public or legal goes to her first).

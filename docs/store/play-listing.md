@@ -97,7 +97,7 @@ When the legal site is live (R-037), change the two dev links to `https://legal.
 |---|---|---|
 | App icon | 512×512 PNG | `docs/icon/play-icon-512.png` (option A, ready) |
 | Feature graphic | 1024×500, JPEG or 24-bit PNG, no alpha | Drafts in `~/Downloads/raviga-play-screenshots/`: `feature-graphic-navy.png` (recommended: it stands out on Play's white page) and `feature-graphic-cream.png`. Icon A tile plus the R-045 wordmark; SVG sources and `feature_graphic.py` beside them. |
-| Phone screenshots | 2 to 8; JPEG or 24-bit PNG, no alpha; 320 to 3,840 px a side, the long side at most twice the short side | 4 to 6 from the OnePlus against dev, in the same folder (R-052 step 3, waiting for the phone). Its 1080×2340 screen is 2.17:1, over Play's limit, so each is cropped to 1080×2160 (status and navigation bars off). |
+| Phone screenshots | 2 to 8; JPEG or 24-bit PNG, no alpha; 320 to 3,840 px a side, the long side at most twice the short side | Six in the same folder, `01-welcome` to `06-project`, with `captions.txt`: Welcome, describe, type, brief, quote, submitted project. Taken 2026-10-29 on the OnePlus against dev with a team.py demo account and a made-up project (no client data, no recovery key on screen). The phone's 1080×2340 is over Play's 2:1 limit, so each is cropped to the app area, 1080×2136. |
 
 ## Facts checked against Android (2026-10-29)
 
