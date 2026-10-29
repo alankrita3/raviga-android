@@ -1,13 +1,17 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-10-29.
+The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **R-055 (contract v0.9.2): no name or address in the app.** Code done, a5f36c9 (unit tests 64/64). Left: install on
-  the OnePlus over USB, keeping its data (dev's 2026-10-29 legal versions bring up the consent screen by itself),
-  screenshot the consent screen and Privacy and data, send both to the PM. Blocked: the phone is off USB.
+- **R-055 and R-056, code done; device check waits for the OnePlus on USB.**
+  - R-055 (no name or address): a5f36c9. R-056 (consent at the first Type/Speak/Upload/Restore/Buy credits; only
+    GET /config before Agree): 932b08f. Unit tests 69/69.
+  - Left: install the debug build over the existing app (keep its data) and screenshot for the PM: the consent
+    screen and Privacy and data (R-055); then a fresh flow (R-056: open on Welcome, Type gives the consent once,
+    Agree, no second consent on Speak or Restore). The fresh flow needs a clean install. Do it on a second
+    install of the release build (com.raviga.app, internal-test against dev), so the debug app's data stays.
 - Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots), accepted by the PM 2026-10-29;
   the copy still waits for her approval.
 
