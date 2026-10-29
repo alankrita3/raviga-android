@@ -21,6 +21,9 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 - **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle),
   a feature graphic (navy recommended) and the screenshots. Dev keeps the demo project RA-Q3FJ24 (awaiting review); the
   team can reject it, or keep it for the reviewer walkthrough.
+- **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
+  Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). Fix: System
+  Settings → Privacy & Security → Local Network → Terminal on, then `adb kill-server` and `adb connect`. USB works meanwhile.
 - **Hardware:** the themed icon needs an Android 13+ phone; voice dictation needs a phone with an on-device recogniser.
   The OnePlus 7 runs Android 12 and has neither.
 - **On hold (founder said "later"):** the queue screen and the suggested tech stack.
