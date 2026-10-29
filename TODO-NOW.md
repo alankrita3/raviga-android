@@ -65,6 +65,6 @@ Release:
 
 ## Next step (mine)
 
-- When the PM says the OnePlus is plugged in: R-052 screenshots (demo account from backend's team.py, paid runs
+- **Next: R-052 step 3, OnePlus screenshots (waiting on USB).** When the PM says the phone is plugged in: (demo account from backend's team.py, paid runs
   logged in the PM ledger first, mirakee-android told the phone is taken and free), then report to the PM.
 - When the PM says go: enter the App content answers from the drafts (anything public or legal goes to her first).
