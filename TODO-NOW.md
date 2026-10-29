@@ -5,8 +5,11 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 
 ## In flight
 
-- Nothing. Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots), accepted by the PM
-  2026-10-29; the copy still waits for her approval.
+- **R-055 (contract v0.9.2): no name or address in the app.** Code done, a5f36c9 (unit tests 64/64). Left: install on
+  the OnePlus over USB, keeping its data (dev's 2026-10-29 legal versions bring up the consent screen by itself),
+  screenshot the consent screen and Privacy and data, send both to the PM. Blocked: the phone is off USB.
+- Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots), accepted by the PM 2026-10-29;
+  the copy still waits for her approval.
 
 ## Blocked, and on whom
 
@@ -22,6 +25,7 @@ The PM reads this file if the session has closed. Updated 2026-10-29.
 - **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle),
   a feature graphic (navy recommended) and the screenshots. The dev demo project RA-Q3FJ24 is rejected ("screenshot demo");
   store reviewers get a prod demo account later.
+- **Founder via PM (phone):** plug the OnePlus back in by USB and unlock it (it dropped off during R-055).
 - **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
   Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). The PM is asking her: System
   Settings → Privacy & Security → Local Network → Terminal on, then `adb kill-server` and `adb connect`. USB works meanwhile.
