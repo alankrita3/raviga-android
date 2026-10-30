@@ -10,13 +10,16 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
     .venv/bin/python tools/play_release.py add-region credits_10 FR     # add one country, priced at the USD conversion or its cap
     .venv/bin/python tools/play_release.py withdraw-region credits_50 KR  # stop selling one pack in one country
+    .venv/bin/python tools/play_release.py set-price credits_10 IN 8499  # one pack's price in one country, local currency
+    .venv/bin/python tools/play_release.py regions [IN]  # read back every pack's price per country (TSV, for diffs)
 
 Releases are created as drafts: Play allows only drafts until the app is first published, and rolling out stays a
 deliberate step in Play Console. Products: prices are converted from USD per region. Where the converted price is over
 Play's maximum for that country, the pack is sold at that country's maximum (founder's rule, 2026-10-28): it sells
 everywhere, slightly cheaper where the cap bites (India's ₹84,000 for the $999.99 pack, for example).
 Exceptions are in NOT_SOLD and are never added back: Korea gets 10 and 25 only (her call 10-28; there the cap made the
-50 and 100 packs cost the same, the 100 pack about 59% off).
+50 and 100 packs cost the same, the 100 pack about 59% off). FIXED_PRICES holds her own local prices, which replace
+Play's conversion: India's 10, 25 and 50 packs at the plan prices (R-060, 10-30); the 100 pack stays at India's cap.
 """
 import argparse, json, os, re, sys
 
@@ -31,6 +34,8 @@ KEY = os.environ.get("RAVIGA_PLAY_KEY", os.path.expanduser("~/.config/raviga/rav
 DESCRIPTION = "Credits to pay for building your Raviga projects."
 # Founder's exclusions, per pack: countries where it is not sold at all.
 NOT_SOLD = {"credits_50": {"KR"}, "credits_100": {"KR"}}  # Korea: 10 and 25 only (her call 10-28)
+# Founder's fixed local prices, per pack (whole units of the local currency); `product` keeps them on a re-run.
+FIXED_PRICES = {"credits_10": {"IN": 8499}, "credits_25": {"IN": 21249}, "credits_50": {"IN": 42499}}  # her plan prices, R-060 (10-30)
 
 
 def session() -> requests.Session:
@@ -95,6 +100,8 @@ def product(s, pid, title, usd):
     conv = check(s.post(f"{API}/pricing:convertRegionPrices",
                         json={"price": {"currencyCode": "USD", "units": units, "nanos": int(cents) * 10_000_000}}))
     regions = {code: v["price"] for code, v in conv["convertedRegionPrices"].items() if code not in NOT_SOLD.get(pid, set())}
+    for code, amount in FIXED_PRICES.get(pid, {}).items():
+        regions[code] = {"currencyCode": regions[code]["currencyCode"], "units": str(amount), "nanos": 0}
     capped = []
     for _ in range(len(regions) + 1):
         body = {"packageName": PKG, "productId": pid,
@@ -156,6 +163,35 @@ def add_region(s, pid, code):
     print(f"{pid}: added {code} at {price['currencyCode']} {price['units']}.{str(price.get('nanos', 0)).zfill(9)[:2]}")
 
 
+def regions(s, only=None):
+    """Every product's price and availability per country, one TSV row each, sorted (diff two runs to see changes)."""
+    rows = []
+    for p in check(s.get(f"{API}/oneTimeProducts")).get("oneTimeProducts", []):
+        for c in p["purchaseOptions"][0].get("regionalPricingAndAvailabilityConfigs", []):
+            if only and c["regionCode"] != only:
+                continue
+            pr = c.get("price", {})
+            rows.append((p["productId"], c["regionCode"], pr.get("currencyCode", ""),
+                         f"{pr.get('units', '0')}.{str(pr.get('nanos', 0)).zfill(9)[:2]}", c.get("availability", "")))
+    for r in sorted(rows):
+        print("\t".join(r))
+
+
+def set_price(s, pid, code, amount):
+    """Sets one product's price in one country, in that country's currency; every other region is sent back as is."""
+    prod = check(s.get(f"{API}/oneTimeProducts/{pid}"))
+    cfg = prod["purchaseOptions"][0]["regionalPricingAndAvailabilityConfigs"]
+    hit = [c for c in cfg if c["regionCode"] == code]
+    if not hit:
+        sys.exit(f"{pid} has no {code}; add it with add-region first")
+    old = hit[0]["price"]
+    units, _, frac = f"{float(amount):.2f}".partition(".")
+    hit[0]["price"] = {"currencyCode": old["currencyCode"], "units": units, "nanos": int(frac) * 10_000_000}
+    check(s.patch(f"{API}/onetimeproducts/{pid}", json=prod,
+                  params={"regionsVersion.version": prod["regionsVersion"]["version"], "updateMask": "purchaseOptions"}))
+    print(f"{pid} {code}: {old['currencyCode']} {old.get('units')}.{str(old.get('nanos', 0)).zfill(9)[:2]} -> {units}.{frac}")
+
+
 def main():
     a = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = a.add_subparsers(dest="cmd", required=True)
@@ -165,12 +201,16 @@ def main():
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
     r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
     w = sub.add_parser("withdraw-region"); w.add_argument("id"); w.add_argument("region")
+    sp = sub.add_parser("set-price"); sp.add_argument("id"); sp.add_argument("region"); sp.add_argument("amount")
+    rg = sub.add_parser("regions"); rg.add_argument("region", nargs="?")
     args = a.parse_args()
     s = session()
     {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track), "products": lambda: products(s),
      "product": lambda: product(s, args.id, args.title, args.usd),
      "add-region": lambda: add_region(s, args.id, args.region),
-     "withdraw-region": lambda: withdraw_region(s, args.id, args.region)}[args.cmd]()
+     "withdraw-region": lambda: withdraw_region(s, args.id, args.region),
+     "set-price": lambda: set_price(s, args.id, args.region, args.amount),
+     "regions": lambda: regions(s, args.region)}[args.cmd]()
 
 
 if __name__ == "__main__":

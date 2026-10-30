@@ -9,14 +9,14 @@ are the same credential used by more than one repo.
 
 | # | Item | Where it goes | Status |
 |---|---|---|---|
-| 1 | **Play Console app** for `com.raviga.app` (Raviga Apps Private Limited), name "Raviga" | Play Console → Create app | not created |
-| 2 | **Four consumable in-app products**: `credits_10`, `credits_25`, `credits_50`, `credits_100` with USD base prices ($99.99 / $249.99 / $499.99 / $999.99, from `/config` `priceHintUsd`; let Play convert to local currencies; the backend's `/config` carries the credit amounts) (shared with the App Store) | Play Console → Monetise → In-app products | not created |
+| 1 | **Play Console app** for `com.raviga.app` (Raviga Apps Private Limited), name "Raviga" | Play Console → Create app | done 2026-10-28 (Google Play, below) |
+| 2 | **Four consumable in-app products**: `credits_10`, `credits_25`, `credits_50`, `credits_100` with USD base prices ($99.99 / $249.99 / $499.99 / $999.99, from `/config` `priceHintUsd`; let Play convert to local currencies; the backend's `/config` carries the credit amounts) (shared with the App Store) | Play Console → Monetise → In-app products | done 2026-10-28, all active (Google Play, below) |
 | 3 | **RevenueCat** project with the Android app, the Google public SDK key `goog_…`, Play service-account credentials, and the webhook URL + shared secret from the backend (shared) | `secrets.properties` → `REVENUECAT_API_KEY`; backend SSM | missing |
 | 4 | **Firebase project** with the Android app `com.raviga.app` (and `com.raviga.app.debug` for debug builds) added; download `google-services.json`; give the backend the service-account JSON for FCM (shared) | `app/google-services.json` (gitignored) | in place: Firebase project `raviga-e6b92`, file on this Mac (2026-10-21); the app registers its FID with dev. Backend's service account is next |
 | 5 | **Upload key** for Play App Signing: a keystore plus `keystore.properties` with `storeFile`, `storePassword`, `keyAlias`, `keyPassword` | `keystore.properties` (gitignored) | missing; release builds are unsigned until then |
 | 6 | **Production API URL** once the backend deploys prod | `secrets.properties` → `API_BASE_URL` | placeholder |
 | 7 | **Legal pages**: the backend publishes Terms and Privacy as a static site (dev: `https://d1mi85jr39d7la.cloudfront.net/terms-of-use`, `/privacy-policy` and, since v0.9.1, `/delete-account`) and `/config` points at them; the app opens whatever `/config` says. Read them once before launch | backend | served; needs your read-through |
-| 8 | **Grievance officer** (you, membersupport@miraquill.com, 15-day response) and support email are live in `/config`. The registered company address is still a stand-in ("Raviga Apps Private Limited, India") | backend `/config` → `legal.companyAddress`, `legal.grievance.address` | address to confirm |
+| 8 | **Registered company address** (your decision, 2026-10-30, R-060): Plot No-7, Manzil Apartment, Flat No.11, Sector 9 Dwarka, New Delhi 110077. The grievance email (membersupport@miraquill.com, 15-day response) and support email are live in `/config`. Since contract v0.9.2 (R-055) the app shows no person's name and no address, only the one-line grievance route | backend `/config` → `legal.companyAddress`, `legal.grievance.address` (backend sets it) | confirmed |
 | 9 | **Play Data safety form** and the microphone / notifications declarations; no audio or files leave the phone (speech is recognised on the device); the app sends project text (to OpenAI, to write and price briefs), a device identifier and purchase history | Play Console → App content | to fill |
 | 10 | **AWS role policy** for `RavigaDeployRole` (currently AdministratorAccess per the backend contract); the Connect AWS screen describes the role in plain words | backend CloudFormation template | to decide |
 | 11 | **Anything you registered under the old app id** (the old name after `com.raviga.`): items 1, 3 and 4 were not created as far as this repo knows, but if any were, create them again for `com.raviga.app`. App ids can't be renamed in Play Console or Firebase | Play Console, Firebase, RevenueCat | check |
@@ -33,8 +33,10 @@ are the same credential used by more than one repo.
   sells at that maximum. That applies to `credits_100` in 76 countries (India ₹84,000, UK £810, Germany €940, Japan ¥155,000,
   Canada CA$1,380). Korea: 10 and 25 only (her call 10-28). There the cap made `credits_50` and `credits_100` the same
   ₩600,000, about 59% off for the 100 pack, so both are not sold in Korea (`NOT_SOLD` in `tools/play_release.py` keeps a re-run
-  from adding Korea back). Sold in: 174 / 174 / 173 / 173 regions. India's prices for the smaller packs are Play's conversions
-  (₹11,200 / 28,100 / 56,200), above /config's hints; that's still open.
+  from adding Korea back). Sold in: 174 / 174 / 173 / 173 regions. India's prices for the smaller packs
+  were set to your plan prices on 2026-10-30 (R-060): ₹8,499 / ₹21,249 / ₹42,499 (Play's conversions had been ₹11,200 / 28,100 /
+  56,200). `credits_100` stays at the ₹84,000 cap. Change one with `tools/play_release.py set-price <pack> IN <amount>`; read
+  every price back with `regions`.
 - API access: `tools/play_release.py` with Raviga's own service account (raviga-play-publisher@raviga-e6b92). Its key lives
   in `~/.config/raviga/`, outside the repo; it can release to testing tracks and manage products for Raviga only.
 - BillDesk KYC must be completed by 15 Mar 2027 for sales outside India (payments contact: team@mirakee.com).

@@ -12,26 +12,32 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
     screen and Privacy and data (R-055); then a fresh flow (R-056: open on Welcome, Type gives the consent once,
     Agree, no second consent on Speak or Restore). The fresh flow needs a clean install. Do it on a second
     install of the release build (com.raviga.app, internal-test against dev), so the debug app's data stays.
-- Last shipped: R-057 (2026-10-30), her final store copy in `docs/store/play-listing.md` (short description B,
-  opening B plus "AI does the building; our team checks each project before it's handed over.", 1,853 characters;
-  18+), and two cream feature graphics with icon A's r merged into the wordmark, no tile:
-  `feature-graphic-cream-merged-two-squares.png` and `-one-square.png` in `~/Downloads/raviga-play-screenshots/`
-  (fallback `feature-graphic-cream.png`). The PM shows her the drafts.
+- **R-060 (her decisions 10-30, via the PM):**
+  - 1, India prices: done. Play now sells credits_10 / 25 / 50 in India at ₹8,499 / ₹21,249 / ₹42,499 (were
+    ₹11,200 / 28,100 / 56,200); credits_100 stays at ₹84,000. Read back with `tools/play_release.py regions`; the
+    before/after diff (696 rows, and the full product JSON) changed only those three India rows. `FIXED_PRICES` keeps
+    them on a re-run of `product`. Backend asked to set product.py's credits_100 `priceHintInr` 84999 → 84000 so all
+    four hints match Play; then mirror it in DemoApi.
+  - 2, app colours C (R-049): waiting for iOS's exact colour tokens. Then implement (medium: tests pass, device
+    check on the OnePlus: Welcome, Home and launch screenshots to the PM), batched into the sprint build.
+  - 3, registered address in `docs/HANDOFF.md` item 8: done (the Dwarka address; backend puts it in /config, the app
+    shows no address).
+- Last shipped: R-057, closed 2026-10-30. Her final store copy in `docs/store/play-listing.md` (short description B,
+  opening B plus her sentence, 1,853 characters; 18+) and her feature graphic,
+  `feature-graphic-cream-merged-two-squares.png` (alternates kept). Not uploaded to Play yet.
 
 ## Blocked, and on whom
 
-- **Founder via PM:** India prices for the three smaller packs. Play's conversions (₹11,200 / ₹28,100 / ₹56,200) are
-  above /config's hints (₹8,499 / ₹21,249 / ₹42,499). Changing them is one `tools/play_release.py` run once she decides (R-035
-  follow-up).
+- **iOS:** the exact colour tokens for app colours C (R-049, R-060 item 2).
+- **Backend:** credits_100 `priceHintInr` 84999 → 84000 in product.py (R-060 item 1).
 - **Founder:** RevenueCat project, with the Android `goog_` key and Play credentials, then `REVENUECAT_API_KEY` in
   secrets.properties. Until then purchases can't be tested end to end, and neither can the analytics events
   `credits_purchased`, `project_submitted` and `delivery_accepted`.
 - **Backend + founder:** the prod stage (`API_BASE_URL`). Until then only internal-test bundles against dev exist
   (`bundleRelease -Praviga.internalTest=true`).
 - **Founder:** BillDesk KYC for sales outside India, due 15 Mar 2027 (Play Console banner; contact team@mirakee.com).
-- **Founder via PM:** pick a feature graphic (the two cream merged drafts or the cream fallback). The copy (option B) and
-  18+ are decided. The dev demo project RA-Q3FJ24 is rejected ("screenshot demo"); store reviewers get a prod demo
-  account later.
+- Store listing: copy, 18+ and the feature graphic are decided (R-057). The dev demo project RA-Q3FJ24 is rejected
+  ("screenshot demo"); store reviewers get a prod demo account later.
 - **Founder via PM (phone):** plug the OnePlus back in by USB and unlock it (it dropped off during R-055).
 - **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
   Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). The PM is asking her: System
@@ -64,7 +70,7 @@ Still to do in Play Console (App content). Drafts are in `docs/play-launch-readi
 
 Store listing (public), drafted under R-052, copy final under R-057:
 - short and full description, category (Business), contact email and website: `docs/store/play-listing.md`;
-- 1024×500 feature graphic: cream, merged-r drafts in `~/Downloads/raviga-play-screenshots/` (her pick pending);
+- 1024×500 feature graphic: her pick, `feature-graphic-cream-merged-two-squares.png` in `~/Downloads/raviga-play-screenshots/`;
 - 2 to 8 phone screenshots: six in the same folder, with captions.
 
 Release:

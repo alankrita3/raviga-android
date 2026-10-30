@@ -80,8 +80,8 @@ Sources:
 **Store listing (public; founder approves)**
 15. Name "Raviga", short description (≤80 characters), full description (≤4,000), category Business, contact email
     and website. Copy final 2026-10-30 (R-057): `docs/store/play-listing.md`.
-16. 512×512 icon: ready, `docs/icon/play-icon-512.png` (option A). Six phone screenshots (R-052) and cream feature-graphic
-    drafts (R-057) in `~/Downloads/raviga-play-screenshots/`; her pick of feature graphic is still to come.
+16. 512×512 icon: ready, `docs/icon/play-icon-512.png` (option A). Six phone screenshots (R-052) and the feature graphic
+    (R-057, her pick: `feature-graphic-cream-merged-two-squares.png`) in `~/Downloads/raviga-play-screenshots/`.
 
 **Payments (account)**
 - BillDesk KYC (shown in Play Console, checked 2026-10-28): sales to users outside India pause on **15 Mar 2027** unless
