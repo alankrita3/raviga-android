@@ -73,14 +73,15 @@ Sources:
     whether reviewers get test credits.
 11. Ads: none.
 12. Content rating (IARC): clients talk only to our team, never to other users.
-13. Target audience: 18+ only, a business service with payments. This keeps the app out of the Families policy.
+13. Target audience: 18+ only (her decision, final 2026-10-30, R-057), a business service with payments. This keeps the
+    app out of the Families policy.
 14. Payments policy: decided per `docs/play-payments-policy.md` (R-013).
 
 **Store listing (public; founder approves)**
 15. Name "Raviga", short description (≤80 characters), full description (≤4,000), category Business, contact email
-    and website.
-16. 512×512 icon: ready, `docs/icon/play-icon-512.png` (option A); still needed: a 1024×500 feature graphic and 2 to 8 phone
-    screenshots.
+    and website. Copy final 2026-10-30 (R-057): `docs/store/play-listing.md`.
+16. 512×512 icon: ready, `docs/icon/play-icon-512.png` (option A). Six phone screenshots (R-052) and cream feature-graphic
+    drafts (R-057) in `~/Downloads/raviga-play-screenshots/`; her pick of feature graphic is still to come.
 
 **Payments (account)**
 - BillDesk KYC (shown in Play Console, checked 2026-10-28): sales to users outside India pause on **15 Mar 2027** unless

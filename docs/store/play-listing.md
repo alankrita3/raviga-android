@@ -1,48 +1,36 @@
-# Google Play store listing (draft)
+# Google Play store listing
 
-Draft for the founder, 2026-10-29 (R-052). Public copy, so nothing goes into Play Console until she approves it
-through the PM. Every sentence comes from the iOS listing (`Raviga iOS/docs/store/listing.md`, R-042), and its facts are
-checked against this app and dev's `/config` (below). Character counts are Python `len()`, which is how Play counts.
+Drafted 2026-10-29 (R-052). The copy is final as of 2026-10-30 (R-057, her decisions through the PM): short description
+B, opening B with one sentence added, and 18+. Nothing goes into Play Console until the PM says so, and the feature
+graphic is still a draft. Every sentence comes from the iOS listing (`Raviga iOS/docs/store/listing.md`, R-042), plus
+the sentence she added. Its facts are checked against this app and dev's `/config` (below). Character counts are
+Python `len()`, which is how Play counts.
 
 ## App name (30 max)
 
 **Raviga** (6)
 
-## Short description (80 max), pick one
+## Short description (80 max)
 
-Pairs with the iOS subtitle she picks, so both stores lead with the same line.
+Final: B, which pairs with the iOS subtitle she chose, "Custom software, built with AI". Both stores lead with the
+same line. (77)
 
-- A, with iOS subtitle A ("Say what you want built", her approved Welcome headline): (77)
-  ```text
-  Say what you want built. See the price first, and get the code handed to you.
-  ```
-  Phrases from subtitle A and the iOS promotional text.
-- B, with iOS subtitle B ("Custom software, built with AI"): (77)
-  ```text
-  Custom software, built with AI. Describe it, approve the quote, get the code.
-  ```
-  Subtitle B plus iOS opening B, shortened.
+```text
+Custom software, built with AI. Describe it, approve the quote, get the code.
+```
 
-## Full description (4,000 max)
+Option A ("Say what you want built. See the price first, and get the code handed to you.") was not chosen.
+
+## Full description (4,000 max): 1,853
 
 The opening (one paragraph), a blank line, then the body. Plain text: Play doesn't render Markdown, so headings are
 plain lines.
 
-| Version | Opening | Full description |
-|---|---|---|
-| A | iOS opening A, word for word (140) | **1,753** |
-| B | iOS opening B, word for word (164) | **1,777** |
-
-Opening A:
+Opening (240): iOS opening B, word for word, plus the sentence she added at its end ("AI does the building; our team
+checks each project before it's handed over."):
 
 ```text
-Say what you want built. Talk it through, type it, or upload a document you already have. Raviga writes the brief, prices it, and builds it.
-```
-
-Opening B:
-
-```text
-Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code, a handover guide and simple steps to make it live.
+Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code, a handover guide and simple steps to make it live. AI does the building; our team checks each project before it's handed over.
 ```
 
 Body (1,611), the iOS body word for word:
@@ -75,12 +63,21 @@ Privacy: https://d1mi85jr39d7la.cloudfront.net/privacy-policy
 ```
 
 When the legal site is live (R-037), change the two dev links to `https://legal.ravigaapps.com/terms-of-use` and
-`/privacy-policy`. The full description gets 18 characters shorter.
+`/privacy-policy`. The full description then gets 18 characters shorter (1,835).
+
+Option A's opening ("Say what you want built. Talk it through, type it, or upload a document you already have. Raviga
+writes the brief, prices it, and builds it.") was not chosen.
 
 ## Category and tags
 
 - App or game: **App**. Category: **Business** (as on iOS and in RevenueCat).
 - Tags: optional, up to five from Play's list. None picked; her call.
+
+## Age rating: 18+ (final, R-057)
+
+Play has no age-rating override like Apple's. 18+ comes from two App content answers: **Target audience** "18 and
+over" only, and the **IARC questionnaire** answered as drafted in `docs/play-launch-readiness.md` (items 12 and 13:
+clients talk only to our team, never to other users; a business service with payments, outside the Families policy).
 
 ## Contact details
 
@@ -96,7 +93,7 @@ When the legal site is live (R-037), change the two dev links to `https://legal.
 | Asset | Play's rule | File |
 |---|---|---|
 | App icon | 512×512 PNG | `docs/icon/play-icon-512.png` (option A, ready) |
-| Feature graphic | 1024×500, JPEG or 24-bit PNG, no alpha | Drafts in `~/Downloads/raviga-play-screenshots/`: `feature-graphic-navy.png` (recommended: it stands out on Play's white page) and `feature-graphic-cream.png`. Icon A tile plus the R-045 wordmark; SVG sources and `feature_graphic.py` beside them. |
+| Feature graphic | 1024×500, JPEG or 24-bit PNG, no alpha | She chose cream; drafts in `~/Downloads/raviga-play-screenshots/`. R-057, the icon's r merged into the wordmark with no separate tile (she found the tile's r plus the wordmark's r repeated): `feature-graphic-cream-merged-two-squares.png` (the r's square and the i's dot both blue) and `feature-graphic-cream-merged-one-square.png` (only the r's square blue, the i's dot navy). Fallback: `feature-graphic-cream.png` (icon A tile plus the wordmark). SVG sources beside each, with `feature_graphic_merged.py` and `feature_graphic.py`. `feature-graphic-navy.png` is the earlier navy draft. |
 | Phone screenshots | 2 to 8; JPEG or 24-bit PNG, no alpha; 320 to 3,840 px a side, the long side at most twice the short side | Six in the same folder, `01-welcome` to `06-project`, with `captions.txt`: Welcome, describe, type, brief, quote, submitted project. Taken 2026-10-29 on the OnePlus against dev with a team.py demo account and a made-up project (no client data, no recovery key on screen). The phone's 1080×2340 is over Play's 2:1 limit, so each is cropped to the app area, 1080×2136. |
 
 ## Facts checked against Android (2026-10-29)
@@ -107,14 +104,14 @@ When the legal site is live (R-037), change the two dev links to `https://legal.
 - Earlier versions: `ui/document/VersionsScreen.kt`.
 - 1 credit is US$10, the bonuses (25+2, 50+6, 100+15) and two revision rounds: dev's `/config`.
 - Analytics off until the client turns it on: verified on the OnePlus (`docs/play-launch-readiness.md`).
+- "Our team checks each project before it's handed over": the project timeline's review steps, and the body's "Built
+  by AI, checked by experts".
 
 ## Notes for her
 
 - **"Speak" doesn't work on every Android phone.** Dictation needs Android 12 or later, with an on-device recogniser
   and its English model. On other phones the app explains why and typing and files still work (the OnePlus 7 is one).
   The copy stays accurate as long as she's comfortable with "Speak" describing most phones, not all.
-- Play has no age-rating override like Apple's. 18+ comes from the Target audience answer (18+ only) and the IARC
-  questionnaire, both under App content.
 - Play adds "In-app purchases" and the price range to the listing by itself; the description doesn't need prices.
 - Play's metadata rules (no rankings, no emoji, no capitals for emphasis, no keyword lists) are already met. Naming
   Claude, Anthropic and GitHub is factual use.

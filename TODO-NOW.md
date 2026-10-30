@@ -12,8 +12,11 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
     screen and Privacy and data (R-055); then a fresh flow (R-056: open on Welcome, Type gives the consent once,
     Agree, no second consent on Speak or Restore). The fresh flow needs a clean install. Do it on a second
     install of the release build (com.raviga.app, internal-test against dev), so the debug app's data stays.
-- Last shipped: R-052, Play listing drafts (copy, feature graphics, six screenshots), accepted by the PM 2026-10-29;
-  the copy still waits for her approval.
+- Last shipped: R-057 (2026-10-30), her final store copy in `docs/store/play-listing.md` (short description B,
+  opening B plus "AI does the building; our team checks each project before it's handed over.", 1,853 characters;
+  18+), and two cream feature graphics with icon A's r merged into the wordmark, no tile:
+  `feature-graphic-cream-merged-two-squares.png` and `-one-square.png` in `~/Downloads/raviga-play-screenshots/`
+  (fallback `feature-graphic-cream.png`). The PM shows her the drafts.
 
 ## Blocked, and on whom
 
@@ -26,9 +29,9 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 - **Backend + founder:** the prod stage (`API_BASE_URL`). Until then only internal-test bundles against dev exist
   (`bundleRelease -Praviga.internalTest=true`).
 - **Founder:** BillDesk KYC for sales outside India, due 15 Mar 2027 (Play Console banner; contact team@mirakee.com).
-- **Founder via PM:** approve the Play listing copy, pick short description A or B (pairs with the iOS subtitle),
-  a feature graphic (navy recommended) and the screenshots. The dev demo project RA-Q3FJ24 is rejected ("screenshot demo");
-  store reviewers get a prod demo account later.
+- **Founder via PM:** pick a feature graphic (the two cream merged drafts or the cream fallback). The copy (option B) and
+  18+ are decided. The dev demo project RA-Q3FJ24 is rejected ("screenshot demo"); store reviewers get a prod demo
+  account later.
 - **Founder via PM (phone):** plug the OnePlus back in by USB and unlock it (it dropped off during R-055).
 - **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
   Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). The PM is asking her: System
@@ -55,13 +58,13 @@ Still to do in Play Console (App content). Drafts are in `docs/play-launch-readi
 3. **App access:** reviewer instructions with a team.py demo account and the verified restore taps (8 steps).
 4. **Ads:** none.
 5. **Content rating (IARC):** questionnaire.
-6. **Target audience:** 18+.
+6. **Target audience:** 18+ (decided 2026-10-30).
 7. **Account deletion URL:** prod delete-account page.
 8. **Government, financial and health declarations:** none apply.
 
-Store listing (public, founder approves the copy), drafted under R-052:
+Store listing (public), drafted under R-052, copy final under R-057:
 - short and full description, category (Business), contact email and website: `docs/store/play-listing.md`;
-- 1024×500 feature graphic: two drafts in `~/Downloads/raviga-play-screenshots/`;
+- 1024×500 feature graphic: cream, merged-r drafts in `~/Downloads/raviga-play-screenshots/` (her pick pending);
 - 2 to 8 phone screenshots: six in the same folder, with captions.
 
 Release:
