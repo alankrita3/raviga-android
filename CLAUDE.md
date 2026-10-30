@@ -31,7 +31,7 @@ Project manager: the Raviga PM session directs work across backend, iOS and Andr
 
 ## Conventions
 
-- Light appearance only. Warm white paper, near-black ink, teal for anything live, marigold for
+- Light appearance only. Warm white paper, near-black ink, the logo's blue for anything live (link blue for text), marigold for
   highlights. White tiles with a rule border for choices and grouped facts (never shadows or
   gradients); hairline rows elsewhere; 8dp grid; 20dp gutter; 56dp buttons, radius 18.
 - Bricolage Grotesque (bundled, OFL) for titles, headings, figures and dictation; Figtree (bundled,
