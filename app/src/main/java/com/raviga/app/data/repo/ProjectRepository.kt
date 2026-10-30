@@ -57,6 +57,11 @@ class ProjectRepository(
         }
     }
 
+    /** R-056: before Agree there is no account, so nothing to load; Home shows its empty state, not a blank page. */
+    fun noAccountYet() {
+        _loadedOnce.value = true
+    }
+
     /** Forgets everything held for the previous client (sign-out, recovery, deletion). */
     suspend fun reset() {
         _summaries.value = emptyList()

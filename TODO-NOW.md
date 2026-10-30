@@ -5,13 +5,16 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **R-055, R-056 and R-060's colours, code done; device checks wait for the OnePlus on USB.**
-  - R-055 (no name or address): a5f36c9. R-056 (consent at the first Type/Speak/Upload/Restore/Buy credits; only
-    GET /config before Agree): 932b08f. Unit tests 69/69.
-  - Left: install the debug build over the existing app (keep its data) and screenshot for the PM: the consent
-    screen and Privacy and data (R-055); then a fresh flow (R-056: open on Welcome, Type gives the consent once,
-    Agree, no second consent on Speak or Restore). The fresh flow needs a clean install. Do it on a second
-    install of the release build (com.raviga.app, internal-test against dev), so the debug app's data stays.
+- **R-066 (her review of the iOS builds, for both apps; via the PM 10-30): in progress.** Welcome subline,
+  onboarding navigation (Get started → Step 1, Next/Skip, Start, Settings "How Raviga works"), the style-D
+  illustrations (5 ready, 8 coming; backend-87 sends the names), the Welcome hero focus at y 0.2, consent "Your
+  rights" text and links (`legal.rightsUrl` from /config, R-067; dev URL only as a fallback), and the "What we don't
+  keep" text. Tests, the OnePlus run, commit, report to the PM. No Play upload until the PM says.
+- **R-055, R-056 and R-060's colours: device checks done 2026-10-30** on the OnePlus (Wi-Fi adb works again).
+  Screenshots in `~/Downloads/raviga-device-checks/2026-10-30-r055-r056-r060/`. The checks found two R-056 bugs,
+  now fixed: release builds refused GET /config before Agree (R8 renamed the method the guard matched by name; it
+  now matches the route), so Agree failed on a fresh install; and Home was blank before Agree instead of showing its
+  empty state.
 - **R-060 (her decisions 10-30, via the PM):**
   - 1, India prices: done. Play now sells credits_10 / 25 / 50 in India at ₹8,499 / ₹21,249 / ₹42,499 (were
     ₹11,200 / 28,100 / 56,200); credits_100 stays at ₹84,000. Read back with `tools/play_release.py regions`; the
@@ -21,8 +24,7 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
   - 2, app colours C (R-049/R-059): code done with iOS's tokens (palette C: cream paper, navy ink, the logo's blue
     for marks, link blue #3B54C4 for text and controls, marigold unchanged); the wordmark on the launch screen, the
     loading screen and Welcome page 1. Unit tests 72/72 (PaletteTest pins the tokens to iOS and checks contrast).
-    Left: the device check on the OnePlus (launch, Welcome and Home screenshots to the PM); it goes into the sprint
-    build.
+    Device check done 2026-10-30 (splash, loading, Welcome, Home). It goes into the sprint build.
   - 3, registered address in `docs/HANDOFF.md` item 8: done (the Dwarka address; backend puts it in /config, the app
     shows no address).
 - Last shipped: R-057, closed 2026-10-30. Her final store copy in `docs/store/play-listing.md` (short description B,
@@ -39,10 +41,6 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 - **Founder:** BillDesk KYC for sales outside India, due 15 Mar 2027 (Play Console banner; contact team@mirakee.com).
 - Store listing: copy, 18+ and the feature graphic are decided (R-057). The dev demo project RA-Q3FJ24 is rejected
   ("screenshot demo"); store reviewers get a prod demo account later.
-- **Founder via PM (phone):** plug the OnePlus back in by USB and unlock it (it dropped off during R-055).
-- **Founder via PM (Mac setting):** Wi-Fi adb to the OnePlus (192.168.1.4:5555) fails with "No route to host" because macOS
-  Local Network privacy blocks adb under Terminal.app (this session's app since the 10-29 account move). The PM is asking her: System
-  Settings → Privacy & Security → Local Network → Terminal on, then `adb kill-server` and `adb connect`. USB works meanwhile.
 - **Hardware:** the themed icon needs an Android 13+ phone; voice dictation needs a phone with an on-device recogniser.
   The OnePlus 7 runs Android 12 and has neither.
 - **On hold (founder said "later"):** the queue screen and the suggested tech stack.

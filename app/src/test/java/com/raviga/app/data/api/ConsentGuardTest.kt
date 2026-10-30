@@ -8,10 +8,12 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
+import retrofit2.http.GET
 import java.io.File
 import java.lang.reflect.Method
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
@@ -75,6 +77,19 @@ class ConsentGuardTest {
         assertEquals(1, server.requestCount)
         assertEquals("GET /v1/config", server.takeRequest().let { "${it.method} ${it.path}" })
         assertTrue("registerDevice" in refused && "recoverDevice" in refused && "putConsent" in refused && "putPushToken" in refused)
+    }
+
+    /** As R8 leaves RavigaApi in a release build: the routes stay, the method names don't. */
+    private interface Renamed {
+        @GET("config") suspend fun a(): AppConfig
+        @GET("me") suspend fun config(): Me
+    }
+
+    @Test
+    fun `the allow-list follows the route, not the method name R8 renames`() {
+        val byName = Renamed::class.java.declaredMethods.associateBy { it.name }
+        assertTrue(ConsentGuard.allowedBeforeAgree(byName.getValue("a")))
+        assertFalse(ConsentGuard.allowedBeforeAgree(byName.getValue("config")))
     }
 
     @Test

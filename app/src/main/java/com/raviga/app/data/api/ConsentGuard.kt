@@ -1,6 +1,8 @@
 package com.raviga.app.data.api
 
+import retrofit2.http.GET
 import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -17,7 +19,7 @@ class ConsentGuard {
     @Volatile var agreed: Boolean = false
 
     fun wrap(api: RavigaApi): RavigaApi = Proxy.newProxyInstance(RavigaApi::class.java.classLoader, arrayOf(RavigaApi::class.java)) { _, method, args ->
-        if (method.declaringClass != Any::class.java && !agreed && method.name !in BEFORE_AGREE) {
+        if (method.declaringClass != Any::class.java && !agreed && !allowedBeforeAgree(method)) {
             val error = ApiException(ApiException.BEFORE_CONSENT, message = "Agree to the terms first.")
             // Every call is a suspend function: fail it through its continuation, as Retrofit does. Thrown from a
             // proxy, a checked exception would arrive wrapped in UndeclaredThrowableException.
@@ -35,6 +37,12 @@ class ConsentGuard {
 
     companion object {
         /** Public and anonymous: no identity, nothing about the person. */
-        val BEFORE_AGREE = setOf("config")
+        private val BEFORE_AGREE = setOf("config")
+
+        /**
+         * Matched on the route (`@GET("config")`), never the method name: R8 renames RavigaApi's methods in release
+         * builds, and a name check there refused GET /config too, so Agree could not load the terms versions.
+         */
+        fun allowedBeforeAgree(method: Method): Boolean = method.getAnnotation(GET::class.java)?.value in BEFORE_AGREE
     }
 }
