@@ -65,10 +65,10 @@ Sources:
 6. Supply the RevenueCat key with Play credentials, `google-services.json` and the prod URL (HANDOFF items 3, 4 and 6).
 
 **App content declarations**
-7. Privacy policy URL: the prod legal site, on ravigaapps.com once the domain exists.
+7. Privacy policy URL: `https://legal.ravigaapps.com/privacy-policy` (live 2026-10-30, backend 5fe84e0).
 8. Data safety: section 1 above.
-9. Account deletion web link: published by backend in contract v0.9.1. Dev: `https://d1mi85jr39d7la.cloudfront.net/delete-account`;
-   the prod page will be on ravigaapps.com. Enter the prod URL in the Data safety form.
+9. Account deletion web link: published by backend in contract v0.9.1, now on Raviga's domain:
+   `https://legal.ravigaapps.com/delete-account` (live 2026-10-30, backend 5fe84e0). Enter it in the Data safety form.
 10. App access: no login is needed, but submitting costs credits. We need reviewer instructions, and a decision on
     whether reviewers get test credits.
 11. Ads: none.

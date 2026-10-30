@@ -21,7 +21,7 @@ Custom software, built with AI. Describe it, approve the quote, get the code.
 
 Option A ("Say what you want built. See the price first, and get the code handed to you.") was not chosen.
 
-## Full description (4,000 max): 1,853
+## Full description (4,000 max): 1,835
 
 The opening (one paragraph), a blank line, then the body. Plain text: Play doesn't render Markdown, so headings are
 plain lines.
@@ -33,7 +33,7 @@ checks each project before it's handed over."):
 Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code, a handover guide and simple steps to make it live. AI does the building; our team checks each project before it's handed over.
 ```
 
-Body (1,611), the iOS body word for word:
+Body (1,593), the iOS body word for word, with the legal links on Raviga's domain:
 
 ```text
 Describe it your way
@@ -58,12 +58,12 @@ Private by design
 No sign-up and no password. Your drafts stay on your phone. The brief you submit is kept only to build your project, and deleted from our servers when you accept the delivery. Usage analytics runs only if you turn it on.
 
 You need to be 18 or older, and a GitHub account to receive your code.
-Terms: https://d1mi85jr39d7la.cloudfront.net/terms-of-use
-Privacy: https://d1mi85jr39d7la.cloudfront.net/privacy-policy
+Terms: https://legal.ravigaapps.com/terms-of-use
+Privacy: https://legal.ravigaapps.com/privacy-policy
 ```
 
-When the legal site is live (R-037), change the two dev links to `https://legal.ravigaapps.com/terms-of-use` and
-`/privacy-policy`. The full description then gets 18 characters shorter (1,835).
+The two links are on Raviga's own legal site (live on 2026-10-30, backend 5fe84e0; they replaced the dev
+CloudFront links, as planned under R-037).
 
 Option A's opening ("Say what you want built. Talk it through, type it, or upload a document you already have. Raviga
 writes the brief, prices it, and builds it.") was not chosen.
@@ -86,7 +86,8 @@ clients talk only to our team, never to other users; a business service with pay
 | Email (required, public) | `support@miraquill.com` | Live: it's the `supportEmail` dev's `/config` returns today (also on the support page). If she wants a Raviga address, `support@ravigaapps.com` is the placeholder until the domain is live. |
 | Website (optional) | `https://ravigaapps.com` | **Placeholder**: the domain isn't live. Leave empty until there's a site (iOS leaves its marketing URL empty too). |
 | Phone (optional) | none | |
-| Privacy policy (App content, required) | `https://d1mi85jr39d7la.cloudfront.net/privacy-policy` | Dev's site, as on iOS. Switch to `https://legal.ravigaapps.com/privacy-policy` when backend says R-037 is live. |
+| Privacy policy (App content, required) | `https://legal.ravigaapps.com/privacy-policy` | Live on Raviga's domain (backend 5fe84e0, 2026-10-30). |
+| Account deletion URL (App content, Data safety) | `https://legal.ravigaapps.com/delete-account` | Live (backend 5fe84e0). |
 
 ## Graphics
 

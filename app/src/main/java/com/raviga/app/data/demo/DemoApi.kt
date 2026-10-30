@@ -779,14 +779,14 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1"),
             legal = LegalConfig(
                 companyName = "Raviga Apps Private Limited",
-                // The dev legal site (contract v0.8); demo mode opens the same pages.
-                termsUrl = "https://d1mi85jr39d7la.cloudfront.net/terms-of-use",
+                // The legal site on Raviga's domain (dev /config since backend 5fe84e0); demo mode opens the same pages.
+                termsUrl = "https://legal.ravigaapps.com/terms-of-use",
                 termsVersion = "2026-10-30",
-                privacyUrl = "https://d1mi85jr39d7la.cloudfront.net/privacy-policy",
+                privacyUrl = "https://legal.ravigaapps.com/privacy-policy",
                 privacyVersion = "2026-10-30",
                 grievance = Grievance("membersupport@miraquill.com", 15),
                 supportEmail = "support@miraquill.com",
-                rightsUrl = "https://d1mi85jr39d7la.cloudfront.net/your-rights",
+                rightsUrl = "https://legal.ravigaapps.com/your-rights",
             ),
         )
     }

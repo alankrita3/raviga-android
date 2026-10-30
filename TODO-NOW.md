@@ -64,13 +64,13 @@ Done:
 - 16 KB pages, target SDK and permissions.
 
 Still to do in Play Console (App content). Drafts are in `docs/play-launch-readiness.md`:
-1. **Privacy policy URL:** prod legal site on ravigaapps.com (domain pending; dev pages exist).
+1. **Privacy policy URL:** `https://legal.ravigaapps.com/privacy-policy` (live 2026-10-30).
 2. **Data safety form:** draft answers ready, including analytics. Enter them, founder to confirm.
 3. **App access:** reviewer instructions with a team.py demo account and the verified restore taps (8 steps).
 4. **Ads:** none.
 5. **Content rating (IARC):** questionnaire.
 6. **Target audience:** 18+ (decided 2026-10-30).
-7. **Account deletion URL:** prod delete-account page.
+7. **Account deletion URL:** `https://legal.ravigaapps.com/delete-account` (live 2026-10-30).
 8. **Government, financial and health declarations:** none apply.
 
 Store listing (public), drafted under R-052, copy final under R-057:

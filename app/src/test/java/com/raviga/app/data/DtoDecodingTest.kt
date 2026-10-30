@@ -61,8 +61,7 @@ class DtoDecodingTest {
         assertEquals("RavigaDeployRole", config.delivery.awsRoleName)
         assertEquals(config.delivery.awsRoleName, demo.delivery.awsRoleName)
         assertEquals("Raviga Apps Private Limited", config.legal.companyName)
-        assertEquals(config.legal.termsUrl, demo.legal.termsUrl)
-        assertEquals(config.legal.privacyUrl, demo.legal.privacyUrl)
+        // The legal URLs moved to Raviga's domain (backend 5fe84e0); the v0.9.3 test pins the demo to them.
         assertEquals(config.quote.brackets.map { it.timeline }, demo.quote.brackets.map { it.timeline })
         assertEquals(config.credits.packs.map { it.productId }, demo.credits.packs.map { it.productId })
     }
@@ -142,11 +141,13 @@ class DtoDecodingTest {
     @Test
     fun `v093 config has the your rights page and the new legal versions, and the demo matches`() {
         val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v093.json")!!)
-        assertEquals("https://d1mi85jr39d7la.cloudfront.net/your-rights", config.legal.rightsUrl)
+        assertEquals("https://legal.ravigaapps.com/your-rights", config.legal.rightsUrl)
         assertEquals("2026-10-30", config.legal.termsVersion)
         assertEquals("2026-10-30", config.legal.privacyVersion)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.legal.rightsUrl, demo.legal.rightsUrl)
+        assertEquals(config.legal.termsUrl, demo.legal.termsUrl)
+        assertEquals(config.legal.privacyUrl, demo.legal.privacyUrl)
         assertEquals(config.legal.termsVersion, demo.legal.termsVersion)
         assertEquals(config.legal.privacyVersion, demo.legal.privacyVersion)
         assertEquals(config.legal.grievance, demo.legal.grievance)
