@@ -20,7 +20,7 @@ are the same credential used by more than one repo.
 | 9 | **Play Data safety form** and the microphone / notifications declarations; no audio or files leave the phone (speech is recognised on the device); the app sends project text (to OpenAI, to write and price briefs), a device identifier and purchase history | Play Console → App content | to fill |
 | 10 | **AWS role policy** for `RavigaDeployRole` (currently AdministratorAccess per the backend contract); the Connect AWS screen describes the role in plain words | backend CloudFormation template | to decide |
 | 11 | **Anything you registered under the old app id** (the old name after `com.raviga.`): items 1, 3 and 4 were not created as far as this repo knows, but if any were, create them again for `com.raviga.app`. App ids can't be renamed in Play Console or Firebase | Play Console, Firebase, RevenueCat | check |
-| 12 | **OpenAI Zero Data Retention**: until OpenAI approves it, OpenAI may keep the text of notes and briefs up to 30 days for abuse checks; the privacy page and `/config`'s provider line say so meanwhile (shared) | OpenAI account; backend provider line | to apply |
+| 12 | ~~**OpenAI Zero Data Retention**~~: no longer needed. Since contract v0.9.4 (R-068, 2026-10-31) the app's AI is the Claude API only; `/config`'s one provider line says Anthropic deletes the text within 30 days, longer only if flagged for abuse | backend provider line | closed |
 
 ## Google Play (2026-10-28)
 
@@ -113,8 +113,9 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
   depends on it beyond the Credits screen copy. Policy, fees and a recommendation: `docs/play-payments-policy.md`.
 - The microphone is only used while the Capture screen is listening, and speech is recognised on the phone.
   The Data safety form can say no audio or files are collected; the text of notes and briefs is sent to
-  OpenAI to write and price briefs (kept up to 30 days for abuse checks, per the backend's provider line),
-  and submitted briefs are stored until the project closes.
+  Anthropic's Claude API to write, price and check briefs (deleted within 30 days, longer only if flagged for
+  abuse, per the backend's provider line, contract v0.9.4), and submitted briefs are stored until the project
+  closes.
 
 ## How to run it tomorrow
 
@@ -122,7 +123,7 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
 2. Plug in the OnePlus (or start the `Raviga_API34` emulator; the `Pixel_6_API_34` one has a pattern
    lock) and press Run, or `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
 3. The debug build talks to the backend's dev stage (`secrets.properties`, already on this Mac). Drafting
-   uses OpenAI; credits on dev need the backend's admin flow until RevenueCat is connected.
+   uses the Claude API (v0.9.4); credits on dev need the backend's admin flow until RevenueCat is connected.
 4. For a self-contained demo with no network: Settings → "Demo backend (debug)" on, restart the app. Then
    Describe a project → "Use a sample description" (or speak) → the brief writes itself → Get a quote → Buy
    credits (instant) → Submit → Settings → Demo controls → "Advance the latest project" to play the team's

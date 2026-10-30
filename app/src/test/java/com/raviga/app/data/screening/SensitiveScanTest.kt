@@ -43,6 +43,13 @@ class SensitiveScanTest {
         assertEquals(emptyList<Kind>(), kinds("users reset their password by email"))
     }
 
+    /** v0.9.4: a Claude key is removed whole, the "sk-ant-" prefix included. */
+    @Test fun claudeKeyIsRemovedWhole() {
+        val key = "sk-ant-api03-" + "Zx9_Qw-Er".repeat(10) + "AA"
+        assertEquals("ANTHROPIC_API_KEY=[removed] in the env file", SensitiveScan.redact("ANTHROPIC_API_KEY=$key in the env file"))
+        assertEquals(emptyList<Kind>(), kinds("we use the sk-ant prefix check and Anthropic's API"))
+    }
+
     /** The server's L1 cases (Raviga Backend tests/test_screening.py): the phone flags the same. */
     @Test fun serverCasesAreFlaggedAsTheSameKind() {
         val cases = listOf(
@@ -52,6 +59,8 @@ class SensitiveScanTest {
             "token ghp_" + "a".repeat(36) to Kind.API_KEY,
             "github_pat_" + "B".repeat(82) to Kind.API_KEY,
             "openai sk-proj-Ab12Cd34Ef56Gh78Ij90Kl12Mn34" to Kind.API_KEY,
+            "claude sk-ant-api03-" + "Ab3_dE-f".repeat(12) to Kind.API_KEY,
+            "claude sk-ant-usr-" + "AbCdEfGhIjKlMnOpQrStUvWx" to Kind.API_KEY,
             "legacy sk-" + "a1".repeat(24) to Kind.API_KEY,
             "stripe sk_live_" + "4eC39HqLyjWDarjtT1zdp7dc" to Kind.API_KEY,
             "restricted rk_live_" + "4eC39HqLyjWDarjtT1zdp7dc" to Kind.API_KEY,

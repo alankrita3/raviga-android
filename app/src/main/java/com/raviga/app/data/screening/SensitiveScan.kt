@@ -34,6 +34,8 @@ object SensitiveScan {
         Regex("\\b(?:AKIA|ASIA)[A-Z0-9]{16}\\b"),
         Regex("\\bgh[pousr]_[A-Za-z0-9]{36,}\\b"),
         Regex("\\bgithub_pat_[A-Za-z0-9_]{22,}"),
+        // Claude API keys (contract v0.9.4): "sk-ant-api03-…", "sk-ant-usr-…", then a long base64url tail.
+        Regex("\\bsk-ant-[A-Za-z0-9_-]{20,}"),
         // OpenAI keys contain a digit, so "sk-learn-style" prose is left alone.
         Regex("\\bsk-(?:proj-|svcacct-|admin-)?(?=[A-Za-z0-9_-]*\\d)[A-Za-z0-9_-]{20,}"),
         Regex("\\b[sr]k_live_[A-Za-z0-9]{16,}\\b"),

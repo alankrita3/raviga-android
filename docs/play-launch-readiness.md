@@ -20,14 +20,14 @@ Sources:
 - Account creation: **yes, "Other"**. The app creates a client account for the phone by itself, with no password but
   with a recovery key. Play's deletion rule covers this
   ([account deletion](https://support.google.com/googleplay/android-developer/answer/13327111)).
-- **Shared: no, for every type.** OpenAI, RevenueCat and Google (FCM, ML Kit) process data on Raviga's behalf, which
+- **Shared: no, for every type.** Anthropic (the Claude API, contract v0.9.4), RevenueCat and Google (FCM, ML Kit) process data on Raviga's behalf, which
   Play doesn't count as sharing.
 
 **Collected**
 
 | Play data type | What it is | Purpose | Optional? |
 |---|---|---|---|
-| App activity → Other user-generated content | Notes and brief text, sent to the backend to draft and price (OpenAI may keep it up to 30 days) and stored on submit until the project closes; text read from uploaded files | App functionality | Required for the core flow |
+| App activity → Other user-generated content | Notes and brief text, sent to the backend to draft and price (Anthropic deletes it within 30 days, longer only if flagged for abuse) and stored on submit until the project closes; text read from uploaded files | App functionality | Required for the core flow |
 | Messages → Other in-app messages | Comments between the client and the team on a project | App functionality | Optional |
 | Personal info → Other info | GitHub username and AWS account ID, for delivery | App functionality | Optional |
 | Financial info → Purchase history | Credit purchases through Play Billing and RevenueCat | App functionality, account management | Required to buy credits |

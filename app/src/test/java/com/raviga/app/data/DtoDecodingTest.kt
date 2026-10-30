@@ -115,14 +115,12 @@ class DtoDecodingTest {
 
     /** Captured from the raviga-* dev GET /config on 2026-10-21 (contract v0.9.1: new legal versions, two AI providers). */
     @Test
-    fun `v091 config has the new legal versions and both AI providers, as the demo does`() {
+    fun `v091 config has the new legal versions and both AI providers`() {
         val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v091.json")!!)
         assertEquals("2026-10-21", config.legal.termsVersion)
         assertEquals("2026-10-21", config.legal.privacyVersion)
         assertEquals(2, config.ai.providers.size)
         assertTrue(config.ai.providers[1].startsWith("Anthropic"))
-        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
-        assertEquals(config.ai.providers, demo.ai.providers)
     }
 
     /** Captured from the raviga-* dev GET /config on 2026-10-29 (contract v0.9.2); name and address scrubbed for the repo. */
@@ -137,14 +135,26 @@ class DtoDecodingTest {
             com.raviga.app.ui.status.StatusCopy.grievanceLine(config.legal.grievance))
     }
 
-    /** v0.9.3 (R-066/R-067): the "Your rights" page and the 2026-10-30 legal versions; the demo matches dev. */
+    /** v0.9.3 (R-066/R-067): the "Your rights" page and the 2026-10-30 legal versions. */
     @Test
-    fun `v093 config has the your rights page and the new legal versions, and the demo matches`() {
+    fun `v093 config has the your rights page and the new legal versions`() {
         val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v093.json")!!)
         assertEquals("https://legal.ravigaapps.com/your-rights", config.legal.rightsUrl)
         assertEquals("2026-10-30", config.legal.termsVersion)
         assertEquals("2026-10-30", config.legal.privacyVersion)
+    }
+
+    /** v0.9.4 (R-068), dev /config 2026-10-31: the Claude API is the only AI provider; the demo matches dev. */
+    @Test
+    fun `v094 config names only the Claude API, and the demo matches`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v094.json")!!)
+        assertEquals(1, config.ai.providers.size)
+        assertTrue(config.ai.providers.single().startsWith("Anthropic (Claude writes, prices and checks briefs"))
+        assertFalse(config.ai.providers.single().contains("OpenAI"))
+        assertEquals("2026-10-31", config.legal.termsVersion)
+        assertEquals("2026-10-31", config.legal.privacyVersion)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(config.ai.providers, demo.ai.providers)
         assertEquals(config.legal.rightsUrl, demo.legal.rightsUrl)
         assertEquals(config.legal.termsUrl, demo.legal.termsUrl)
         assertEquals(config.legal.privacyUrl, demo.legal.privacyUrl)
