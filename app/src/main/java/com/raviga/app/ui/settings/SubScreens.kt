@@ -56,6 +56,7 @@ import com.raviga.app.ui.components.RaTextField
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.Hairline
 import com.raviga.app.ui.components.InlineAction
+import com.raviga.app.ui.components.LegalLinks
 import com.raviga.app.ui.components.InlineNotice
 import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.ProgressRule
@@ -228,12 +229,11 @@ fun PrivacyScreen(nav: NavController) {
             }
             Hairline(Modifier.padding(horizontal = Ra.gutter))
             Column(Modifier.padding(horizontal = Ra.gutter)) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Recordings and files never leave this phone, and drafts are kept only here. A submitted brief is held by Raviga " +
-                        "until you accept the delivery (or the project is cancelled), then deleted.",
-                    style = RaType.caption, color = Ink.graphite,
-                )
+                Spacer(Modifier.height(16.dp))
+                // R-066: the consent screen's words, so both say the same.
+                Text("What we don't keep", style = RaType.bodyMedium, color = Ink.ink)
+                Spacer(Modifier.height(6.dp))
+                Text(StatusCopy.LOCAL_FIRST_PROMISE, style = RaType.secondary, color = Ink.graphite)
                 Spacer(Modifier.height(24.dp))
             }
             RaRow(
@@ -276,8 +276,15 @@ fun PrivacyScreen(nav: NavController) {
                         modifier = Modifier.clickable { emailLink(context, email, "Raviga grievance") }.padding(vertical = 4.dp),
                     )
                 }
-                // Contract v0.9.2: the line sits next to the privacy policy link, as on the consent screen.
-                InlineAction("Privacy policy", onClick = { openLink(context, legal.privacyUrl) }, modifier = Modifier.padding(top = 4.dp))
+                // Contract v0.9.2: the line sits next to the privacy policy link, as on the consent screen; v0.9.3 adds
+                // the "Your rights" page beside it.
+                LegalLinks(
+                    listOfNotNull(
+                        "Privacy policy" to { openLink(context, legal.privacyUrl) },
+                        legal.rightsUrl.takeIf { it.isNotBlank() }?.let { url -> "Your rights" to { openLink(context, url) } },
+                    ),
+                    Modifier.padding(top = 4.dp),
+                )
                 Spacer(Modifier.height(32.dp))
             }
         }

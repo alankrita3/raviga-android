@@ -76,6 +76,8 @@ fun SettingsScreen(nav: NavController) {
             )
             RaRow(title = "Privacy policy", onClick = { openLink(context, legal.privacyUrl) }, chevron = false)
             RaRow(title = "Terms of service", onClick = { openLink(context, legal.termsUrl) }, chevron = false)
+            // R-066: right after the legal rows, as on iOS.
+            RaRow(title = "How Raviga works", onClick = { nav.navigate(Routes.HOW_IT_WORKS) })
             RaRow(title = "Fonts", subtitle = "Bricolage Grotesque and Figtree, open font licence", onClick = { nav.navigate(Routes.FONTS) })
             if (vm.isDebug) DebugBackendRow(context, vm.isDemo)
             if (vm.isDemo) {

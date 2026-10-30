@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextAlign
-import com.raviga.app.ui.components.InlineAction
+import com.raviga.app.ui.components.LegalLinks
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.SpotIllustration
 import androidx.compose.foundation.layout.Column
@@ -124,17 +124,14 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                 "The brief you submit for us to build, and our comments on it. A random id for this phone. Your credit purchases and balance. A GitHub username and, if you add one, an AWS account id, so we can hand your project over.",
             )
             Block("Why", "To write your brief, quote it, build it and deliver it. We do not sell data or show ads.")
-            Block(
-                "What we don't keep",
-                "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to our AI, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
-            )
+            Block("What we don't keep", StatusCopy.LOCAL_FIRST_PROMISE)
             Block(
                 "What we won't build",
                 "Anything made to harm, deceive or track people, or that breaks the law. Every description is checked automatically, passwords and ID numbers are removed, and a refused project is never charged.",
             )
             Block(
                 "Your rights",
-                "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance. Under India's DPDP Act you may also complain to the Data Protection Board after using our grievance process.",
+                "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance.",
             )
             // Contract v0.9, wording shared with iOS: its own block, the switch off until the client turns it on.
             Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
@@ -151,11 +148,16 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                 Text(it, style = RaType.secondary, color = Ink.graphite)
                 Spacer(Modifier.height(20.dp))
             }
-            Row(Modifier.padding(top = 4.dp)) {
-                InlineAction("Privacy policy", onClick = { openLink(context, legal.privacyUrl) })
-                Spacer(Modifier.width(12.dp))
-                InlineAction("Terms of service", onClick = { openLink(context, legal.termsUrl) })
-            }
+            LegalLinks(
+                listOfNotNull(
+                    "Privacy policy" to { openLink(context, legal.privacyUrl) },
+                    "Terms of service" to { openLink(context, legal.termsUrl) },
+                    // R-066 / contract v0.9.3: withdrawing consent, download and delete, the grievance route, the Board.
+                    // A server without the key (older than v0.9.3) gets no link, as on iOS.
+                    legal.rightsUrl.takeIf { it.isNotBlank() }?.let { url -> "Your rights" to { openLink(context, url) } },
+                ),
+                Modifier.padding(top = 4.dp),
+            )
             Spacer(Modifier.height(32.dp))
         }
     }

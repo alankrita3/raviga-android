@@ -13,6 +13,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.raviga.app.ui.status.StatusCopy
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,10 +95,7 @@ fun AiConsentScreen(nav: NavController) {
             Block("What is sent", "Only the text of your notes and brief, to write and price it. Never your recordings or files. We don't store it.")
             // The backend's provider line carries the full disclosure (retention, no training); show it as sent.
             Block("Who processes it", providers.joinToString("\n"))
-            Block(
-                "How long it is kept",
-                "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to our AI, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
-            )
+            Block("How long it is kept", StatusCopy.LOCAL_FIRST_PROMISE)
             Block("When it is sent", "Only after you turn this on and continue. You can turn it off later in Settings.")
             Spacer(Modifier.height(12.dp))
         }

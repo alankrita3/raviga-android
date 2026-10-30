@@ -51,6 +51,8 @@ object Routes {
     const val RECOVERY = "settings/recovery"
     const val FONTS = "settings/fonts"
     const val NOTIFICATIONS = "settings/notifications"
+    /** R-066: the five welcome pages again, from Settings. */
+    const val HOW_IT_WORKS = "settings/how-it-works"
 
     /** Where a project opens from the list, by status. Drafts open the document screen, which handles "no brief yet". */
     /** A submitted project's own screen. Drafts (ids starting "ld_") open the brief. */

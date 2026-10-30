@@ -67,6 +67,15 @@ object StatusCopy {
     /** From `/config` legal.supportEmail; set by the container whenever config loads. */
     @Volatile var supportEmail: String = ""
 
+    /**
+     * The local-first promise in one paragraph (R-066 wording, founder 2026-10-30): "What we don't keep" on the consent
+     * screens and on Privacy and data. Same words on iOS (`ServiceConfig.Retention.promise`).
+     */
+    const val LOCAL_FIRST_PROMISE =
+        "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, " +
+            "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
+            "review and build it, and delete it when you accept the delivery."
+
     /** R-055: the grievance route in one line, email and days only (consent screen and Privacy and data). */
     fun grievanceLine(grievance: Grievance): String? =
         if (grievance.email.isBlank()) null

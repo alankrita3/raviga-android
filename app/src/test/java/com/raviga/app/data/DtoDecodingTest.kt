@@ -134,12 +134,22 @@ class DtoDecodingTest {
         val config = json.decodeFromString(AppConfig.serializer(), raw)
         assertEquals("2026-10-29", config.legal.termsVersion)
         assertEquals("2026-10-29", config.legal.privacyVersion)
+        assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
+            com.raviga.app.ui.status.StatusCopy.grievanceLine(config.legal.grievance))
+    }
+
+    /** v0.9.3 (R-066/R-067): the "Your rights" page and the 2026-10-30 legal versions; the demo matches dev. */
+    @Test
+    fun `v093 config has the your rights page and the new legal versions, and the demo matches`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v093.json")!!)
+        assertEquals("https://d1mi85jr39d7la.cloudfront.net/your-rights", config.legal.rightsUrl)
+        assertEquals("2026-10-30", config.legal.termsVersion)
+        assertEquals("2026-10-30", config.legal.privacyVersion)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(config.legal.rightsUrl, demo.legal.rightsUrl)
         assertEquals(config.legal.termsVersion, demo.legal.termsVersion)
         assertEquals(config.legal.privacyVersion, demo.legal.privacyVersion)
         assertEquals(config.legal.grievance, demo.legal.grievance)
-        assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
-            com.raviga.app.ui.status.StatusCopy.grievanceLine(config.legal.grievance))
     }
 
     /** R-060 (10-30): Play sells India at the plan prices and the 100 pack at India's cap; dev's /config hints match (backend c5f333b). */
@@ -166,6 +176,15 @@ class DtoDecodingTest {
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig().legal
         assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
             com.raviga.app.ui.status.StatusCopy.grievanceLine(demo.grievance))
+    }
+
+    /** R-066: her words for "What we don't keep", on the consent screens and Privacy and data. */
+    @Test
+    fun `the local-first promise is her R-066 wording`() {
+        assertEquals(
+            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
+            com.raviga.app.ui.status.StatusCopy.LOCAL_FIRST_PROMISE,
+        )
     }
 
     /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */

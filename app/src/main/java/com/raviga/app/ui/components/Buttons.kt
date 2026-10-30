@@ -28,9 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.indication
@@ -150,6 +153,36 @@ fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     )
+}
+
+/**
+ * Link-blue actions separated by dots ("Privacy policy · Terms of service · Your rights") on one line where they fit;
+ * a narrow phone or large text stacks them instead (as on iOS), so a line never starts with a dot.
+ */
+@Composable
+fun LegalLinks(links: List<Pair<String, () -> Unit>>, modifier: Modifier = Modifier) {
+    Layout(
+        content = {
+            links.forEachIndexed { index, (label, open) ->
+                if (index > 0) Text("·", style = RaType.secondary, color = Ink.ash, modifier = Modifier.clearAndSetSemantics {})
+                InlineAction(label, onClick = open)
+            }
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val items = measurables.map { it.measure(Constraints()) }
+        val inRow = items.sumOf { it.width } <= constraints.maxWidth
+        val shown = if (inRow) items else items.filterIndexed { index, _ -> index % 2 == 0 }
+        val width = if (inRow) items.sumOf { it.width } else shown.maxOf { it.width }
+        val height = if (inRow) items.maxOf { it.height } else shown.sumOf { it.height }
+        layout(width.coerceAtMost(constraints.maxWidth), height) {
+            var x = 0
+            var y = 0
+            shown.forEach {
+                if (inRow) { it.place(x, (height - it.height) / 2); x += it.width } else { it.place(0, y); y += it.height }
+            }
+        }
+    }
 }
 
 /** 72dp ink circle; while recording the glyph becomes a 20dp paper square. */

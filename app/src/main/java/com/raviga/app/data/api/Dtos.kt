@@ -246,6 +246,8 @@ data class LegalConfig(
     val privacyVersion: String = "",
     val grievance: Grievance = Grievance(),
     val supportEmail: String = "",
+    /** v0.9.3: the "Your rights" page (withdrawing consent, download and delete, grievance, the Data Protection Board). */
+    val rightsUrl: String = "",
 )
 
 @Serializable

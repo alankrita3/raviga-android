@@ -5,11 +5,17 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **R-066 (her review of the iOS builds, for both apps; via the PM 10-30): in progress.** Welcome subline,
-  onboarding navigation (Get started → Step 1, Next/Skip, Start, Settings "How Raviga works"), the style-D
-  illustrations (5 ready, 8 coming; backend-87 sends the names), the Welcome hero focus at y 0.2, consent "Your
-  rights" text and links (`legal.rightsUrl` from /config, R-067; dev URL only as a fallback), and the "What we don't
-  keep" text. Tests, the OnePlus run, commit, report to the PM. No Play upload until the PM says.
+- **R-066 (her review of the iOS builds, for both apps; via the PM 10-30): done, reported to the PM.** Welcome
+  subline; onboarding navigation (Get started → step 1, Next and a graphite Skip, Start; Settings › How Raviga
+  works replays the pages); the 13 style-D pictures (converted from iOS's PNGs, identical to iOS 6ac85eb); the
+  Welcome hero cropped from the top (focus 0, not 0.2: on Android a higher focus lifts the brief under the status
+  bar; the PM and iOS told); consent "Your rights" text and "Privacy policy · Terms of service · Your rights"
+  (contract v0.9.3 `legal.rightsUrl`, also on Privacy and data); "What we don't keep" in her words on the
+  consent screens and Privacy and data. Checked on the OnePlus (screenshots in
+  `~/Downloads/raviga-device-checks/2026-10-30-r066/`). No Play upload until the PM says.
+- **OnePlus stay-awake:** `svc power stayon false` is killed on the phone since 10-30 evening (exit 137), so
+  Developer options › Stay awake is still on (setting 7) while it charges. She can switch it off there; the PM
+  knows.
 - **R-055, R-056 and R-060's colours: device checks done 2026-10-30** on the OnePlus (Wi-Fi adb works again).
   Screenshots in `~/Downloads/raviga-device-checks/2026-10-30-r055-r056-r060/`. The checks found two R-056 bugs,
   now fixed: release builds refused GET /config before Agree (R8 renamed the method the guard matched by name; it

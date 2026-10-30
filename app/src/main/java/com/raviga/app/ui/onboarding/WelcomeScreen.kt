@@ -47,6 +47,7 @@ import com.raviga.app.ui.components.ChipRows
 import com.raviga.app.ui.components.ChipSpec
 import com.raviga.app.ui.components.HeroIllustration
 import com.raviga.app.ui.components.Illustration
+import com.raviga.app.ui.components.InlineAction
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.Wordmark
@@ -81,15 +82,33 @@ private val steps = listOf(
 
 /**
  * First launch. Page one says what Raviga does; four more show the flow with its pictures (describe,
- * see the price, built by AI and checked by experts, ready), as on iOS. "Get started" is on every page,
- * so nobody has to swipe. Who-builds copy exists only here, in the founder's approved words.
+ * see the price, built by AI and checked by experts, ready), as on iOS. Who-builds copy exists only here,
+ * in the founder's approved words.
+ *
+ * R-066 (founder, 2026-10-30): "Get started" goes to step 1; steps 1 to 3 have "Next" and a small "Skip";
+ * step 4's "Start" closes onboarding. Swiping still works. [replay] is Settings > How Raviga works: the same
+ * five pages, and closing them goes back to Settings.
  */
 @Composable
-fun WelcomeScreen(nav: NavController) {
+fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
     val container = LocalAppContainer.current
     val config by container.session.config.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val pager = rememberPagerState(pageCount = { steps.size + 1 })
+    val last = steps.size
+    val finish: () -> Unit = {
+        scope.launch {
+            if (replay) {
+                nav.popBackStack()
+            } else {
+                container.prefs.setWelcomeDone()
+                val me = container.session.me.value
+                // R-056: a first-time client goes straight to Home; only updated terms ask here.
+                val next = if (container.session.agreed && container.session.needsLegal(me, container.session.config.value)) Routes.TERMS else Routes.HOME
+                nav.navigate(next) { popUpTo(Routes.WELCOME) { inclusive = true } }
+            }
+        }
+    }
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink.paper)) {
         // Heights count from the top of the screen: the pictures run under the status bar.
         val hero = (maxHeight * 0.46f).coerceIn(240.dp, 440.dp)
@@ -110,23 +129,30 @@ fun WelcomeScreen(nav: NavController) {
                     .padding(horizontal = Ra.gutter)
                     .padding(bottom = 8.dp),
             ) {
-                PrimaryButton("Get started", onClick = {
-                    scope.launch {
-                        container.prefs.setWelcomeDone()
-                        val me = container.session.me.value
-                        // R-056: a first-time client goes straight to Home; only updated terms ask here.
-                        val next = if (container.session.agreed && container.session.needsLegal(me, container.session.config.value)) Routes.TERMS else Routes.HOME
-                        nav.navigate(next) { popUpTo(Routes.WELCOME) { inclusive = true } }
-                    }
-                })
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "By ${config.legal.companyName}",
-                    style = RaType.caption,
-                    color = Ink.ash,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+                val page = pager.currentPage
+                PrimaryButton(
+                    when (page) {
+                        0 -> "Get started"
+                        last -> "Start"
+                        else -> "Next"
+                    },
+                    onClick = { if (page == last) finish() else scope.launch { pager.animateScrollToPage(page + 1) } },
                 )
+                Spacer(Modifier.height(4.dp))
+                // One fixed-height line under the button, so the pages never shift: "Skip" wherever there is a "Next".
+                Box(Modifier.fillMaxWidth().height(36.dp), contentAlignment = Alignment.Center) {
+                    if (page in 1 until last) {
+                        InlineAction("Skip", onClick = finish, color = Ink.graphite)
+                    } else {
+                        Text(
+                            "By ${config.legal.companyName}",
+                            style = RaType.caption,
+                            color = Ink.ash,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
         }
     }
@@ -146,7 +172,9 @@ private fun Intro(heroMax: Dp) {
             val words = subcompose("words") { IntroWords() }.map { it.measure(width) }
             val wordsHeight = words.sumOf { it.height }
             val hero = (page - wordsHeight).coerceIn(MIN_HERO.roundToPx(), heroMax.roundToPx())
-            val picture = subcompose("hero") { HeroIllustration(Picture.Welcome, height = hero.toDp(), focusY = 0.1f) }.map { it.measure(width) }
+            // R-066: the floating brief's top corner sits 89 px down the picture at 1080 px wide, so only the top of
+            // the picture (focus 0) keeps it below the status bar; a higher focus crops more off the top and lifts it under.
+            val picture = subcompose("hero") { HeroIllustration(Picture.Welcome, height = hero.toDp(), focusY = 0f) }.map { it.measure(width) }
             layout(c.maxWidth, picture.sumOf { it.height } + wordsHeight) {
                 var y = 0
                 (picture + words).forEach { it.place(0, y); y += it.height }
@@ -165,7 +193,7 @@ private fun IntroWords() {
         Text("Say what you want built.", style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(14.dp))
         Text(
-            "Describe it in your own words: say it, type it, or upload a document. We write the brief, quote it and build it.",
+            "Describe it in your own words. We write the brief, quote it and build it.",
             style = RaType.body,
             color = Ink.graphite,
         )

@@ -104,6 +104,7 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
 
     NavHost(navController = nav, startDestination = state.startRoute) {
         composable(Routes.WELCOME) { WelcomeScreen(nav) }
+        composable(Routes.HOW_IT_WORKS) { WelcomeScreen(nav, replay = true) }
         composable(Routes.TERMS) { TermsScreen(nav) }
         composable(Routes.CONSENT_FIRST, arguments = listOf(navArgument("next") { type = NavType.StringType })) { entry ->
             TermsScreen(nav, next = entry.arguments?.getString("next"))
