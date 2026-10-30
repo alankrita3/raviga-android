@@ -49,6 +49,7 @@ import com.raviga.app.ui.components.HeroIllustration
 import com.raviga.app.ui.components.Illustration
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.PrimaryButton
+import com.raviga.app.ui.components.Wordmark
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
@@ -159,6 +160,8 @@ private val MIN_HERO = 200.dp
 @Composable
 private fun IntroWords() {
     Column(Modifier.padding(horizontal = Ra.gutterWide).padding(top = 26.dp, bottom = 16.dp)) {
+        Wordmark(Modifier.height(23.dp))
+        Spacer(Modifier.height(16.dp))   // the 14dp stack spacing plus 2dp, as on iOS
         Text("Say what you want built.", style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(14.dp))
         Text(
@@ -171,7 +174,7 @@ private fun IntroWords() {
         ChipRows(
             listOf(
                 listOf(ChipSpec("You approve the quote", dot = Ink.marigold), ChipSpec("Super fast delivery", icon = Icons.Outlined.Bolt)),
-                listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Code handed to you", dot = Ink.teal)),
+                listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Code handed to you", dot = Ink.blue)),
             ),
         )
     }
@@ -189,7 +192,7 @@ private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
     ) {
         Illustration(step.picture, height = pictureHeight, radius = Ra.tileRadius)
         Spacer(Modifier.height(28.dp))
-        Text("Step $number of ${steps.size}", style = RaType.secondaryMedium, color = Ink.teal)
+        Text("Step $number of ${steps.size}", style = RaType.secondaryMedium, color = Ink.link)
         Spacer(Modifier.height(8.dp))
         Text(step.title, style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(12.dp))
@@ -197,7 +200,7 @@ private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
     }
 }
 
-/** Where you are in a short sequence: the current page is a teal pill, the rest small dots. */
+/** Where you are in a short sequence: the current page is a blue pill, the rest small dots. */
 @Composable
 private fun PageDots(count: Int, current: Int, modifier: Modifier = Modifier) {
     Row(
@@ -208,7 +211,7 @@ private fun PageDots(count: Int, current: Int, modifier: Modifier = Modifier) {
         repeat(count) { index ->
             val on = index == current
             val width by animateDpAsState(if (on) 18.dp else 6.dp, tween(200), label = "dot")
-            Box(Modifier.width(width).height(6.dp).clip(CircleShape).background(if (on) Ink.teal else Ink.ruleStrong))
+            Box(Modifier.width(width).height(6.dp).clip(CircleShape).background(if (on) Ink.blue else Ink.ruleStrong))
         }
     }
 }

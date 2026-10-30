@@ -1,22 +1,23 @@
 # Raviga Android — design notes
 
 The design system is owned by iOS: `Raviga iOS/docs/DESIGN.md` ("Workshop", direction A, approved by the
-founder on 2026-10-09; it replaced "Wet ink, dry ink"). This file records only how Android mirrors it and
-where the platform differs. The fonts and pictures are the same files iOS ships.
+founder on 2026-10-09; it replaced "Wet ink, dry ink"), in the logo's colours since 2026-10-30 (palette C, her choice;
+R-059/R-060). This file records only how Android mirrors it and where the platform differs. The fonts and pictures are the same files iOS ships.
 
 ## Tokens → code
 
 | Design | Android |
 |---|---|
-| colours (paper `#FBFAF7`, surface, ink, graphite, ash, rule, ruleStrong, wash, teal, tealWash/tealInk, marigold, marigoldWash/marigoldInk, moss, amber, brick) | `ui/theme/Color.kt` (`Ink` object); also mapped onto the Material 3 scheme in `Theme.kt`. `res/values/colors.xml` carries paper, ink and teal for the splash and launcher |
+| colours, palette C (iOS `Theme.swift`, R-059): paper `#F6F3EE`, surface `#FFFFFF`, ink `#14183A`, graphite `#474B66`, ash `#686B81`, rule `#E6E1D6`, ruleStrong `#D3CDC0`, wash `#ECE7DD`; the live colour split in two: **blue** `#6F8CFF` for marks only, never text (2.8:1 on paper: the ink line while recording, the current page pill, progress bars, field focus borders, the current timeline node's ring, the approved status mark, the "Code handed to you" chip dot, the quote breakdown bar's second segment) and **link** `#3B54C4` for text and controls (5.8:1: links, tertiary buttons and inline actions, "Step N of 4", progress messages, the current timeline label, switches, the cursor and selection handles, done Go-live step circles, the Material secondary/tertiary); blueWash `#EAEEFF` / blueInk `#1E2A66` (privacy notes, the delivered chip, delivery tile glyphs); marigold `#F2A33A`, marigoldWash/marigoldInk, moss, amber, brick unchanged | `ui/theme/Color.kt` (`Ink` object), pinned to iOS's values with contrast checks in `PaletteTest`; also mapped onto the Material 3 scheme in `Theme.kt`. `res/values/colors.xml` carries paper, ink and accent (link) for the splash and launcher |
 | type scale (hero 38, display 48, title 32, heading 21, dictation 26, body 17/25, bodyMedium 17 semibold, secondary 15/21, button 17 semibold, caption 13/18, chip 13 bold) with the doc's tracking | `ui/theme/Type.kt` (`RaType`), all in sp so font scaling works; `includeFontPadding = false` |
 | Bricolage Grotesque (Bold opsz 48, SemiBold opsz 24, Medium opsz 32) and Figtree (400/500/600/700, Italic 400) | `res/font/bricolage_*.ttf`, `res/font/figtree_*.ttf`: the static instances iOS made, OFL; licence in `assets/licenses/OFL.txt`, shown under Settings > Fonts |
 | 8pt grid, 20pt gutter (24 on Welcome), 12pt between tiles | `ui/theme/Dimens.kt` (`Ra`), in dp |
-| buttons 56 tall radius 18; fields surface radius 16 with a rule border (teal 1.5 when focused); tiles radius 24; pictures radius 20 (24 for headers, 18 for thumbnails, 32 bottom corners on Welcome); mic 72; status mark 8 | `Ra.*`; `PrimaryButton`/`SecondaryButton`/`TertiaryButton`, `RaTextField`, `BoxedEditor`, `Modifier.tile()` |
-| chips (plain / teal / marigold, dot or icon) | `Chip`, `ChipRow` (FlowRow) in `ui/components/Workshop.kt`; `ChipRows` for fixed rows that never wrap: a row too wide shrinks every chip's text alike (to 80% at most, single line; past that, large font settings, the words wrap) |
+| buttons 56 tall radius 18; fields surface radius 16 with a rule border (blue 1.5 when focused); tiles radius 24; pictures radius 20 (24 for headers, 18 for thumbnails, 32 bottom corners on Welcome); mic 72; status mark 8 | `Ra.*`; `PrimaryButton`/`SecondaryButton`/`TertiaryButton`, `RaTextField`, `BoxedEditor`, `Modifier.tile()` |
+| chips (plain / blue / marigold, dot or icon) | `Chip`, `ChipRow` (FlowRow) in `ui/components/Workshop.kt`; `ChipRows` for fixed rows that never wrap: a row too wide shrinks every chip's text alike (to 80% at most, single line; past that, large font settings, the words wrap) |
 | pictures | `res/drawable-nodpi/illo_*.webp` (the iOS `Illo*.imageset` files through `tools/to_webp.py`, Pillow's libwebp at cwebp's `-q 88 -alpha_q 100 -m 6`, byte-identical to cwebp's output, about 0.8 MB for all eleven); `Picture` enum, `Illustration` (cropped around a focus point), `HeroIllustration` (full bleed, Welcome), `SpotIllustration` (the transparent ones) |
 | hairline 1px | `Ra.hairline = 1.dp` |
-| app icon, founder's option A (2026-10-23; iOS 777da4b): navy "r" (#14183A) with a floating blue square (#6F8CFF) on cream (#F6F3EE) | vectors from the founder's SVG: `res/drawable/ic_launcher_foreground.xml` on `ic_launcher_background.xml` (adaptive), `ic_launcher_monochrome.xml` (themed), `ic_splash_mark.xml`, and `ic_notification.xml` (white, scaled to fill 24dp); colours `mark_*` in `res/values/colors.xml`; sources and the 512 px Play icon in `docs/icon/` |
+| app icon, founder's option A (2026-10-23; iOS 777da4b): navy "r" (#14183A) with a floating blue square (#6F8CFF) on cream (#F6F3EE) | vectors from the founder's SVG: `res/drawable/ic_launcher_foreground.xml` on `ic_launcher_background.xml` (adaptive), `ic_launcher_monochrome.xml` (themed), and `ic_notification.xml` (white, scaled to fill 24dp); colours `mark_*` in `res/values/colors.xml`; sources and the 512 px Play icon in `docs/icon/` |
+| wordmark (R-045; iOS `Wordmark.imageset`): navy letters, the i's blue square, cut tight (viewBox 0 64 523 194) | `res/drawable/ic_wordmark.xml` and `ic_splash_wordmark.xml`, generated by `tools/wordmark_vectors.py` from the kit's SVG; `Wordmark` and `LaunchScreen` in `ui/components/Wordmark.kt`. Only three places: the launch screen (Android 12 splash: centred on paper, 92 dp wide on the 288 dp icon canvas), the loading screen after it (`LaunchScreen`: the same wordmark in the same place, a 92 dp progress bar ending 28 dp below it) and Welcome page 1 (left-aligned above the headline, 23 dp tall, 16 dp below it). No Home header |
 
 Light appearance only: no `values-night`, `enableEdgeToEdge` with light system bars, no dynamic colour.
 Sheets and dialogs sit on `surface`; the describe chooser sheet stays on `paper` so its white tiles read.
@@ -63,7 +64,7 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
 ## Platform differences
 
 - **Top bars.** iOS shows floating round buttons over the content (its navigation bar); Android keeps
-  a plain 56 dp bar with a back arrow and teal text actions. Screen titles sit in the content in
+  a plain 56 dp bar with a back arrow and link-blue text actions. Screen titles sit in the content in
   Bricolage, as on iOS.
 - **Dictation.** Android has no in-process equivalent of `SFSpeechRecognizer` that can run
   alongside a recorder: the platform `SpeechRecognizer` lives in another process and takes the
@@ -73,7 +74,7 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   picker offers US, UK, India and Australia, defaulting from the phone's region as on iOS. It never
   falls back to cloud recognition and keeps no audio. Phones without it get "Type instead" /
   "Upload a document". The ink line follows the recognizer's RMS callback (about 10 Hz, interpolated).
-- **Reduce motion.** Read from `ANIMATOR_DURATION_SCALE == 0`: the ink line becomes a flat teal
+- **Reduce motion.** Read from `ANIMATOR_DURATION_SCALE == 0`: the ink line becomes a flat blue
   line that pulses opacity; the document reveal still runs but is a single fade per section.
 - **Identity.** No Keychain: the token lives in EncryptedSharedPreferences and is excluded from
   backup, so "Move to another phone" (recovery key) matters more than on iOS. A 401 triggers a
@@ -97,13 +98,13 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
 
 ## Copy that lives in the app
 
-- Welcome (five swipeable pages, `HorizontalPager`; page dots: current an 18x6 teal pill, others 6x6
+- Welcome (five swipeable pages, `HorizontalPager`; page dots: current an 18x6 blue pill, others 6x6
   ruleStrong; "Get started" and "By <company>" pinned on every page): page 1 "Say what you want built." /
   "Describe it in your own words: say it, type it, or upload a document. We write the brief, quote it and
   build it." / chips, in the founder's order, "You approve the quote" (marigold dot), "Super fast delivery"
-  (bolt), "Working project delivered" (check), "Code handed to you" (teal dot), two per row (no privacy chip:
+  (bolt), "Working project delivered" (check), "Code handed to you" (blue dot), two per row (no privacy chip:
   it's only true until submit). Pages
-  2 to 5, "Step N of 4" in teal: "Describe it your way" / "Say it, type it, or upload a document you
+  2 to 5, "Step N of 4" in link blue: "Describe it your way" / "Say it, type it, or upload a document you
   already have. We turn it into a clear brief you can edit."; "See the price first" / "You get a quote and
   a timeline before anything starts. Nothing is charged until you submit."; "Built by AI, checked by
   experts" / "AI builds your project at speed. Experts recommend the right tech stack, or use yours, and
@@ -117,7 +118,7 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
 - Chooser: "Describe your project" ("Whichever is easiest. You can mix them, and edit everything
   after.") / "Add to <title>" ("Add more detail, whichever way is easiest."); tiles Speak ("Talk it
   through. We write it up."), Type ("Write or paste a description."), Upload a document ("A
-  PDF, Word or text file you already have."); teal note led by a bold "Your idea stays private", then
+  PDF, Word or text file you already have."); blue note led by a bold "Your idea stays private", then
   "Your recordings and files never leave your phone. Drafts are kept only on this phone."
 - Upload tab: "Upload a requirements document" / "A PDF, Word, RTF or text file up to 10 MB. We read
   the text, you check it, and the brief is written from it." / note "It's read on your phone. The file
@@ -132,14 +133,14 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   sensitive-data check, saves the document as its own note, then shows the three choices with
   "Saved <file> to your draft." or "Saved N notes to your draft." and "Write the brief now").
   Back from a document review picks another file.
-- Writing: "Writing your brief" with the job's step line in teal; pricing: "Pricing your brief".
+- Writing: "Writing your brief" with the job's step line in link blue; pricing: "Pricing your brief".
 - Sensitive data: "This looks like it includes <up to two kinds, then 'and other secrets'>." /
   "We never need passwords, keys or ID numbers to build your project, and it's safer not to share
   them." Buttons "Remove them", "Keep as is", "Edit".
 - Quote: "<N> credits" with "about $X", the bracket chip and blurb, "Ready in A to B weeks after
-  approval", "Sized for …" (names and platforms keep their capitals), the breakdown tile (ink, teal,
+  approval", "Sized for …" (names and platforms keep their capitals), the breakdown tile (ink, blue,
   marigold, ash, ruleStrong, moss), "Assumes", "What happens next" (iOS wording, step 4 mentions the
-  handover guide and making it live), "Where to deliver", then the privacy promise (tealWash card, Privacy
+  handover guide and making it live), "Where to deliver", then the privacy promise (blueWash card, Privacy
   picture, bold "Your idea stays yours", "We use your brief only to build this project. We never sell it
   or use it to train AI, and we delete it from our servers when you accept the delivery."); under the
   button a lock and "Private. We delete your brief from our servers after delivery." (resubmit: "Your

@@ -24,6 +24,7 @@ import com.raviga.app.data.api.ApiException
 import com.raviga.app.ui.LocalAppContainer
 import com.raviga.app.ui.capture.CaptureScreen
 import com.raviga.app.ui.components.ErrorState
+import com.raviga.app.ui.components.LaunchScreen
 import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.credits.CreditsScreen
@@ -63,7 +64,7 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
                 ErrorState(state.error!!, Modifier.padding(padding), onRetry = { app.bootstrap() })
             }
         } else {
-            ScreenScaffold { _ -> }
+            LaunchScreen()
         }
         return
     }

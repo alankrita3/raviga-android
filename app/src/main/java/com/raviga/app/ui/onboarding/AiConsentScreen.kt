@@ -84,7 +84,7 @@ fun AiConsentScreen(nav: NavController) {
                     checked = allow,
                     onCheckedChange = { allow = it },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Ink.surface, checkedTrackColor = Ink.teal, checkedBorderColor = Ink.teal,
+                        checkedThumbColor = Ink.surface, checkedTrackColor = Ink.link, checkedBorderColor = Ink.link,
                         uncheckedThumbColor = Ink.surface, uncheckedTrackColor = Ink.ruleStrong, uncheckedBorderColor = Ink.ruleStrong,
                     ),
                 )

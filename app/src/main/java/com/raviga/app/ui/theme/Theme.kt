@@ -12,11 +12,11 @@ private val Scheme = lightColorScheme(
     onPrimary = Ink.paper,
     primaryContainer = Ink.wash,
     onPrimaryContainer = Ink.ink,
-    secondary = Ink.teal,
+    secondary = Ink.link,
     onSecondary = Ink.surface,
-    secondaryContainer = Ink.tealWash,
-    onSecondaryContainer = Ink.tealInk,
-    tertiary = Ink.teal,
+    secondaryContainer = Ink.blueWash,
+    onSecondaryContainer = Ink.blueInk,
+    tertiary = Ink.link,
     onTertiary = Ink.surface,
     background = Ink.paper,
     onBackground = Ink.ink,
@@ -41,12 +41,12 @@ private val Scheme = lightColorScheme(
     scrim = Ink.ink,
 )
 
-/** Light only: warm white paper (docs/DESIGN.md, "Workshop"). */
+/** Light only: cream paper (docs/DESIGN.md, "Workshop", palette C). */
 @Composable
 fun RavigaTheme(content: @Composable () -> Unit) {
     val selection = TextSelectionColors(
-        handleColor = Ink.teal,
-        backgroundColor = Ink.teal.copy(alpha = 0.18f),
+        handleColor = Ink.link,
+        backgroundColor = Ink.link.copy(alpha = 0.18f),
     )
     MaterialTheme(
         colorScheme = Scheme,

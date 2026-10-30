@@ -105,7 +105,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val done = project.status == ProjectStatus.DELIVERED || project.status == ProjectStatus.ACCEPTED
-                    Chip(StatusCopy.detailTitle(project.status), tone = if (done) ChipTone.Teal else ChipTone.Plain, dot = StatusCopy.markColor(project.status))
+                    Chip(StatusCopy.detailTitle(project.status), tone = if (done) ChipTone.Blue else ChipTone.Plain, dot = StatusCopy.markColor(project.status))
                     Spacer(Modifier.width(12.dp))
                     Text(headerCaption(project), style = RaType.caption, color = Ink.graphite, maxLines = 2)
                 }

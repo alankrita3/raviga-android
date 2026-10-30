@@ -195,7 +195,7 @@ private fun AccentPicker(accent: DictationEngine.Accent, enabled: Boolean, onPic
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Ink.surface) {
             DictationEngine.Accent.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.label, style = RaType.body, color = if (option == accent) Ink.teal else Ink.ink) },
+                    text = { Text(option.label, style = RaType.body, color = if (option == accent) Ink.link else Ink.ink) },
                     onClick = { open = false; onPick(option) },
                 )
             }
@@ -311,7 +311,7 @@ private fun CapturePhase(
                 InkLine(level = state.level, active = state.listening)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.weight(1f))
-                    Text(formatTime(state.elapsedSec), style = RaType.caption, color = if (state.listening) Ink.teal else Ink.graphite)
+                    Text(formatTime(state.elapsedSec), style = RaType.caption, color = if (state.listening) Ink.link else Ink.graphite)
                 }
                 InlineNotice(state.error)
                 Spacer(Modifier.height(16.dp))
@@ -445,7 +445,7 @@ private fun Processing(title: String, line: String, progress: Float?, modifier: 
         Text(title, style = RaType.title, color = Ink.ink)
         if (message != null) {
             Spacer(Modifier.height(8.dp))
-            Text(message, style = RaType.secondary, color = Ink.teal)
+            Text(message, style = RaType.secondary, color = Ink.link)
         }
         Spacer(Modifier.height(20.dp))
         ProgressRule(progress = progress?.takeIf { it > 0f })

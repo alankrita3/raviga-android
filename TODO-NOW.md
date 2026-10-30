@@ -5,7 +5,7 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **R-055 and R-056, code done; device check waits for the OnePlus on USB.**
+- **R-055, R-056 and R-060's colours, code done; device checks wait for the OnePlus on USB.**
   - R-055 (no name or address): a5f36c9. R-056 (consent at the first Type/Speak/Upload/Restore/Buy credits; only
     GET /config before Agree): 932b08f. Unit tests 69/69.
   - Left: install the debug build over the existing app (keep its data) and screenshot for the PM: the consent
@@ -18,8 +18,11 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
     before/after diff (696 rows, and the full product JSON) changed only those three India rows. `FIXED_PRICES` keeps
     them on a re-run of `product`. All four /config hints match Play (backend c5f333b: credits_100 84000, live on dev);
     DemoApi mirrors it, pinned by a unit test. Verified by the PM.
-  - 2, app colours C (R-049): waiting for iOS's exact colour tokens. Then implement (medium: tests pass, device
-    check on the OnePlus: Welcome, Home and launch screenshots to the PM), batched into the sprint build.
+  - 2, app colours C (R-049/R-059): code done with iOS's tokens (palette C: cream paper, navy ink, the logo's blue
+    for marks, link blue #3B54C4 for text and controls, marigold unchanged); the wordmark on the launch screen, the
+    loading screen and Welcome page 1. Unit tests 72/72 (PaletteTest pins the tokens to iOS and checks contrast).
+    Left: the device check on the OnePlus (launch, Welcome and Home screenshots to the PM); it goes into the sprint
+    build.
   - 3, registered address in `docs/HANDOFF.md` item 8: done (the Dwarka address; backend puts it in /config, the app
     shows no address).
 - Last shipped: R-057, closed 2026-10-30. Her final store copy in `docs/store/play-listing.md` (short description B,
@@ -28,7 +31,6 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## Blocked, and on whom
 
-- **iOS:** the exact colour tokens for app colours C (R-049, R-060 item 2).
 - **Founder:** RevenueCat project, with the Android `goog_` key and Play credentials, then `REVENUECAT_API_KEY` in
   secrets.properties. Until then purchases can't be tested end to end, and neither can the analytics events
   `credits_purchased`, `project_submitted` and `delivery_accepted`.

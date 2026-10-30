@@ -96,7 +96,7 @@ fun SettingsScreen(nav: NavController) {
             if (legal.supportEmail.isNotBlank()) RaRow(
                 title = "Support",
                 subtitle = legal.supportEmail,
-                subtitleColor = Ink.teal,
+                subtitleColor = Ink.link,
                 chevron = false,
                 onClick = { com.raviga.app.ui.emailLink(context, legal.supportEmail, "Raviga support" + (clientId?.let { " ($it)" } ?: "")) },
             )

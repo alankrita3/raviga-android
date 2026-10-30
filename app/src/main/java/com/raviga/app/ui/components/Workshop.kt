@@ -123,7 +123,7 @@ fun Modifier.tile(padding: Dp = 16.dp, onClick: (() -> Unit)? = null): Modifier 
         .padding(padding)
 }
 
-enum class ChipTone { Plain, Teal, Marigold }
+enum class ChipTone { Plain, Blue, Marigold }
 
 /** Small rounded label: a status, a tier, a promise. Optional 7dp dot or a small icon. */
 @Composable
@@ -138,7 +138,7 @@ fun Chip(
 ) {
     val (fg, bg) = when (tone) {
         ChipTone.Plain -> Ink.ink to Ink.wash
-        ChipTone.Teal -> Ink.tealInk to Ink.tealWash
+        ChipTone.Blue -> Ink.blueInk to Ink.blueWash
         ChipTone.Marigold -> Ink.marigoldInk to Ink.marigoldWash
     }
     Row(
@@ -220,25 +220,25 @@ fun ChipRow(modifier: Modifier = Modifier, perRow: Int = Int.MAX_VALUE, content:
     ) { content() }
 }
 
-/** The teal note with a lock: what stays private. With a [title], the title leads in bold. */
+/** The blue note with a lock: what stays private. With a [title], the title leads in bold. */
 @Composable
 fun PrivacyNote(text: String, modifier: Modifier = Modifier, title: String? = null) {
     Row(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Ra.imageRadius))
-            .background(Ink.tealWash)
+            .background(Ink.blueWash)
             .padding(16.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(Icons.Outlined.Lock, contentDescription = null, tint = Ink.tealInk, modifier = Modifier.padding(top = 3.dp).size(16.dp))
+        Icon(Icons.Outlined.Lock, contentDescription = null, tint = Ink.blueInk, modifier = Modifier.padding(top = 3.dp).size(16.dp))
         Spacer(Modifier.width(12.dp))
         Column {
             if (title != null) {
-                Text(title, style = RaType.bodyMedium, color = Ink.tealInk)
+                Text(title, style = RaType.bodyMedium, color = Ink.blueInk)
                 Spacer(Modifier.height(4.dp))
             }
-            Text(text, style = if (title != null) RaType.secondary else RaType.secondaryMedium, color = Ink.tealInk)
+            Text(text, style = if (title != null) RaType.secondary else RaType.secondaryMedium, color = Ink.blueInk)
         }
     }
 }
@@ -250,7 +250,7 @@ fun PrivacyPromise(modifier: Modifier = Modifier) {
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Ra.imageRadius))
-            .background(Ink.tealWash)
+            .background(Ink.blueWash)
             .semantics(mergeDescendants = true) {}
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -258,12 +258,12 @@ fun PrivacyPromise(modifier: Modifier = Modifier) {
         SpotIllustration(Picture.Privacy, size = 72.dp)
         Spacer(Modifier.width(14.dp))
         Column {
-            Text("Your idea stays yours", style = RaType.bodyMedium, color = Ink.tealInk)
+            Text("Your idea stays yours", style = RaType.bodyMedium, color = Ink.blueInk)
             Spacer(Modifier.height(6.dp))
             Text(
                 "We use your brief only to build this project. We never sell it or use it to train AI, and we delete it from our servers when you accept the delivery.",
                 style = RaType.secondary,
-                color = Ink.tealInk,
+                color = Ink.blueInk,
             )
         }
     }

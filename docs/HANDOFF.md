@@ -92,11 +92,13 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
   valid 14 days; auto-accept 14 days after delivery; the server deletes a brief when its project closes. All of these live in the backend
   `/config`; the app renders whatever it is sent.
 - Notifications permission is asked once on the home screen (Android 13+). Change in `HomeScreen.kt`.
-- Light appearance only. The "Workshop" design you approved on iOS (Bricolage Grotesque and Figtree, warm
-  white, teal and marigold, clay pictures), built from the same font and picture files. The app icon is your
+- Light appearance only. The "Workshop" design you approved on iOS (Bricolage Grotesque and Figtree, clay
+  pictures), built from the same font and picture files, in the logo's colours
+  (palette C, your choice 2026-10-30: cream paper, navy ink, the logo's blue for anything live with a deeper link blue
+  for text, marigold highlights). The wordmark shows on the launch screen and Welcome page 1. The app icon is your
   pick, option A (2026-10-23): a navy "r" with a floating blue square on cream (#14183A, #6F8CFF, #F6F3EE), the
   same as iOS. It is drawn as vectors from your SVG in `res/drawable/ic_launcher_foreground.xml` (on
-  `ic_launcher_background.xml`), `ic_launcher_monochrome.xml` (themed icons), `ic_splash_mark.xml` and
+  `ic_launcher_background.xml`), `ic_launcher_monochrome.xml` (themed icons) and
   `ic_notification.xml` (white). `docs/icon/` keeps the source SVG, the 1024 PNG and the 512 px Play Store icon.
   None of the clay pictures show the old name.
 - Speech is English only (US, UK, India or Australia accent, from the phone's region), as you asked.

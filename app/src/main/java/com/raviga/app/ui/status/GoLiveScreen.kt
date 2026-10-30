@@ -117,7 +117,7 @@ private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, on
             .semantics(mergeDescendants = true) { contentDescription = if (step.done) "Done: ${step.title}" else "Step $number: ${step.title}" },
         verticalAlignment = Alignment.Top,
     ) {
-        Box(Modifier.size(28.dp).clip(CircleShape).background(if (step.done) Ink.teal else Ink.ink), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(28.dp).clip(CircleShape).background(if (step.done) Ink.link else Ink.ink), contentAlignment = Alignment.Center) {
             if (step.done) Icon(Icons.Outlined.Check, contentDescription = null, tint = Ink.surface, modifier = Modifier.size(15.dp))
             else Text("$number", style = RaType.chip, color = Ink.surface)
         }

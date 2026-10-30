@@ -115,7 +115,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 Spacer(Modifier.height(8.dp))
                 Text("Pricing your brief", style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(8.dp))
-                Text(state.progressMessage ?: "Sizing the work", style = RaType.secondary, color = Ink.teal)
+                Text(state.progressMessage ?: "Sizing the work", style = RaType.secondary, color = Ink.link)
                 Spacer(Modifier.height(20.dp))
                 ProgressRule(progress = state.progress?.takeIf { it > 0f })
                 Spacer(Modifier.height(14.dp))
@@ -181,7 +181,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
 
             val weeks = timelineText(quote.timeline?.minWeeks ?: 0, quote.timeline?.maxWeeks ?: 0, quote.estimatedWorkingDays)
             Row {
-                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Ink.teal, modifier = Modifier.padding(top = 3.dp).size(17.dp))
+                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Ink.link, modifier = Modifier.padding(top = 3.dp).size(17.dp))
                 Spacer(Modifier.width(10.dp))
                 Column {
                     Text("Ready in $weeks after approval", style = RaType.bodyMedium, color = Ink.ink)
@@ -268,7 +268,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
 /** What the credits pay for: one bar split by area, then each area with its share. */
 @Composable
 private fun BreakdownTile(parts: List<Pair<String, Int>>) {
-    val colors = listOf(Ink.ink, Ink.teal, Ink.marigold, Ink.ash, Ink.ruleStrong, Ink.moss)
+    val colors = listOf(Ink.ink, Ink.blue, Ink.marigold, Ink.ash, Ink.ruleStrong, Ink.moss)
     val total = parts.sumOf { it.second }.coerceAtLeast(1)
     Column(Modifier.tile(padding = 18.dp)) {
         Row(Modifier.fillMaxWidth().height(10.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {

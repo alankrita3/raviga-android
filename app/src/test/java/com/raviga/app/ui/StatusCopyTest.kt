@@ -36,7 +36,7 @@ class StatusCopyTest {
     fun `mark colours follow the design table`() {
         assertEquals(Ink.ash, StatusCopy.markColor(ProjectStatus.DRAFT))
         assertEquals(Ink.amber, StatusCopy.markColor(ProjectStatus.SUBMITTED))
-        assertEquals(Ink.teal, StatusCopy.markColor(ProjectStatus.APPROVED))
+        assertEquals(Ink.blue, StatusCopy.markColor(ProjectStatus.APPROVED))
         assertEquals(Ink.moss, StatusCopy.markColor(ProjectStatus.DELIVERED))
         assertEquals(Ink.brick, StatusCopy.markColor(ProjectStatus.REJECTED))
     }

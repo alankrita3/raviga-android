@@ -27,7 +27,7 @@ import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 
-/** Surface fill, radius 16, 14dp padding, 1dp rule border; teal 1.5dp when focused, brick on error. */
+/** Surface fill, radius 16, 14dp padding, 1dp rule border; blue 1.5dp when focused, brick on error. */
 @Composable
 fun RaTextField(
     value: String,
@@ -50,7 +50,7 @@ fun RaTextField(
     val shape = RoundedCornerShape(Ra.fieldRadius)
     val outline = when {
         isError -> Ink.brick
-        focused -> Ink.teal
+        focused -> Ink.blue
         else -> Ink.rule
     }
     BasicTextField(
@@ -63,7 +63,7 @@ fun RaTextField(
             .padding(Ra.fieldPadding),
         enabled = enabled,
         textStyle = textStyle.copy(color = if (enabled) Ink.ink else Ink.ash),
-        cursorBrush = SolidColor(Ink.teal),
+        cursorBrush = SolidColor(Ink.link),
         singleLine = singleLine,
         minLines = minLines,
         maxLines = maxLines,
@@ -85,7 +85,7 @@ fun RaTextField(
     )
 }
 
-/** Long text in a field box (typed description, transcript review): surface fill, rule border, teal when focused. */
+/** Long text in a field box (typed description, transcript review): surface fill, rule border, blue when focused. */
 @Composable
 fun BoxedEditor(
     value: String,
@@ -105,10 +105,10 @@ fun BoxedEditor(
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .background(Ink.surface, shape)
-            .border(if (focused) 1.5.dp else Ra.hairline, if (focused) Ink.teal else Ink.rule, shape)
+            .border(if (focused) 1.5.dp else Ra.hairline, if (focused) Ink.blue else Ink.rule, shape)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         textStyle = textStyle.copy(color = Ink.ink),
-        cursorBrush = SolidColor(Ink.teal),
+        cursorBrush = SolidColor(Ink.link),
         interactionSource = interaction,
         decorationBox = { inner ->
             Box {
@@ -136,7 +136,7 @@ fun PlainEditor(
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
         textStyle = textStyle.copy(color = Ink.ink),
-        cursorBrush = SolidColor(Ink.teal),
+        cursorBrush = SolidColor(Ink.link),
         minLines = minLines,
         decorationBox = { inner ->
             Box {

@@ -39,7 +39,7 @@ import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 
-/** A rounded 4dp teal bar on a wash track. Determinate when [progress] is given, otherwise a sweep. */
+/** A rounded 4dp blue bar on a wash track. Determinate when [progress] is given, otherwise a sweep. */
 @Composable
 fun ProgressRule(modifier: Modifier = Modifier, progress: Float? = null) {
     val target = progress?.coerceIn(0f, 1f)
@@ -55,11 +55,11 @@ fun ProgressRule(modifier: Modifier = Modifier, progress: Float? = null) {
         val y = h / 2
         drawLine(Ink.wash, Offset(0f, y), Offset(w, y), strokeWidth = h)
         if (target != null) {
-            if (animated > 0f) drawLine(Ink.teal, Offset(h / 2, y), Offset((w * animated).coerceAtLeast(h / 2), y), strokeWidth = h, cap = StrokeCap.Round)
+            if (animated > 0f) drawLine(Ink.blue, Offset(h / 2, y), Offset((w * animated).coerceAtLeast(h / 2), y), strokeWidth = h, cap = StrokeCap.Round)
         } else {
             val span = w * 0.3f
             val start = -span + (w + span) * sweep.value
-            drawLine(Ink.teal, Offset(start, y), Offset(start + span, y), strokeWidth = h, cap = StrokeCap.Round)
+            drawLine(Ink.blue, Offset(start, y), Offset(start + span, y), strokeWidth = h, cap = StrokeCap.Round)
         }
     }
 }

@@ -3,28 +3,32 @@ package com.raviga.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * "Workshop" colour tokens, mirrored from Raviga iOS/docs/DESIGN.md: warm white paper,
- * near-black ink, teal for anything live, marigold for the moments worth a smile.
- * Light appearance only.
+ * "Workshop" colour tokens in the logo's colours (the founder's choice C, 2026-10-30; R-059/R-060), mirrored from
+ * Raviga iOS/docs/DESIGN.md: cream paper, navy ink, the logo's blue for anything live, marigold for the moments worth
+ * a smile. Light appearance only.
  */
 object Ink {
-    /** The page. */
-    val paper = Color(0xFFFBFAF7)
+    /** The page, and the launch screen. */
+    val paper = Color(0xFFF6F3EE)
     /** Tiles, fields and sheets that sit on the page. */
     val surface = Color(0xFFFFFFFF)
-    val ink = Color(0xFF17181C)
-    val graphite = Color(0xFF4A4B52)
-    val ash = Color(0xFF6B6C73)
+    val ink = Color(0xFF14183A)
+    val graphite = Color(0xFF474B66)
+    /** A shade darker than the mockup's #6E7187, so captions keep 4.5:1 on the paper. */
+    val ash = Color(0xFF686B81)
     /** Hairlines and tile borders. */
-    val rule = Color(0xFFECE7DC)
+    val rule = Color(0xFFE6E1D6)
     /** Outline of secondary buttons. */
-    val ruleStrong = Color(0xFFD9D3C6)
+    val ruleStrong = Color(0xFFD3CDC0)
     /** Chips and quiet fills. */
-    val wash = Color(0xFFF3EEE3)
-    /** Live state, links, focus, progress. */
-    val teal = Color(0xFF0F5B57)
-    val tealWash = Color(0xFFE6EFEC)
-    val tealInk = Color(0xFF0D3B38)
+    val wash = Color(0xFFECE7DD)
+    /** Live state as a mark: dots, pills, progress, focus borders, the ink line. Too light for text (2.8:1 on the paper). */
+    val blue = Color(0xFF6F8CFF)
+    /** The live colour as text or a control: links, quiet buttons, switches, the cursor (5.8:1 on the paper). */
+    val link = Color(0xFF3B54C4)
+    /** Privacy notes, the delivered chip, the delivery tiles' glyphs. */
+    val blueWash = Color(0xFFEAEEFF)
+    val blueInk = Color(0xFF1E2A66)
     /** Highlights: the credits dot, the tier chip, the breakdown bar. */
     val marigold = Color(0xFFF2A33A)
     val marigoldWash = Color(0xFFFCE6BF)

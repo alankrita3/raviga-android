@@ -71,7 +71,7 @@ import com.raviga.app.ui.theme.Ink
 
 @Composable
 internal fun switchColors() = SwitchDefaults.colors(
-    checkedThumbColor = Ink.surface, checkedTrackColor = Ink.teal, checkedBorderColor = Ink.teal,
+    checkedThumbColor = Ink.surface, checkedTrackColor = Ink.link, checkedBorderColor = Ink.link,
     uncheckedThumbColor = Ink.surface, uncheckedTrackColor = Ink.ruleStrong, uncheckedBorderColor = Ink.ruleStrong,
 )
 
@@ -270,7 +270,7 @@ fun PrivacyScreen(nav: NavController) {
                         buildAnnotatedString {
                             append(line)
                             val at = line.indexOf(email)
-                            addStyle(SpanStyle(color = Ink.teal), at, at + email.length)
+                            addStyle(SpanStyle(color = Ink.link), at, at + email.length)
                         },
                         style = RaType.body, color = Ink.ink,
                         modifier = Modifier.clickable { emailLink(context, email, "Raviga grievance") }.padding(vertical = 4.dp),

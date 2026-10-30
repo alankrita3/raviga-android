@@ -26,7 +26,7 @@ import com.raviga.app.util.Time
 
 /**
  * Submitted, Reviewed, Approved, Building, Delivered, Accepted as a vertical
- * sequence: done nodes in ink, the current one a teal ring, the rest outlined.
+ * sequence: done nodes in ink, the current one a blue ring, the rest outlined.
  */
 @Composable
 fun TimelineView(
@@ -57,7 +57,7 @@ fun TimelineView(
                         style = if (m.state == "current") RaType.bodyMedium else RaType.body,
                         color = when (m.state) {
                             "upcoming" -> Ink.ash
-                            "current" -> Ink.teal
+                            "current" -> Ink.link
                             else -> Ink.ink
                         },
                     )
@@ -70,7 +70,7 @@ fun TimelineView(
                     }
                     if (line != null) {
                         Spacer(Modifier.height(2.dp))
-                        Text(line, style = RaType.caption, color = if (m.state == "current") Ink.teal else Ink.graphite)
+                        Text(line, style = RaType.caption, color = if (m.state == "current") Ink.link else Ink.graphite)
                     }
                 }
             }
@@ -86,7 +86,7 @@ private val IntrinsicHeightMin = androidx.compose.foundation.layout.IntrinsicSiz
 private fun Node(state: String) {
     when (state) {
         "done" -> Box(Modifier.size(Ra.statusMark).clip(CircleShape).background(Ink.ink))
-        "current" -> Box(Modifier.size(12.dp).clip(CircleShape).background(Ink.paper).border(1.5.dp, Ink.teal, CircleShape))
+        "current" -> Box(Modifier.size(12.dp).clip(CircleShape).background(Ink.paper).border(1.5.dp, Ink.blue, CircleShape))
         else -> Box(Modifier.size(Ra.statusMark).clip(CircleShape).background(Ink.paper).border(1.dp, Ink.ruleStrong, CircleShape))
     }
 }

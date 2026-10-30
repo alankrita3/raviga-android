@@ -11,7 +11,7 @@
 
     <style name="Theme.Raviga.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/paper</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_wordmark</item>
         <item name="postSplashScreenTheme">@style/Theme.Raviga</item>
     </style>
 </resources>

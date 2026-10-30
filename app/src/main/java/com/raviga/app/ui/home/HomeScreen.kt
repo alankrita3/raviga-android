@@ -206,7 +206,7 @@ private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit) {
                     style = RaType.caption,
                     color = when {
                         row.refused -> Ink.brick
-                        row.unread > 0 -> Ink.teal
+                        row.unread > 0 -> Ink.link
                         else -> Ink.graphite
                     },
                     maxLines = 1,

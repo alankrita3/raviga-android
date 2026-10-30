@@ -272,10 +272,10 @@ private fun LinkTile(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(if (dark) Ink.ink else Ink.tealWash),
+            Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(if (dark) Ink.ink else Ink.blueWash),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = if (dark) Ink.surface else Ink.tealInk, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = if (dark) Ink.surface else Ink.blueInk, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {

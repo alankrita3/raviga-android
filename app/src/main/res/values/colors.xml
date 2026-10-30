@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Only what the XML theme and launcher need; Compose tokens live in ui/theme/Color.kt ("Workshop"). -->
-    <color name="paper">#FFFBFAF7</color>
-    <color name="ink">#FF17181C</color>
-    <color name="accent">#FF0F5B57</color>
-    <!-- The app icon (founder's option A): navy "r", blue square, cream ground. -->
+    <!-- Only what the XML theme and launcher need; Compose tokens live in ui/theme/Color.kt ("Workshop", palette C). -->
+    <color name="paper">#FFF6F3EE</color>
+    <color name="ink">#FF14183A</color>
+    <color name="accent">#FF3B54C4</color>
+    <!-- The app icon (founder's option A) and the wordmark: navy letters, blue square, cream ground. -->
     <color name="mark_navy">#FF14183A</color>
     <color name="mark_blue">#FF6F8CFF</color>
     <color name="mark_cream">#FFF6F3EE</color>

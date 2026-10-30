@@ -163,7 +163,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             Spacer(Modifier.height(8.dp))
                             Text("Writing your brief", style = RaType.title, color = Ink.ink)
                             Spacer(Modifier.height(8.dp))
-                            Text(state.busyMessage!!, style = RaType.secondary, color = Ink.teal)
+                            Text(state.busyMessage!!, style = RaType.secondary, color = Ink.link)
                             Spacer(Modifier.height(16.dp))
                             ProgressRule(progress = state.busyProgress?.takeIf { it > 0f })
                         }
@@ -175,7 +175,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         if (state.busyMessage != null) {
                             ProgressRule(progress = state.busyProgress?.takeIf { it > 0f })
                             Spacer(Modifier.height(8.dp))
-                            Text(state.busyMessage!!, style = RaType.caption, color = Ink.teal)
+                            Text(state.busyMessage!!, style = RaType.caption, color = Ink.link)
                             Spacer(Modifier.height(16.dp))
                         } else {
                             Spacer(Modifier.height(8.dp))
@@ -328,7 +328,7 @@ private fun EditableTitle(title: String, editable: Boolean, onSave: (String) -> 
             value = text,
             onValueChange = { text = it },
             textStyle = RaType.title.copy(color = Ink.ink),
-            cursorBrush = SolidColor(Ink.teal),
+            cursorBrush = SolidColor(Ink.link),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { editing = false; if (text.trim() != title) onSave(text) }),
@@ -352,7 +352,7 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
     when {
         project?.status == ProjectStatus.CHANGES_REQUESTED -> Text(
             "The team left comments. Read them, edit, then get a new quote.",
-            style = RaType.secondary, color = Ink.teal,
+            style = RaType.secondary, color = Ink.link,
             modifier = Modifier.clickable { nav.navigate(Routes.status(project.id)) },
         )
         project?.contentDeletedAt != null && draft != null -> Text(

@@ -112,14 +112,14 @@ fun SecondaryButton(
     }
 }
 
-/** Teal text, no chrome. */
+/** Link-blue text, no chrome. */
 @Composable
 fun TertiaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    color: Color = Ink.teal,
+    color: Color = Ink.link,
     fullWidth: Boolean = true,
 ) {
     TextButton(
@@ -138,9 +138,9 @@ fun TertiaryButton(
 fun DestructiveButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) =
     TertiaryButton(text, onClick, modifier, enabled, color = Ink.brick)
 
-/** Small teal text action used inline next to headings ("Edit", "Regenerate"). */
+/** Small link-blue text action used inline next to headings ("Edit", "Regenerate"). */
 @Composable
-fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, color: Color = Ink.teal) {
+fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, color: Color = Ink.link) {
     Text(
         text = text,
         style = RaType.secondaryMedium,
