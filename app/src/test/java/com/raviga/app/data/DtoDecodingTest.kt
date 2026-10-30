@@ -142,6 +142,13 @@ class DtoDecodingTest {
             com.raviga.app.ui.status.StatusCopy.grievanceLine(config.legal.grievance))
     }
 
+    /** R-060 (10-30): Play sells India at the plan prices and the 100 pack at India's cap; dev's /config hints match (backend c5f333b). */
+    @Test
+    fun `demo rupee hints match Play's India prices`() {
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(listOf(8_499, 21_249, 42_499, 84_000), demo.credits.packs.map { it.priceHintInr })
+    }
+
     /** R-055: /config may still send a person's name and an address; the app decodes neither and shows one line. */
     @Test
     fun `grievance shows only the email and days, never a name or an address`() {

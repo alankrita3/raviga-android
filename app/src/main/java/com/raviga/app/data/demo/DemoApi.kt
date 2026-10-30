@@ -748,7 +748,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                     CreditPack("credits_10", 10, 0, priceHintUsd = 99.99, priceHintInr = 8_499, label = "10 credits"),
                     CreditPack("credits_25", 25, 2, priceHintUsd = 249.99, priceHintInr = 21_249, label = "25 + 2 credits"),
                     CreditPack("credits_50", 50, 6, priceHintUsd = 499.99, priceHintInr = 42_499, label = "50 + 6 credits"),
-                    CreditPack("credits_100", 100, 15, priceHintUsd = 999.99, priceHintInr = 84_999, label = "100 + 15 credits"),
+                    CreditPack("credits_100", 100, 15, priceHintUsd = 999.99, priceHintInr = 84_000, label = "100 + 15 credits"),
                 ),
             ),
             quote = QuoteConfig(

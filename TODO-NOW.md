@@ -16,8 +16,8 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
   - 1, India prices: done. Play now sells credits_10 / 25 / 50 in India at ₹8,499 / ₹21,249 / ₹42,499 (were
     ₹11,200 / 28,100 / 56,200); credits_100 stays at ₹84,000. Read back with `tools/play_release.py regions`; the
     before/after diff (696 rows, and the full product JSON) changed only those three India rows. `FIXED_PRICES` keeps
-    them on a re-run of `product`. Backend asked to set product.py's credits_100 `priceHintInr` 84999 → 84000 so all
-    four hints match Play; then mirror it in DemoApi.
+    them on a re-run of `product`. All four /config hints match Play (backend c5f333b: credits_100 84000, live on dev);
+    DemoApi mirrors it, pinned by a unit test. Verified by the PM.
   - 2, app colours C (R-049): waiting for iOS's exact colour tokens. Then implement (medium: tests pass, device
     check on the OnePlus: Welcome, Home and launch screenshots to the PM), batched into the sprint build.
   - 3, registered address in `docs/HANDOFF.md` item 8: done (the Dwarka address; backend puts it in /config, the app
@@ -29,7 +29,6 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 ## Blocked, and on whom
 
 - **iOS:** the exact colour tokens for app colours C (R-049, R-060 item 2).
-- **Backend:** credits_100 `priceHintInr` 84999 → 84000 in product.py (R-060 item 1).
 - **Founder:** RevenueCat project, with the Android `goog_` key and Play credentials, then `REVENUECAT_API_KEY` in
   secrets.properties. Until then purchases can't be tested end to end, and neither can the analytics events
   `credits_purchased`, `project_submitted` and `delivery_accepted`.
