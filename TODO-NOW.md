@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-10-30.
+The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
 
 ## In flight
 
@@ -11,10 +11,16 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
     scan clean, no client text in logs/analytics. Gate file: `qa/results/2026-11-02-android-gate.md`.
   - QA suite P0 done (`qa/results/2026-11-02-android.md`): 7 FAILs fixed (AI consent on every AI call, D4 note limit,
     H9 brief size, F5 10-note limit, G2 save on kill, G7 swipe spring-back), voice blocked (no recogniser).
-  - Next: R-079 (recovery email, devices, link code; PM's strings, same as iOS), R-082 (auto-titles), then suite P1
-    (L, M, N, O, P) and P2 (Q, R); release-APK inspection; then the independent review; build only with her yes.
-  - Throwaway client in use: cl_01m6efysre00xd9cpwwd1mc9qk (delete after the suite). The OnePlus's demo client
-    cl_01m63jpnye... is kept; restore it on the phone with its key file in ~/Downloads after the suite.
+  - R-079 done (d202008, pushed): recovery email, link codes, phones with access, sign out this phone, Protect your
+    credits; checked on the OnePlus (dev and demo). Lint warnings in code: 0 (d23f6cd).
+  - Next: R-082 (auto-titles), then suite P1 (L, M, N, O, P) and P2 (Q, R); release-APK inspection; then the
+    independent review; build only with her yes.
+  - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
+    the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
+    the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw. The OnePlus's demo client cl_01m63jpnye... is kept; restore it
+    on the phone with its key file in ~/Downloads after the suite. Backend deleted the emulator's R-076 client.
+  - Backend 52fe82c on dev: the H10 notice names the file (no app change); an I3 quote-expiry switch
+    (`team.py --stage dev fault quote_expiry --client <id> [--minutes N]`) for the expiry check in the suite.
   - Row 37 (RevenueCat Play app) waits for her at the Mac (sign-ins, two yes lines here).
 - R-074 done (61b1f5f, emulator check passed); R-075 done (bb7c264); R-076 smoke done (voice blocked).
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
