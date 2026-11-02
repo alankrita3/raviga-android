@@ -75,6 +75,7 @@ fun Illustration(
     focusX: Float = 0.5f,
     focusY: Float = 0.5f,
 ) {
+    if (screenIsShort()) return
     Image(
         painter = painterResource(picture.res),
         contentDescription = null,
@@ -87,9 +88,17 @@ fun Illustration(
     )
 }
 
+/**
+ * A phone on its side (QA R5): under 480dp of height the decorative pictures step aside, so the screen opens on its
+ * content (the quote's price, not a picture filling the view). Pictures carry no information.
+ */
+@Composable
+private fun screenIsShort(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
+
 /** A full-bleed picture at the top of a screen, under the status bar, with rounded bottom corners. */
 @Composable
 fun HeroIllustration(picture: Picture, height: Dp, modifier: Modifier = Modifier, focusY: Float = 0.5f) {
+    if (screenIsShort()) return
     Image(
         painter = painterResource(picture.res),
         contentDescription = null,
