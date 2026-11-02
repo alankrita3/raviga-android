@@ -1,5 +1,7 @@
 package com.raviga.app.ui.document
 
+import com.raviga.app.ui.nav.Routes
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.foundation.layout.Column
@@ -44,7 +46,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class SectionEditorViewModel(private val container: AppContainer, private val projectId: String, private val sectionId: String) : ViewModel() {
+/**
+ * Edits one section of a brief. R-092 (iOS review): #1 "Regenerate with AI" saves what was typed first and goes
+ * through the same AI-consent and length checks as the brief; #2 the unsaved text survives the app being ended in the
+ * background ([saved], restored on reopen) and leaving with changes asks first; #32 the section limit is checked on Save.
+ */
+class SectionEditorViewModel(
+    private val container: AppContainer,
+    private val projectId: String,
+    private val sectionId: String,
+    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+) : ViewModel() {
 
     data class State(
         val document: Document? = null,
@@ -57,7 +69,14 @@ class SectionEditorViewModel(private val container: AppContainer, private val pr
         val sheet: Boolean = false,
         val error: String? = null,
         val saved: Boolean = false,
-    )
+        /** The section's text as last saved, to tell an unsaved change. */
+        val savedBody: String = "",
+        val confirmDiscard: Boolean = false,
+        /** AI processing isn't allowed yet: the screen opens the consent screen, then the rewrite runs. */
+        val needsAiConsent: Boolean = false,
+    ) {
+        val changed: Boolean get() = document != null && body.trim() != savedBody.trim()
+    }
 
     private val _state = MutableStateFlow(State(heading = SectionIds.headings[sectionId] ?: ""))
     val state: StateFlow<State> = _state.asStateFlow()
@@ -67,11 +86,42 @@ class SectionEditorViewModel(private val container: AppContainer, private val pr
             container.drafts.load()
             val doc = container.drafts.get(projectId)?.document
             val section = doc?.section(sectionId)
-            _state.update { it.copy(document = doc, heading = section?.heading ?: it.heading, hint = section?.hint, body = section?.body.orEmpty()) }
+            val savedBody = section?.body.orEmpty()
+            // An edit from before the app was ended in the background comes back as it was.
+            val unsaved = saved.get<String>(KEY_BODY)
+            _state.update {
+                it.copy(document = doc, heading = section?.heading ?: it.heading, hint = section?.hint, body = unsaved ?: savedBody, savedBody = savedBody)
+            }
         }
     }
 
-    fun setBody(text: String) = _state.update { it.copy(body = text) }
+    fun setBody(text: String) {
+        saved[KEY_BODY] = text
+        _state.update { it.copy(body = text, error = null) }
+    }
+
+    /** Back or the top bar's arrow: leave, or ask first when there's an unsaved change. */
+    fun leave(): Boolean {
+        if (!_state.value.changed) return true
+        _state.update { it.copy(confirmDiscard = true) }
+        return false
+    }
+
+    fun keepEditing() = _state.update { it.copy(confirmDiscard = false) }
+
+    fun discard() {
+        saved.remove<String>(KEY_BODY)
+        _state.update { it.copy(confirmDiscard = false, body = it.savedBody, saved = true) }
+    }
+
+    private fun tooLong(body: String): String? {
+        val max = container.session.config.value.limits.textInputMaxChars
+        return if (max > 0 && BriefLimits.length(body) > max) {
+            "The ${_state.value.heading} section is over the ${BriefLimits.grouped(max)} character limit. Shorten it, then save."
+        } else {
+            null
+        }
+    }
 
     /** Turns every line into a bullet, or strips bullets if they all have one. */
     fun toggleBullets() {
@@ -90,11 +140,15 @@ class SectionEditorViewModel(private val container: AppContainer, private val pr
     }
 
     fun save() {
-        val doc = _state.value.document ?: return
+        _state.value.document ?: return
+        tooLong(_state.value.body)?.let { line -> _state.update { it.copy(error = line) }; return }
         viewModelScope.launch {
             _state.update { it.copy(saving = true, error = null) }
             runCatching { container.drafts.saveEdit(projectId, null, listOf(SectionBody(sectionId, _state.value.body.trim()))) }
-                .onSuccess { _state.update { it.copy(saving = false, saved = true) } }
+                .onSuccess {
+                    saved.remove<String>(KEY_BODY)
+                    _state.update { it.copy(saving = false, saved = true, savedBody = it.body) }
+                }
                 .onFailure { e -> _state.update { it.copy(saving = false, error = e.userLine()) } }
         }
     }
@@ -102,34 +156,80 @@ class SectionEditorViewModel(private val container: AppContainer, private val pr
     fun openSheet() = _state.update { it.copy(sheet = true) }
     fun closeSheet() = _state.update { it.copy(sheet = false) }
 
+    private var pendingInstruction: String? = null
+
+    /** The consent screen has opened; don't open it again on return. */
+    fun aiConsentRequested() = _state.update { it.copy(needsAiConsent = false) }
+
+    /** Allowed: the rewrite that was asked for runs. */
+    fun aiConsentGranted() {
+        val instruction = pendingInstruction ?: return
+        pendingInstruction = null
+        regenerate(instruction)
+    }
+
     fun regenerate(instruction: String) {
+        // The same checks as the brief's Regenerate: AI consent, then the length the AI call takes.
+        if (container.session.needsAiConsent(container.session.me.value)) {
+            pendingInstruction = instruction
+            _state.update { it.copy(needsAiConsent = true) }
+            return
+        }
+        tooLong(_state.value.body)?.let { line -> _state.update { it.copy(error = line, sheet = false) }; return }
         viewModelScope.launch {
             _state.update { it.copy(busyMessage = "Rereading the section", busyProgress = null, error = null) }
             runCatching {
+                // What was typed is saved first (a version), so the rewrite starts from it and nothing is lost.
+                if (_state.value.changed) {
+                    container.drafts.saveEdit(projectId, null, listOf(SectionBody(sectionId, _state.value.body.trim())))
+                    saved.remove<String>(KEY_BODY)
+                    _state.update { it.copy(savedBody = it.body) }
+                }
                 container.drafts.regenerate(projectId, sectionId, instruction) { st ->
                     _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
                 }
             }.onSuccess { draft ->
                 val doc = draft.document
-                _state.update { it.copy(document = doc, body = doc?.section(sectionId)?.body.orEmpty()) }
+                val body = doc?.section(sectionId)?.body.orEmpty()
+                _state.update { it.copy(document = doc, body = body, savedBody = body) }
             }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busyMessage = null, busyProgress = null, sheet = false) }
         }
+    }
+
+    private companion object {
+        const val KEY_BODY = "unsaved_body"
     }
 }
 
 @Composable
 fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String) {
     val container = LocalAppContainer.current
-    val vm: SectionEditorViewModel = viewModel(key = "section_${projectId}_$sectionId") { SectionEditorViewModel(container, projectId, sectionId) }
+    val vm: SectionEditorViewModel = viewModel(key = "section_${projectId}_$sectionId") {
+        SectionEditorViewModel(container, projectId, sectionId, createSavedStateHandle())
+    }
     val state by vm.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.saved) { if (state.saved) nav.popBackStack() }
+    androidx.activity.compose.BackHandler(enabled = state.changed && !state.saved) { vm.leave() }
+    val aiConsent = nav.currentBackStackEntry?.savedStateHandle?.getStateFlow("ai_consent_granted", false)?.collectAsStateWithLifecycle()
+    LaunchedEffect(aiConsent?.value) {
+        if (aiConsent?.value == true) {
+            nav.currentBackStackEntry?.savedStateHandle?.set("ai_consent_granted", false)
+            vm.aiConsentGranted()
+        }
+    }
+    LaunchedEffect(state.needsAiConsent) {
+        if (state.needsAiConsent) {
+            vm.aiConsentRequested()
+            nav.navigate(Routes.AI_CONSENT)
+        }
+    }
 
     ScreenScaffold(
         topBar = {
             RaTopBar(
-                onBack = { nav.popBackStack() },
+                onBack = { if (vm.leave()) nav.popBackStack() },
                 actions = { InlineAction("Bullets", onClick = { vm.toggleBullets() }) },
             )
         },
@@ -157,6 +257,17 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
             Text("Paragraphs and \"- \" bullets. Nothing else is needed.", style = RaType.caption, color = Ink.ash)
             Spacer(Modifier.height(8.dp))
         }
+    }
+
+    if (state.confirmDiscard) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { vm.keepEditing() },
+            containerColor = Ink.surface,
+            title = { Text("Discard your changes?", style = RaType.heading, color = Ink.ink) },
+            text = { Text("What you typed in ${state.heading} isn't saved.", style = RaType.body, color = Ink.graphite) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { vm.discard() }) { Text("Discard", style = RaType.button, color = Ink.brick) } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { vm.keepEditing() }) { Text("Keep editing", style = RaType.button, color = Ink.ink) } },
+        )
     }
 
     if (state.sheet) {
