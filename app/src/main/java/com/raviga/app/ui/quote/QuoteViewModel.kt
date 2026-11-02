@@ -250,6 +250,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     fun submit() {
+        // R-092 #21 (iOS review): two taps in one frame start one submit.
+        if (_state.value.submitting || _state.value.submittedProjectId != null) return
         if (briefTooLong()) return
         submitNow()
     }
@@ -262,8 +264,9 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
             _state.update { it.copy(error = "Enter your GitHub username so we can hand over the code.") }
             return@withAiConsent
         }
+        // Set before the coroutine starts, so a second tap already sees it.
+        _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, error = null) }
             runCatching {
                 if (s.isResubmit) {
                     if (github != s.me?.deliveryTargets?.githubUsername) container.session.setDeliveryTargets(github, null)
