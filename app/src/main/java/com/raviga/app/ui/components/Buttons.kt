@@ -196,20 +196,38 @@ fun LegalLinks(links: List<Pair<String, () -> Unit>>, modifier: Modifier = Modif
 
 /**
  * Copies plain text to the clipboard ([LocalClipboard], whose set is a suspend call). [sensitive] text (a recovery
- * key) is marked so Android 13+ doesn't show it in the clipboard preview.
+ * key) is marked so Android 13+ doesn't show it in the clipboard preview, and is taken off the clipboard after
+ * [SENSITIVE_CLIP_MS] if it's still there (R-092 #14, iOS review). Android lets an app read the clipboard only while
+ * it's in front, so the clear is best-effort: something else copied since is never touched.
  */
 @Composable
 fun rememberCopier(): (text: String, sensitive: Boolean) -> Unit {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    return remember(clipboard, scope) {
+    val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    return remember(clipboard, scope, context) {
         { text, sensitive ->
             val clip = ClipData.newPlainText("Raviga", text)
             if (sensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 clip.description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
             }
             scope.launch { clipboard.setClipEntry(ClipEntry(clip)) }
+            if (sensitive) {
+                // Not tied to the screen: leaving it still clears the key a minute later.
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ clearIfStill(context, text) }, SENSITIVE_CLIP_MS)
+            }
         }
+    }
+}
+
+const val SENSITIVE_CLIP_MS = 60_000L
+
+private fun clearIfStill(context: android.content.Context, text: String) {
+    val manager = context.getSystemService(android.content.ClipboardManager::class.java) ?: return
+    runCatching {
+        val current = manager.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
+        if (current != text) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) manager.clearPrimaryClip() else manager.setPrimaryClip(ClipData.newPlainText("", ""))
     }
 }
 
