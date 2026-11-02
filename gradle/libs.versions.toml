@@ -19,6 +19,9 @@ firebaseBom = "35.0.2"
 purchases = "8.10.4"
 googleServices = "4.4.2"
 pdfbox = "2.0.27.0"
+# Pinned above what PDFBox and Firebase pull in: OSV advisories on Bouncy Castle 1.72 and Guava 31.1 (build 8 gate).
+bouncycastle = "1.86"
+guava = "33.7.2-android"
 mlkitTextRecognition = "19.0.1"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
@@ -54,6 +57,10 @@ retrofit-kotlinx-serialization = { group = "com.jakewharton.retrofit", name = "r
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
+bouncycastle-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcutil = { group = "org.bouncycastle", name = "bcutil-jdk15to18", version.ref = "bouncycastle" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitTextRecognition" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

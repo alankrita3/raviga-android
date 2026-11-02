@@ -150,6 +150,15 @@ dependencies {
     implementation(libs.pdfbox.android)
     implementation(libs.mlkit.text.recognition)
 
+    // Build 8 gate, OSV check (2026-11-02): newer versions of what PDFBox (Bouncy Castle 1.72) and Firebase
+    // Analytics (Guava 31.1) pull in, which have published advisories. Constraints only raise the version.
+    constraints {
+        implementation(libs.bouncycastle.bcprov) { because("OSV advisories on 1.72, from pdfbox-android") }
+        implementation(libs.bouncycastle.bcpkix) { because("OSV advisories on 1.72, from pdfbox-android") }
+        implementation(libs.bouncycastle.bcutil) { because("kept in step with bcprov and bcpkix") }
+        implementation(libs.guava) { because("OSV advisories on 31.1-android, from play-services-measurement") }
+    }
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
