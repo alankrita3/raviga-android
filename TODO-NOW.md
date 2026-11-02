@@ -21,6 +21,9 @@ The PM reads this file if the session has closed. Updated 2026-11-03 00:15.
     "Edited …" now recomputed on return, 4e9251d). B6 re-run PASS with backend's per-client terms_bump (a real re-ask).
   - Gate: "no demo or debug code in Release" done (11667ee: demo backend in src/debug, demo UI behind
     BuildConfig.DEBUG, strings check clean); logs/analytics/secrets and `!!` lines re-checked and ticked.
+  - M1 (paid run): tap a real Raviga notification with the app closed, in the background and in front; read
+    `logcat -b crash` after each (iOS crashed on the tap). Pre-check 00:58 with the raviga://project link (unknown id):
+    no crash in any state, stays on Home.
   - I3 code done (4fa33a2, as iOS): expired quote says so from expiresAt (clock ticks at expiry), server's quote_stale
     message shown, no automatic re-quote. Device check with backend's quote_expiry switch in the paid run.
   - Next: the paid P1 cases on 11-03's budget (today's ledger is at $2.91 of $3): L1-L8, M1-M3, M5, O1-O4, then O5-O7
