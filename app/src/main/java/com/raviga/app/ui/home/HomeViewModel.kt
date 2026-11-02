@@ -39,7 +39,10 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
      * Drafts (only on this phone) and submitted projects (from the server), newest first.
      * A closed project's title was deleted server-side; this phone's copy names it if it has one.
      */
-    val rows: StateFlow<List<Row>> = combine(container.drafts.drafts, container.projects.summaries) { drafts, summaries ->
+    /** Moves on at each refresh (every return to Home), so "Edited 4 min ago" is worked out again (QA P6). */
+    private val clock = MutableStateFlow(System.currentTimeMillis())
+
+    val rows: StateFlow<List<Row>> = combine(container.drafts.drafts, container.projects.summaries, clock) { drafts, summaries, _ ->
         val localDrafts = drafts.values.filter { it.serverProjectId == null }.map { d ->
             Row(
                 id = d.id,
@@ -104,6 +107,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
 
     /** [force] false on resume: a refresh from the last few seconds (start-up) stands. Retry forces. */
     fun refresh(force: Boolean = true) {
+        clock.value = System.currentTimeMillis()
         viewModelScope.launch {
             _refreshing.value = true
             container.drafts.load()
