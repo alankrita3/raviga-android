@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.raviga.app.ui.LocalAppContainer
+import com.raviga.app.ui.findActivity
 import com.raviga.app.ui.account.MovePhoneViewModel.Restore
 import com.raviga.app.ui.account.MovePhoneViewModel.RestoreWay
 import com.raviga.app.ui.components.BottomBar
@@ -141,6 +142,13 @@ fun MoveToAnotherPhoneScreen(nav: NavController) {
 @Composable
 private fun RecoveryKeySection(state: MovePhoneViewModel.State, vm: MovePhoneViewModel) {
     val copy = rememberCopier()
+    // R-092 #14 (iOS review): while the key is shown in full, it stays out of Recents' snapshot and screen recordings.
+    val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
+    androidx.compose.runtime.DisposableEffect(state.keyVisible, activity) {
+        val window = activity?.window
+        if (state.keyVisible) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
+    }
     SectionHeading("Your recovery key")
     Spacer(Modifier.height(10.dp))
     val key = state.recoveryKey
