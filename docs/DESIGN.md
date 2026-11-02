@@ -151,6 +151,11 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   your phone. This cannot be undone." Delete / Keep). "Write the brief" has the same "+" beside it as a written
   brief, for voice, text or a document. On Home a draft only on this phone can be swiped left or long-pressed to
   delete it, after the same "Delete this draft?" confirm as the brief's Delete.
+- A written brief with notes it doesn't reflect yet (saved on the phone, then left before "Add it to the brief"):
+  under the status line a tile in link blue, "1 note not in the brief yet" / "N notes not in the brief yet" with a
+  chevron. It opens "Not in the brief yet" ("Saved on this phone. Tap a note to edit or delete it."), the notes as
+  tiles (each opens "Your note", then comes back to the list) and "Add it to the brief" / "Add them to the brief",
+  which folds them in (`/ai/append`). Copy in `StatusCopy.notesNotInBrief` / `addNotesToBrief`; same spec as iOS.
 - Writing: "Writing your brief" with the job's step line in link blue; pricing: "Pricing your brief".
 - Sensitive data: "This looks like it includes <up to two kinds, then 'and other secrets'>." /
   "We never need passwords, keys or ID numbers to build your project, and it's safer not to share

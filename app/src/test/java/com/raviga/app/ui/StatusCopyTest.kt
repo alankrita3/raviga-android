@@ -77,4 +77,13 @@ class StatusCopyTest {
         assertEquals("Something went wrong. Try again.", StatusCopy.errorLine("github_unavailable", null))
         assertTrue(StatusCopy.errorLine("network", "ignored").startsWith("Couldn't reach Raviga"))
     }
+
+    /** A written brief with notes it doesn't reflect yet (PM spec, 2026-11-02). */
+    @Test
+    fun `notes not in the brief read naturally for one and many`() {
+        assertEquals("1 note not in the brief yet", StatusCopy.notesNotInBrief(1))
+        assertEquals("3 notes not in the brief yet", StatusCopy.notesNotInBrief(3))
+        assertEquals("Add it to the brief", StatusCopy.addNotesToBrief(1))
+        assertEquals("Add them to the brief", StatusCopy.addNotesToBrief(2))
+    }
 }

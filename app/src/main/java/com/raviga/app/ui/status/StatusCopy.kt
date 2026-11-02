@@ -76,6 +76,11 @@ object StatusCopy {
             "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
             "review and build it, and delete it when you accept the delivery."
 
+    /** On a written brief: notes saved on the phone that the brief doesn't reflect yet (PM spec, 2026-11-02). */
+    fun notesNotInBrief(count: Int): String = if (count == 1) "1 note not in the brief yet" else "$count notes not in the brief yet"
+
+    fun addNotesToBrief(count: Int): String = if (count == 1) "Add it to the brief" else "Add them to the brief"
+
     /** R-055: the grievance route in one line, email and days only (consent screen and Privacy and data). */
     fun grievanceLine(grievance: Grievance): String? =
         if (grievance.email.isBlank()) null

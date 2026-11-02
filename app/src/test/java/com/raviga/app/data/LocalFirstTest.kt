@@ -135,4 +135,12 @@ class LocalFirstTest {
         assertEquals(FileTypes.DOCX, FileTypes.resolve("Spec.DOCX", null, accepted))
         assertNull(FileTypes.resolve("old.doc", "application/msword", accepted))
     }
+
+    /** "N notes not in the brief yet" counts the notes the brief doesn't reflect, and only those. */
+    @Test fun notesNotInTheBriefAreTheNewOnes() {
+        val inputs = listOf("in_1", "in_2", "in_3").map { LocalInput(it, "text", it, createdAt = "a") }
+        val draft = LocalDraft(id = "ld_1", createdAt = "a", updatedAt = "a", inputs = inputs, inputsInBrief = listOf("in_1", "in_2"))
+        assertEquals(listOf("in_3"), draft.newInputs.map { it.id })
+        assertTrue(draft.copy(inputsInBrief = inputs.map { it.id }).newInputs.isEmpty())
+    }
 }

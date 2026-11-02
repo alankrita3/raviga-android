@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.ChevronRight
 import com.raviga.app.ui.components.tile
 import com.raviga.app.ui.components.BoxedEditor
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,8 +100,12 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     val draftId = draft?.id ?: projectId
     var confirmDelete by remember { mutableStateOf(false) }
     var chooser by remember { mutableStateOf(false) }
-    // The note open for editing (a draft with no brief yet), by input id.
+    // The note open for editing (a draft with no brief yet, or one not in the brief yet), by input id.
     var openNote by remember { mutableStateOf<String?>(null) }
+    // Notes saved on the phone that the written brief doesn't reflect yet, and their list.
+    val pendingNotes = if (document != null && editable) draft?.newInputs.orEmpty() else emptyList()
+    var pendingSheet by remember { mutableStateOf(false) }
+    var backToPending by remember { mutableStateOf(false) }
 
     // The document reveal: sections fade in one after another, 90 ms apart, once.
     var revealed by remember { mutableStateOf(if (reveal) -1 else Int.MAX_VALUE) }
@@ -201,6 +206,10 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         Spacer(Modifier.height(8.dp))
                         StatusLine(state, nav)
                         state.notices.forEach { InlineNotice(it, color = Ink.graphite) }
+                        if (pendingNotes.isNotEmpty()) {
+                            Spacer(Modifier.height(16.dp))
+                            PendingNotesLine(pendingNotes.size, onClick = if (state.busyMessage == null) ({ pendingSheet = true }) else null)
+                        }
                         Spacer(Modifier.height(24.dp))
                         if (rejected) {
                             RefusedBlock(state.refusalReason, state.supportEmail)
@@ -297,17 +306,28 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
         )
     }
 
+    if (pendingSheet && pendingNotes.isNotEmpty()) {
+        PendingNotesSheet(
+            notes = pendingNotes,
+            onOpen = { pendingSheet = false; backToPending = true; openNote = it },
+            onAdd = { pendingSheet = false; vm.generate() },
+            onDismiss = { pendingSheet = false },
+        )
+    }
+
     openNote?.let { noteId ->
         val input = draft?.inputs?.firstOrNull { it.id == noteId }
+        // Closing a note opened from the list goes back to the list (if any notes are left in it).
+        val close = { openNote = null; if (backToPending) { backToPending = false; pendingSheet = true } }
         if (input == null) {
-            openNote = null
+            close()
         } else {
             NoteSheet(
                 text = input.text,
                 source = inputSource(input) + " " + Time.relative(input.createdAt),
-                onSave = { vm.editNote(input.id, it); openNote = null },
-                onDelete = { vm.deleteNote(input.id); openNote = null },
-                onDismiss = { openNote = null },
+                onSave = { vm.editNote(input.id, it); close() },
+                onDelete = { vm.deleteNote(input.id); close() },
+                onDismiss = close,
             )
         }
     }
@@ -335,6 +355,57 @@ private fun AddMoreButton(enabled: Boolean, onClick: () -> Unit) {
         border = BorderStroke(1.5.dp, Ink.ruleStrong),
     ) {
         Icon(Icons.Outlined.Add, contentDescription = "Add more", tint = Ink.ink)
+    }
+}
+
+/** "1 note not in the brief yet": opens the list of notes the written brief doesn't reflect yet. */
+@Composable
+private fun PendingNotesLine(count: Int, onClick: (() -> Unit)?) {
+    Row(Modifier.tile(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
+        Text(StatusCopy.notesNotInBrief(count), style = RaType.secondaryMedium, color = Ink.link, modifier = Modifier.weight(1f))
+        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = Ink.ash, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** The notes not in the brief yet: tap one to edit or delete it, or add them all to the brief. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PendingNotesSheet(
+    notes: List<com.raviga.app.data.drafts.LocalInput>,
+    onOpen: (String) -> Unit,
+    onAdd: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Ink.paper,
+        dragHandle = null,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Ra.gutter)
+                .padding(top = 28.dp, bottom = 12.dp)
+                .navigationBarsPadding(),
+        ) {
+            Text("Not in the brief yet", style = RaType.title, color = Ink.ink)
+            Spacer(Modifier.height(6.dp))
+            Text("Saved on this phone. Tap a note to edit or delete it.", style = RaType.secondary, color = Ink.graphite)
+            Spacer(Modifier.height(16.dp))
+            notes.forEach { input ->
+                Column(Modifier.tile(onClick = { onOpen(input.id) })) {
+                    Text(input.text, style = RaType.body, color = Ink.ink, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(6.dp))
+                    Text(inputSource(input) + " " + Time.relative(input.createdAt), style = RaType.caption, color = Ink.graphite)
+                }
+                Spacer(Modifier.height(Ra.tileGap))
+            }
+            Spacer(Modifier.height(8.dp))
+            PrimaryButton(StatusCopy.addNotesToBrief(notes.size), onClick = onAdd)
+        }
     }
 }
 
