@@ -149,6 +149,8 @@ dependencies {
     // ML Kit's on-device recogniser (model delivered by Play services; text never leaves).
     implementation(libs.pdfbox.android)
     implementation(libs.mlkit.text.recognition)
+    // R-082: Gemini Nano (on-device, through AICore) names drafts where the phone has it.
+    implementation(libs.mlkit.genai.prompt)
 
     // Build 8 gate, OSV check (2026-11-02): newer versions of what PDFBox (Bouncy Castle 1.72) and Firebase
     // Analytics (Guava 31.1) pull in, which have published advisories. Constraints only raise the version.

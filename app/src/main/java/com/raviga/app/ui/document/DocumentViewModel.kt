@@ -131,7 +131,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     fun saveTitle(title: String) {
         val draft = _state.value.draft ?: return
         val clean = title.trim()
-        if (clean.isBlank()) return
+        // A brief always has a title; a draft's name can be cleared, and the first note names it again (R-082).
+        if (clean.isBlank() && draft.document != null) return
         viewModelScope.launch {
             runCatching {
                 if (draft.document != null) container.drafts.saveEdit(draft.id, clean, emptyList())

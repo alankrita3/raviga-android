@@ -30,6 +30,11 @@ data class LocalDraft(
     val serverProjectId: String? = null,
     val submittedVersion: Int? = null,
     val submittedAt: String? = null,
+    /**
+     * R-082: where [title] came from before a brief existed: [TITLE_AUTO], named from the first note on the phone,
+     * or [TITLE_USER], the client's own. Null otherwise (no title yet, or the brief's).
+     */
+    val titleSource: String? = null,
 ) {
     val current: LocalVersion? get() = versions.lastOrNull()
     val document: Document? get() = current?.document
@@ -38,6 +43,18 @@ data class LocalDraft(
     val quoteIsCurrent: Boolean get() = quote != null && quoteToken != null && quotedVersion == current?.version
     val displayTitle: String get() = (document?.title ?: title).ifBlank { title }
     val newInputs: List<LocalInput> get() = inputs.filter { it.id !in inputsInBrief }
+
+    /** The first note may (re)name this draft: no brief yet, and no name of the client's own. */
+    val titleIsTheApps: Boolean
+        get() = versions.isEmpty() && !isSubmitted && titleSource != TITLE_USER && (titleSource == TITLE_AUTO || title.isBlank())
+
+    /** The AI gets the client's own name for the project, never one the app made from the first note. */
+    val titleForTheAi: String get() = if (titleSource == TITLE_AUTO) "" else title
+
+    companion object {
+        const val TITLE_AUTO = "auto"
+        const val TITLE_USER = "user"
+    }
 }
 
 @Serializable

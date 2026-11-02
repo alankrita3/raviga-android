@@ -126,7 +126,13 @@ class AppContainer(private val app: Application) {
     )
     /** Contract v0.9 section 22. Collection follows consent.analytics.granted (init below); never in demo mode. */
     val analytics = com.raviga.app.data.analytics.Analytics(com.raviga.app.data.analytics.FirebaseAnalyticsSink(app))
-    val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects, analytics) { session.config.value.limits.inputsPerProject }
+    val drafts = com.raviga.app.data.repo.DraftRepository(
+        draftStore, ai, projects, analytics,
+        maxNotes = { session.config.value.limits.inputsPerProject },
+        // R-082: Gemini Nano names drafts where the phone has it; the fallback rules everywhere else.
+        titleModel = com.raviga.app.data.drafts.NanoTitles()::title,
+        scope = appScope,
+    )
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
     val credits = CreditsRepository(api, json, cache, billing, demoApi)
     val push = PushRegistrar(app, prefs, session, appScope)

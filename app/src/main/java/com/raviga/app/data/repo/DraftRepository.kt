@@ -11,17 +11,22 @@ import com.raviga.app.data.api.SectionBody
 import com.raviga.app.data.api.SectionIds
 import com.raviga.app.data.api.SubmitProjectRequest
 import com.raviga.app.data.drafts.DraftStore
+import com.raviga.app.data.drafts.DraftTitle
 import com.raviga.app.data.drafts.LocalDraft
 import com.raviga.app.data.drafts.LocalInput
 import com.raviga.app.data.drafts.LocalVersion
 import com.raviga.app.data.drafts.Refusal
 import com.raviga.app.data.screening.SensitiveScan
 import com.raviga.app.util.Time
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -38,6 +43,11 @@ class DraftRepository(
     private val analytics: com.raviga.app.data.analytics.Analytics? = null,
     /** limits.inputsPerProject from /config (QA F5): how many notes a draft can hold. */
     private val maxNotes: () -> Int = { Int.MAX_VALUE },
+    /** R-082: the on-device model's title for a first note (Gemini Nano), or null where the phone has none. */
+    private val titleModel: (suspend (String) -> String?)? = null,
+    /** Where the model's title is asked for, a moment after the first note stops changing. */
+    private val scope: CoroutineScope? = null,
+    private val titleDelayMs: Long = 1_500,
 ) {
     val drafts: StateFlow<Map<String, LocalDraft>> = store.drafts
 
@@ -61,8 +71,15 @@ class DraftRepository(
         return store.create(LocalDraft(id = DraftStore.newId(), createdAt = now, updatedAt = now))
     }
 
-    /** Names a draft before it has a brief (afterwards the title is part of the brief). */
-    suspend fun rename(id: String, title: String) = touch(id) { it.copy(title = title.trim()) }
+    /**
+     * Names a draft before it has a brief (afterwards the title is part of the brief). The client's name is never
+     * replaced (R-082); clearing it hands the name back to the first note, as on iOS.
+     */
+    suspend fun rename(id: String, title: String): LocalDraft {
+        val clean = title.trim()
+        touch(id) { it.copy(title = clean, titleSource = if (clean.isEmpty()) null else LocalDraft.TITLE_USER) }
+        return retitle(id)
+    }
 
     suspend fun delete(id: String) {
         val draft = get(id) ?: return
@@ -93,6 +110,7 @@ class DraftRepository(
         noteLimitProblem(get(id)?.inputs?.size ?: 0, maxNotes())?.let { throw ApiException(ApiException.INVALID_ARGUMENT, message = it) }
         val first = get(id)?.inputs?.isEmpty() == true
         touch(id) { it.copy(inputs = it.inputs + input) }
+        retitle(id)
         if (first) {
             val inputKind = when (kind) {
                 "voice" -> com.raviga.app.data.analytics.Analytics.InputKind.VOICE
@@ -104,11 +122,55 @@ class DraftRepository(
         return input
     }
 
-    suspend fun editInput(id: String, inputId: String, text: String) =
+    suspend fun editInput(id: String, inputId: String, text: String): LocalDraft {
         touch(id) { d -> d.copy(inputs = d.inputs.map { if (it.id == inputId) it.copy(text = text.trim()) else it }) }
+        return retitle(id)
+    }
 
-    suspend fun removeInput(id: String, inputId: String) =
+    suspend fun removeInput(id: String, inputId: String): LocalDraft {
         touch(id) { d -> d.copy(inputs = d.inputs.filterNot { it.id == inputId }, inputsInBrief = d.inputsInBrief - inputId) }
+        return retitle(id)
+    }
+
+    // ----- R-082: the draft's name from its first note -----
+
+    private val titleJobs = mutableMapOf<String, Job>()
+
+    /**
+     * Names the draft from its first note while the name is still the app's: at once by the fallback rules, then,
+     * where the phone has Gemini Nano, by the model. Never over the client's own name, never once a brief exists.
+     * Only the first note names it. Nothing leaves the phone, and the title goes into no analytics.
+     */
+    private suspend fun retitle(id: String): LocalDraft {
+        val draft = require(id)
+        if (!draft.titleIsTheApps) return draft
+        val note = draft.inputs.firstOrNull()?.text ?: return draft
+        val title = DraftTitle.fallback(note) ?: return draft
+        val named = if (title != draft.title || draft.titleSource != LocalDraft.TITLE_AUTO) {
+            store.update(draft.id) { it.copy(title = title, titleSource = LocalDraft.TITLE_AUTO) }
+        } else {
+            draft
+        }
+        askTheModel(draft.id, note)
+        return named
+    }
+
+    private fun askTheModel(id: String, note: String) {
+        val model = titleModel ?: return
+        val scope = scope ?: return
+        synchronized(titleJobs) {
+            titleJobs[id]?.cancel()
+            titleJobs[id] = scope.launch {
+                delay(titleDelayMs)
+                val title = model(note) ?: return@launch
+                fun stillTheApps(d: LocalDraft) =
+                    d.titleSource == LocalDraft.TITLE_AUTO && d.versions.isEmpty() && d.inputs.firstOrNull()?.text == note
+                val now = store.drafts.value[id] ?: return@launch
+                if (!stillTheApps(now) || now.title == title) return@launch
+                runCatching { store.update(id) { d -> if (stillTheApps(d)) d.copy(title = title) else d } }
+            }
+        }
+    }
 
     // ----- The brief -----
 
@@ -120,7 +182,7 @@ class DraftRepository(
         val draft = require(id)
         val current = draft.document
         if (current == null) {
-            val result = ai.draft(draft.inputs.map { it.ai() }, draft.title, onProgress)
+            val result = ai.draft(draft.inputs.map { it.ai() }, draft.titleForTheAi, onProgress)
             analytics?.briefGenerated(draft.inputs.size, result.document.sections.count { it.body.isNotBlank() })
             commit(id, result.document, "draft", inputsUsed = draft.inputs.map { it.id }, notices = result.notices)
         } else {
@@ -251,9 +313,11 @@ class DraftRepository(
             s.copy(heading = s.heading.ifBlank { d.document?.section(s.id)?.heading ?: SectionIds.headings[s.id] ?: s.id })
         }
         val createdAt = Time.nowIso()
+        // R-082: the first brief's title replaces a name made from the first note, never the client's own.
+        val clientsName = d.versions.isEmpty() && d.titleSource == LocalDraft.TITLE_USER && d.title.isNotBlank()
         val document = Document(
             version = number,
-            title = doc.title.ifBlank { d.document?.title ?: d.title },
+            title = if (clientsName) d.title else doc.title.ifBlank { d.document?.title ?: d.title },
             sections = sections,
             createdAt = createdAt,
             source = source,
@@ -264,6 +328,7 @@ class DraftRepository(
         val inputs = if (notices.isEmpty()) d.inputs else d.inputs.map { it.copy(text = SensitiveScan.redact(it.text)) }
         d.copy(
             title = document.title,
+            titleSource = null,
             versions = d.versions + version,
             inputs = inputs,
             inputsInBrief = inputsUsed ?: d.inputsInBrief,
