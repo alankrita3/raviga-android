@@ -5,6 +5,10 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
+- **R-074 (her yes via the PM, 2026-11-02): committed, waiting on one check.** "Stay in the loop" before Android's
+  notification prompt at the end of onboarding (once; Android 13+ only), Home's ask removed; AI busy line "Try again
+  in a few minutes." Tests pass. The button check needs Android 13+: the OnePlus is Android 12 (no prompt there by
+  design). Asked the PM whether to use the Raviga_API34 emulator or an Android 13+ phone. No build.
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
   uploaded notes are saved in the local draft while they're made; drafts with no brief take more notes ("+"), and
   notes can be edited or deleted; Home deletes a draft by swipe or long-press, with a confirm; a written brief

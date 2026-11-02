@@ -7,6 +7,9 @@ object Routes {
 
     /** R-056: the first consent, shown at the first Type, Speak, Upload, Restore or Buy credits; then on to [next]. */
     const val CONSENT_FIRST = "consent?next={next}"
+    /** R-074: "Stay in the loop" at the end of onboarding, then [next]. */
+    const val NOTIFY_PROMPT = "notify?next={next}"
+    fun notifyPrompt(next: String) = "notify?next=" + java.net.URLEncoder.encode(next, "UTF-8")
     fun consentFirst(next: String) = "consent?next=" + java.net.URLEncoder.encode(next, "UTF-8")
     const val HOME = "home"
     const val AI_CONSENT = "ai_consent"

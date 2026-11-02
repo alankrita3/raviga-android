@@ -36,6 +36,7 @@ import com.raviga.app.ui.home.HomeScreen
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.onboarding.AiConsentScreen
 import com.raviga.app.ui.onboarding.TermsScreen
+import com.raviga.app.ui.onboarding.NotificationPromptScreen
 import com.raviga.app.ui.onboarding.WelcomeScreen
 import com.raviga.app.ui.openLink
 import com.raviga.app.ui.quote.ConnectAwsScreen
@@ -105,6 +106,9 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
     NavHost(navController = nav, startDestination = state.startRoute) {
         composable(Routes.WELCOME) { WelcomeScreen(nav) }
         composable(Routes.HOW_IT_WORKS) { WelcomeScreen(nav, replay = true) }
+        composable(Routes.NOTIFY_PROMPT, arguments = listOf(navArgument("next") { type = NavType.StringType })) { entry ->
+            NotificationPromptScreen(nav, next = entry.arguments?.getString("next") ?: Routes.HOME)
+        }
         composable(Routes.TERMS) { TermsScreen(nav) }
         composable(Routes.CONSENT_FIRST, arguments = listOf(navArgument("next") { type = NavType.StringType })) { entry ->
             TermsScreen(nav, next = entry.arguments?.getString("next"))

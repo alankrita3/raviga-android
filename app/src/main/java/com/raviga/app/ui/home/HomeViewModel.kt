@@ -131,6 +131,4 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { runCatching { container.drafts.delete(id) } }
     }
 
-    suspend fun markNotificationsAsked() = container.prefs.setNotificationsAsked()
-    suspend fun notificationsAsked(): Boolean = container.prefs.current().notificationsAsked
 }

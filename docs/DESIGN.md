@@ -113,6 +113,11 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   review the work before it reaches you."; "Ready before you know it" / "A working project, ready for your
   review, with the code and a handover guide. Go live in a few simple steps, or we'll do it for you." (R-073) (Steps 3 and 4 are the
   founder's exact words, iOS 489412c.)
+- "Stay in the loop" (R-074, same as iOS): one screen right after onboarding's Start or Skip (not after How Raviga
+  works): "We'll let you know when your quote is ready, when we need your input, and when your project is delivered.",
+  "Allow notifications" (Android's prompt) and "Not now" (back does the same). Once only, and only on Android 13+ when
+  permission isn't granted or asked before (`NotificationAsk`); Android 12 and earlier post without asking, so it
+  never shows there. Home no longer asks. Settings > Notifications turns them on later.
 - Founder rule: no other copy about who builds the project (team, AI, agents or robots) unless she approves it.
 - Consent ("Before you start" / "We've updated our terms") and Privacy and data, R-066: "What we don't keep" is
   `StatusCopy.LOCAL_FIRST_PROMISE` ("… its text is sent to an AI service, used once, and not stored by us. …", the

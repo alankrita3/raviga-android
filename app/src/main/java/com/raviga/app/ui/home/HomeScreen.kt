@@ -8,10 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.SwipeToDismissBox
-import android.Manifest
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,7 +43,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -110,14 +105,7 @@ fun HomeScreen(nav: NavController) {
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh(force = false) }
 
-    // Android 13+: ask for notifications once, after the client has seen the home screen.
-    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !vm.notificationsAsked()) {
-            vm.markNotificationsAsked()
-            askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
+    // Notifications are asked for once, at the end of onboarding ("Stay in the loop", R-074), not here.
 
     ScreenScaffold(
         topBar = {

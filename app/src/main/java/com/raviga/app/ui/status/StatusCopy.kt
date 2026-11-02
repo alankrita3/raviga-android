@@ -125,7 +125,7 @@ object StatusCopy {
         "otp_invalid" -> "That recovery key doesn't match. Check it and try again."
         "upgrade_required" -> "Update Raviga from the Play Store to continue."
         "rate_limited" -> "Too many requests. Wait a moment and try again."
-        "ai_unavailable" -> "The AI is busy right now. Try again in a moment."
+        "ai_unavailable" -> "The AI is busy right now. Try again in a few minutes."   // R-074: also when its usage limit is hit
         "not_found" -> "That no longer exists."
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
         "unauthenticated" -> "This phone is no longer linked. Move your projects here with a recovery key."

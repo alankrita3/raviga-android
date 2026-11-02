@@ -30,7 +30,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import android.os.Build
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import com.raviga.app.push.Notifications
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -94,6 +97,7 @@ private val steps = listOf(
 fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
     val container = LocalAppContainer.current
     val config by container.session.config.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pager = rememberPagerState(pageCount = { steps.size + 1 })
     val last = steps.size
@@ -106,7 +110,11 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
                 val me = container.session.me.value
                 // R-056: a first-time client goes straight to Home; only updated terms ask here.
                 val next = if (container.session.agreed && container.session.needsLegal(me, container.session.config.value)) Routes.TERMS else Routes.HOME
-                nav.navigate(next) { popUpTo(Routes.WELCOME) { inclusive = true } }
+                // R-074: "Stay in the loop" first, once, where Android asks for notifications at all.
+                val askNotifications = NotificationAsk.shouldAsk(
+                    Build.VERSION.SDK_INT, Notifications.canPost(context), container.prefs.current().notificationsAsked,
+                )
+                nav.navigate(if (askNotifications) Routes.notifyPrompt(next) else next) { popUpTo(Routes.WELCOME) { inclusive = true } }
             }
         }
     }
