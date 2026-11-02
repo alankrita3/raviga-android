@@ -9,7 +9,7 @@ import com.raviga.app.data.api.JobRunner
 import com.raviga.app.data.api.ReRegisterAuthenticator
 import com.raviga.app.data.audio.DictationEngine
 import com.raviga.app.data.billing.BillingManager
-import com.raviga.app.data.demo.DemoApi
+import com.raviga.app.data.api.DemoBackend
 import com.raviga.app.data.local.CacheStore
 import com.raviga.app.data.local.PrefsStore
 import com.raviga.app.data.local.SessionStore
@@ -68,11 +68,11 @@ class AppContainer(private val app: Application) {
     val cache = CacheStore(app, json)
 
     /**
-     * True until secrets.properties names a backend, or when a debug build has
-     * the "demo backend" switch on in Settings; the demo backend then serves everything.
+     * Debug builds only: true until secrets.properties names a backend, or with the "demo backend" switch on in
+     * Settings; the demo backend then serves everything. A release build has no demo backend at all.
      */
-    val isDemo: Boolean = BuildConfig.API_BASE_URL.isBlank() ||
-        (BuildConfig.DEBUG && com.raviga.app.data.local.DebugFlags.useDemoBackend(app))
+    val isDemo: Boolean = BuildConfig.DEBUG &&
+        (BuildConfig.API_BASE_URL.isBlank() || com.raviga.app.data.local.DebugFlags.useDemoBackend(app))
 
     private val baseUrl: String = BuildConfig.API_BASE_URL.let { if (it.isBlank() || it.endsWith("/")) it else "$it/" }
 
@@ -98,11 +98,11 @@ class AppContainer(private val app: Application) {
     /** R-056: nothing but GET /config leaves the phone until the person agrees (demo mode too). */
     val consentGuard = com.raviga.app.data.api.ConsentGuard()
 
-    /** The in-process backend in demo mode; [api] wraps it like the real one. */
-    val demoApi: DemoApi? = if (isDemo) DemoApi(cache, json) else null
+    /** The in-process backend in demo mode (debug builds); [api] wraps it like the real one. */
+    val demo: DemoBackend? = if (isDemo) DemoBackends.create(cache, json) else null
 
     val api: RavigaApi = consentGuard.wrap(
-        demoApi ?: run {
+        demo?.api ?: run {
             Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(okHttp)
@@ -134,7 +134,7 @@ class AppContainer(private val app: Application) {
         scope = appScope,
     )
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
-    val credits = CreditsRepository(api, json, cache, billing, demoApi)
+    val credits = CreditsRepository(api, json, cache, billing, demo)
     val push = PushRegistrar(app, prefs, session, appScope)
 
 

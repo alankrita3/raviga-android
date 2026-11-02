@@ -77,7 +77,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (internalTest) buildConfigField("String", "API_BASE_URL", "\"${secret("API_BASE_URL_DEBUG", "")}\"")
+            // No demo backend in a release build: before prod exists, a local release APK (and the internal-test
+            // bundle) talks to the dev stage. bundleRelease still refuses without the prod URL (below).
+            val releaseUrl = if (internalTest) secret("API_BASE_URL_DEBUG", "") else secret("API_BASE_URL", "").ifBlank { secret("API_BASE_URL_DEBUG", "") }
+            buildConfigField("String", "API_BASE_URL", "\"$releaseUrl\"")
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }

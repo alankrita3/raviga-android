@@ -13,8 +13,8 @@ import retrofit2.http.Query
 
 /**
  * The Raviga API (api-contract.md v0.6, local-first). Implemented by Retrofit against the
- * real backend and by [com.raviga.app.data.demo.DemoApi] when no backend
- * URL is configured. Non-2xx responses surface as [ApiException] via [apiCall].
+ * real backend and, in debug builds only, by the in-app demo backend ([DemoBackend]) when no
+ * backend URL is configured. Non-2xx responses surface as [ApiException] via [apiCall].
  */
 interface RavigaApi {
 

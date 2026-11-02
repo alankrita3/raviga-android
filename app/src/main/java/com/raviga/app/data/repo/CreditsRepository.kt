@@ -7,7 +7,6 @@ import com.raviga.app.data.api.RavigaApi
 import com.raviga.app.data.api.apiCall
 import com.raviga.app.data.billing.BillingManager
 import com.raviga.app.data.billing.PurchaseOutcome
-import com.raviga.app.data.demo.DemoApi
 import com.raviga.app.data.local.CacheStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +21,8 @@ class CreditsRepository(
     private val json: Json,
     private val cache: CacheStore,
     private val billing: BillingManager,
-    /** The in-process demo backend when there is one ([api] is wrapped by the consent guard, so not a DemoApi). */
-    private val demo: DemoApi? = null,
+    /** The in-process demo backend in debug builds ([api] is wrapped by the consent guard, so not the demo itself). */
+    private val demo: com.raviga.app.data.api.DemoBackend? = null,
 ) {
     private val _credits = MutableStateFlow<CreditsResponse?>(null)
     val credits: StateFlow<CreditsResponse?> = _credits.asStateFlow()
@@ -73,7 +72,7 @@ class CreditsRepository(
      */
     suspend fun purchase(activity: Activity, pack: CreditPack): PurchaseOutcome {
         if (demo != null && !billing.isAvailable) {
-            demo.demoPurchase(pack.productId)
+            demo.purchase(pack.productId)
             refresh()
             return PurchaseOutcome.Success
         }

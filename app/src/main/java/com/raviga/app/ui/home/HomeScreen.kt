@@ -150,7 +150,7 @@ fun HomeScreen(nav: NavController) {
                                 onDismiss = { vm.dismissSignedOut() },
                             )
                         }
-                        if (vm.isDemo) {
+                        if (com.raviga.app.BuildConfig.DEBUG && vm.isDemo) {
                             Spacer(Modifier.height(24.dp))
                             Text("Demo backend: everything works on this phone until the Raviga API is connected.", style = RaType.caption, color = Ink.ash)
                         }

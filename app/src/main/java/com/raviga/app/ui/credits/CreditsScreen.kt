@@ -225,7 +225,7 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                             Spacer(Modifier.height(6.dp))
                             Chip("+${pack.bonusCredits} bonus", tone = ChipTone.Marigold)
                         }
-                        if (state.demoBilling) {
+                        if (com.raviga.app.BuildConfig.DEBUG && state.demoBilling) {
                             Spacer(Modifier.height(4.dp))
                             Text("Demo, no charge", style = RaType.caption, color = Ink.ash)
                         }

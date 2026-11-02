@@ -95,8 +95,8 @@ fun SettingsScreen(nav: NavController) {
             // R-066: right after the legal rows, as on iOS.
             RaRow(title = "How Raviga works", onClick = { nav.navigate(Routes.HOW_IT_WORKS) })
             RaRow(title = "Fonts", subtitle = "Bricolage Grotesque and Figtree, open font licence", onClick = { nav.navigate(Routes.FONTS) })
-            if (vm.isDebug) DebugBackendRow(context, vm.isDemo)
-            if (vm.isDemo) {
+            if (com.raviga.app.BuildConfig.DEBUG) DebugBackendRow(context, vm.isDemo)
+            if (com.raviga.app.BuildConfig.DEBUG && vm.isDemo) {
                 Spacer(Modifier.height(24.dp))
                 Text("Demo controls", style = RaType.secondary, color = Ink.graphite, modifier = Modifier.padding(horizontal = Ra.gutter, vertical = 4.dp))
                 RaRow(title = "Advance the latest project", subtitle = "Plays the team's next move now instead of on the timer", onClick = { vm.demoAdvance() }, chevron = false)
@@ -108,7 +108,7 @@ fun SettingsScreen(nav: NavController) {
                 }
             }
             Text("About", style = RaType.heading, color = Ink.ink, modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 32.dp, bottom = 4.dp))
-            RaRow(title = "Raviga", subtitle = vm.versionName + if (vm.isDemo) ", demo backend on this phone" else "")
+            RaRow(title = "Raviga", subtitle = vm.versionName + if (com.raviga.app.BuildConfig.DEBUG && vm.isDemo) ", demo backend on this phone" else "")
             RaRow(title = legal.companyName)
             val clientId = state.me?.clientId
             if (legal.supportEmail.isNotBlank()) RaRow(

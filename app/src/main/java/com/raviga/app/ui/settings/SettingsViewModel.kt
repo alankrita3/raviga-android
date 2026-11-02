@@ -31,7 +31,6 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<State> = _state.asStateFlow()
 
     val isDemo: Boolean get() = container.isDemo
-    val isDebug: Boolean get() = BuildConfig.DEBUG
     val versionName: String get() = BuildConfig.VERSION_NAME
     val pushConfigured: Boolean get() = container.push.isFirebaseConfigured
 
@@ -117,12 +116,12 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     // ----- demo controls -----
-    private val demo get() = container.demoApi
+    private val demo get() = container.demo
 
-    fun demoAdvance() = demoAction { demo?.demoAdvanceLatest() ?: "No submitted project to advance." }
-    fun demoAddCredits() = demoAction { demo?.demoAddCredits(50); container.credits.refresh(); "50 demo credits added." }
+    fun demoAdvance() = demoAction { demo?.advanceLatest() ?: "No submitted project to advance." }
+    fun demoAddCredits() = demoAction { demo?.addCredits(50); container.credits.refresh(); "50 demo credits added." }
     fun demoReset() = demoAction {
-        demo?.demoReset()
+        demo?.reset()
         container.cache.clearAll()
         container.prefs.clear()
         "Demo data reset. Restart the app."

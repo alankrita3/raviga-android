@@ -168,7 +168,8 @@ class CaptureViewModel(
     fun setTranscript(text: String) { _state.update { it.copy(transcript = text) }; scheduleSave() }
 
     /** Emulators have no microphone and demos want a quick start: offer a canned description. */
-    val offersSample: Boolean get() = container.isDemo || isEmulator()
+    /** Debug builds only: a sample description on the demo backend or an emulator. */
+    val offersSample: Boolean get() = com.raviga.app.BuildConfig.DEBUG && (container.isDemo || isEmulator())
 
     fun useSample() { _state.update { it.copy(tab = TAB_TYPE, typed = SAMPLE_DESCRIPTION, error = null) }; scheduleSave() }
 
