@@ -150,6 +150,8 @@ object StatusCopy {
         "conflict" -> "That was already sent. Refresh to see the latest."
         "permission_denied" -> "That isn't allowed for this account."
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
+        // QA O6: a job whose result ran out (after the one automatic rerun): iOS's line, with the next step.
+        "job_expired" -> "This is taking longer than usual. Try again."
         "unauthenticated" -> "This phone is no longer linked. Move your projects here with a recovery key."
         com.raviga.app.data.api.ApiException.BEFORE_CONSENT -> "Agree to the terms and privacy policy first."
         else -> fallback?.takeIf { it.isNotBlank() } ?: "Something went wrong. Try again."

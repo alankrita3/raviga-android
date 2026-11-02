@@ -129,4 +129,10 @@ class StatusCopyTest {
             StatusCopy.pausedLine(null),
         )
     }
+
+    /** QA O6 (as iOS): an expired job says what to do, not that "the result expired before it was read". */
+    @Test fun anExpiredJobSaysTryAgain() {
+        val expired = com.raviga.app.data.api.ApiException("job_expired", message = "The result expired before it was read.")
+        assertEquals("This is taking longer than usual. Try again.", expired.userLine())
+    }
 }
