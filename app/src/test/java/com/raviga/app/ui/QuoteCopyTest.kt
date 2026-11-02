@@ -44,4 +44,31 @@ class QuoteCopyTest {
         assertEquals("$99.99", Money.usd(99.99))
         assertEquals("$10", Money.usd(10.0))
     }
+
+    /** QA I3, as iOS: why a new quote is needed, from expiresAt before any submit, and the server's own words after. */
+    @Test fun anExpiredOrRefusedQuoteSaysWhy() {
+        val now = 1_800_000_000_000L
+        fun iso(ms: Long) = java.time.Instant.ofEpochMilli(ms).toString()
+        val quote = com.raviga.app.data.api.Quote(id = "qt_1", documentVersion = 1, credits = 7, expiresAt = iso(now + 60_000))
+        val doc = com.raviga.app.data.api.Document(version = 1, title = "T", sections = emptyList())
+        val draft = com.raviga.app.data.drafts.LocalDraft(
+            id = "ld_1", createdAt = "a", updatedAt = "a",
+            versions = listOf(com.raviga.app.data.drafts.LocalVersion(1, doc, "a", "draft")),
+            quote = quote, quoteToken = "tok", quotedVersion = 1,
+        )
+        val fresh = com.raviga.app.ui.quote.QuoteViewModel.State(draft = draft, clock = now)
+        assertEquals(false, fresh.needsNewQuote)
+        assertEquals(null, fresh.staleLine)
+
+        val later = fresh.copy(clock = now + 60_000)
+        assertEquals(true, later.needsNewQuote)
+        assertEquals("This quote has expired. Get a new one before submitting.", later.staleLine)
+
+        val edited = fresh.copy(draft = draft.copy(quotedVersion = 0))
+        assertEquals("The brief changed since this quote.", edited.staleLine)
+
+        val refused = fresh.copy(staleMessage = "That quote has already been used. Get a fresh quote and try again.")
+        assertEquals(true, refused.needsNewQuote)
+        assertEquals("That quote has already been used. Get a fresh quote and try again.", refused.staleLine)
+    }
 }

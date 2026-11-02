@@ -1,5 +1,7 @@
 package com.raviga.app.ui.quote
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import com.raviga.app.ui.document.BriefLimits
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,7 +22,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 
 /**
  * Prices the brief on this phone and submits it (contract v0.6). The quote and
@@ -47,6 +48,10 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val needsAiConsent: Boolean = false,
         /** Server id of the project once submit landed. */
         val submittedProjectId: String? = null,
+        /** The server refused the quote at submit (409 quote_stale): its own words, which say which case (contract 11). */
+        val staleMessage: String? = null,
+        /** Now, as of the last tick: moves on when the quote's expiry passes, so the screen changes without a tap. */
+        val clock: Long = System.currentTimeMillis(),
     ) {
         val quote get() = draft?.quote
         val isResubmit get() = project?.status == ProjectStatus.CHANGES_REQUESTED
@@ -56,9 +61,20 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val shortBy: Int get() = (due - balance).coerceAtLeast(0)
         val rejected get() = draft?.isRefused == true || project?.isRejected == true
         val refusalReason get() = draft?.refusal?.reason ?: project?.screening?.reason
-        /** No quote for this exact brief, or it ran out. */
-        val needsNewQuote: Boolean
-            get() = draft != null && (!draft.quoteIsCurrent || quote?.expiresAt?.let { Time.parse(it)?.isBefore(Instant.now()) } == true)
+        /** The brief changed since this quote. */
+        val briefChanged: Boolean get() = draft != null && !draft.quoteIsCurrent
+        /** The quote ran out (QA I3: from expiresAt, before any submit). */
+        val quoteExpired: Boolean get() = quote?.expiresAt?.let { Time.parse(it)?.toEpochMilli() }?.let { it <= clock } == true
+        /** No quote for this exact brief, it ran out, or the server refused it. */
+        val needsNewQuote: Boolean get() = draft != null && (briefChanged || quoteExpired || staleMessage != null)
+        /** Why a new quote is needed, in iOS's words; the server's own message when it refused the quote. */
+        val staleLine: String?
+            get() = when {
+                !needsNewQuote -> null
+                briefChanged -> "The brief changed since this quote."
+                quoteExpired -> "This quote has expired. Get a new one before submitting."
+                else -> staleMessage
+            }
         val submitted get() = submittedProjectId != null
     }
 
@@ -117,7 +133,9 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         viewModelScope.launch {
             container.drafts.load()
             container.drafts.draft(projectId).collect { d ->
-                _state.update { it.copy(draft = d) }
+                // A new quote clears the server's refusal of the old one.
+                _state.update { it.copy(draft = d, staleMessage = it.staleMessage.takeIf { _ -> it.draft?.quote?.id == d?.quote?.id }) }
+                watchExpiry(d?.quote?.expiresAt)
                 d?.serverProjectId?.let { serverId.value = it }
                 d?.quote?.takeIf { d.quoteIsCurrent && it.id != viewedQuoteId }?.let { q ->
                     viewedQuoteId = q.id
@@ -165,6 +183,25 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         if (briefTooLong()) return
         requestQuoteNow()
     }
+
+    private var expiryJob: Job? = null
+    private var watchedExpiry: String? = null
+
+    /** Ticks the clock when the quote's expiry passes, so "Submit" turns into "Get a new quote" on its own. */
+    private fun watchExpiry(expiresAt: String?) {
+        if (expiresAt == watchedExpiry) return
+        watchedExpiry = expiresAt
+        expiryJob?.cancel()
+        val at = expiresAt?.let { Time.parse(it)?.toEpochMilli() } ?: return
+        expiryJob = viewModelScope.launch {
+            val wait = at - System.currentTimeMillis()
+            if (wait > 0) delay(wait + 500)
+            tick()
+        }
+    }
+
+    /** Also on return to the screen. */
+    fun tick() = _state.update { it.copy(clock = System.currentTimeMillis()) }
 
     private fun requestQuoteNow() = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
@@ -218,11 +255,13 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 runCatching { container.session.refreshMe() }
                 _state.update { it.copy(submitting = false, submittedProjectId = project.id) }
             }.onFailure { e ->
-                val line = when ((e as? ApiException)?.code) {
-                    ApiException.QUOTE_STALE -> { requestQuote(); "The brief changed. Here is a fresh quote." }
-                    else -> e.userLine()
+                // quote_stale (QA I3, as iOS): the server's message says which case (expired, used, brief changed);
+                // the screen offers "Get a new quote". No quote is asked for on the person's behalf: it's an AI call.
+                if ((e as? ApiException)?.code == ApiException.QUOTE_STALE) {
+                    _state.update { it.copy(submitting = false, error = null, staleMessage = e.userLine(), clock = System.currentTimeMillis()) }
+                } else {
+                    _state.update { it.copy(submitting = false, error = e.userLine()) }
                 }
-                _state.update { it.copy(submitting = false, error = line) }
             }
         }
     }

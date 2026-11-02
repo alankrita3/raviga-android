@@ -68,6 +68,8 @@ fun QuoteScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
     val vm: QuoteViewModel = viewModel(key = "quote_$projectId") { QuoteViewModel(container, projectId) }
     val state by vm.state.collectAsStateWithLifecycle()
+    // Back on the screen: a quote may have run out meanwhile.
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { vm.tick() }
     val quote = state.quote
     val config = state.config
 
@@ -189,8 +191,8 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 )
                 Spacer(Modifier.height(20.dp))
             }
-            if (state.needsNewQuote) {
-                Text("The brief changed since this quote.", style = RaType.secondary, color = Ink.amber)
+            state.staleLine?.let { line ->
+                Text(line, style = RaType.secondary, color = Ink.amber)
                 Spacer(Modifier.height(20.dp))
             }
 

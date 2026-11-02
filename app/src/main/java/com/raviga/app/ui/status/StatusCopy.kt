@@ -114,7 +114,8 @@ object StatusCopy {
         "consent_required" -> "Allow AI processing before continuing."
         "insufficient_credits" -> fallback ?: "You need more credits to submit."
         "version_conflict" -> "The brief changed elsewhere. Reload and try again."
-        "quote_stale" -> "The brief changed since this quote. Get a new quote."
+        // The server's message says which case (expired, used, brief changed; contract 11 step 3), as on iOS.
+        "quote_stale" -> fallback ?: "The brief changed since this quote. Get a new quote."
         "document_locked" -> "This brief is locked because it has been submitted."
         "github_user_not_found" -> "No GitHub user with that name. Check the spelling."
         "invalid_argument" -> fallback ?: "Something in the form isn't right."
