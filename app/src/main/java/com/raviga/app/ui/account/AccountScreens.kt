@@ -126,7 +126,9 @@ fun MoveToAnotherPhoneScreen(nav: NavController) {
     if (state.pendingRestore != null) {
         ConfirmDialog(
             title = "Replace the projects on this phone?",
-            text = "This phone will show the other phone's projects and credits instead of its own.",
+            // R-092 #16 (iOS review): with an account here, say what it takes to come back to it.
+            text = "This phone will show the other phone's projects and credits instead of its own." +
+                if (state.hasAccount) " To come back to this phone's account later, you'll need its recovery key or email." else "",
             confirm = "Replace and restore",
             confirmColor = Ink.brick,
             dismiss = "Cancel",
