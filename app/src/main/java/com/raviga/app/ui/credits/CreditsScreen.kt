@@ -95,6 +95,12 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         }
         viewModelScope.launch { container.events.collect { if (it is AppEvent.CreditsUpdated) runCatching { container.credits.refresh() } } }
         // R-056: before Agree there is no account yet, so no balance to fetch (and nothing may leave the phone).
+        if (container.session.hasAccount) viewModelScope.launch {
+            // R-092 #20 (as iOS): a purchase that wasn't booked yet is synced on the next open, not only re-read.
+            if (container.prefs.current().creditsSyncDue) {
+                runCatching { container.credits.sync() }.onSuccess { container.prefs.setCreditsSyncDue(false) }
+            }
+        }
         if (container.session.hasAccount) viewModelScope.launch { runCatching { container.credits.refresh() }.onFailure { e -> if (_state.value.credits == null) _state.update { it.copy(error = e.userLine()) } } }
     }
 
@@ -113,6 +119,7 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             // Confirmed means the balance synced (contract v0.9); bonus credits included.
             if (outcome == PurchaseOutcome.Success) container.analytics.creditsPurchased(pack.productId, pack.total)
             if (outcome == PurchaseOutcome.Success && pack.total > 0) offerRecoveryEmailOnce()
+            if (outcome == PurchaseOutcome.NotBookedYet) container.prefs.setCreditsSyncDue(true)
             _state.update {
                 it.copy(
                     buying = null,

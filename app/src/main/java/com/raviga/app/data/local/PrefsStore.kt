@@ -31,6 +31,8 @@ data class Prefs(
     val agreedPrivacyVersion: String? = null,
     /** R-079: "Protect your credits" has been offered on this install (once, whichever button was tapped). */
     val recoveryEmailPromptShown: Boolean = false,
+    /** R-092 #20: a purchase the store confirmed wasn't booked yet; the next Credits open asks the server to sync. */
+    val creditsSyncDue: Boolean = false,
 )
 
 class PrefsStore(private val context: Context) {
@@ -50,6 +52,7 @@ class PrefsStore(private val context: Context) {
             agreedTermsVersion = p[AGREED_TERMS],
             agreedPrivacyVersion = p[AGREED_PRIVACY],
             recoveryEmailPromptShown = p[RECOVERY_EMAIL_PROMPT] ?: false,
+            creditsSyncDue = p[CREDITS_SYNC_DUE] ?: false,
         )
     }
 
@@ -83,6 +86,7 @@ class PrefsStore(private val context: Context) {
     }
     suspend fun setRecoveryKeyShown() = context.dataStore.edit { it[RECOVERY_SHOWN] = true }
     suspend fun setRecoveryEmailPromptShown() = context.dataStore.edit { it[RECOVERY_EMAIL_PROMPT] = true }
+    suspend fun setCreditsSyncDue(due: Boolean) = context.dataStore.edit { it[CREDITS_SYNC_DUE] = due }
     suspend fun clear() = context.dataStore.edit { it.clear() }
 
     /** Forgets what belonged to the previous client; device-level choices stay. */
@@ -112,5 +116,6 @@ class PrefsStore(private val context: Context) {
         val LEGACY_PUSH_TOKEN = stringPreferencesKey("push_token")
         val RECOVERY_SHOWN = booleanPreferencesKey("recovery_key_shown")
         val RECOVERY_EMAIL_PROMPT = booleanPreferencesKey("recovery_email_prompt_shown")
+        val CREDITS_SYNC_DUE = booleanPreferencesKey("credits_sync_due")
     }
 }
