@@ -5,19 +5,17 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): in progress.** Order:
-  1. Consent as one screen at the first Type/Speak/Upload/Restore/Buy credits (terms, privacy, AI switch off with
-     Continue disabled until on, analytics); drop the AI step at "Write the brief" (PM decision on R-056 + R-028).
-  2. Compiler warnings (4) and Lint errors (4); Lint warnings worth fixing.
-  3. QA suite v1 (`qa/QA-SUITE-v1.md`) P0 on the OnePlus, fresh throwaway clients; results in `qa/results/`.
-     Voice (C1-C7) blocked: no on-device recogniser on our Android hardware (PM). The OnePlus's demo client
-     cl_01m63jpnye... is kept (key file in ~/Downloads); restore it on the phone after the suite.
-  4. Account features to match iOS: devices list/remove, link a second device (code + QR), recovery email (strings
-     asked from raviga-ios).
-  5. Gate code lines: release-APK inspection (local release APK for testing approved), secret scan, OSV dependency
-     report, `!!` audit.
-  6. Row 37 RevenueCat Play app: needs her at the Mac (sign-ins, the key upload, two yeses in this chat).
-  Then P1/P2, the independent review, the signed gate file; the build only with her yes.
+- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): in progress.**
+  - Done: compiler warnings 0, Lint 0 errors (lint.xml justified), OSV 0 advisories, deps current for AGP 8 (AGP 9 and
+    OkHttp 5/Retrofit 3 waived by the PM), RevenueCat 10, session store off EncryptedSharedPreferences, no `!!`, secret
+    scan clean, no client text in logs/analytics. Gate file: `qa/results/2026-11-02-android-gate.md`.
+  - QA suite P0 done (`qa/results/2026-11-02-android.md`): 7 FAILs fixed (AI consent on every AI call, D4 note limit,
+    H9 brief size, F5 10-note limit, G2 save on kill, G7 swipe spring-back), voice blocked (no recogniser).
+  - Next: R-079 (recovery email, devices, link code; PM's strings, same as iOS), R-082 (auto-titles), then suite P1
+    (L, M, N, O, P) and P2 (Q, R); release-APK inspection; then the independent review; build only with her yes.
+  - Throwaway client in use: cl_01m6efysre00xd9cpwwd1mc9qk (delete after the suite). The OnePlus's demo client
+    cl_01m63jpnye... is kept; restore it on the phone with its key file in ~/Downloads after the suite.
+  - Row 37 (RevenueCat Play app) waits for her at the Mac (sign-ins, two yes lines here).
 - R-074 done (61b1f5f, emulator check passed); R-075 done (bb7c264); R-076 smoke done (voice blocked).
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
   uploaded notes are saved in the local draft while they're made; drafts with no brief take more notes ("+"), and
