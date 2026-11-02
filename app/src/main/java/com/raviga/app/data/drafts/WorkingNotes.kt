@@ -1,7 +1,9 @@
 package com.raviga.app.data.drafts
 
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Keeps what is being typed, spoken or read saved in the local draft as it changes (contract v0.6 section 8:
@@ -10,6 +12,10 @@ import kotlinx.coroutines.sync.withLock
  * Each way of describing in one visit to Capture has one note, its [slot] (speak, type, upload): a change
  * edits that note in place. The draft is made with the first words, so an empty visit leaves nothing on Home.
  * [forget] starts a new note in a slot (the next document); a slot's note goes when its text is cleared.
+ *
+ * Each save runs to the end even if its caller is cancelled (a newer keystroke cancels the pending save): stopped
+ * between writing a draft or note and recording its id, the next save would make a second draft or add the note
+ * twice (QA, 2026-11-02: an empty "Untitled draft" next to the real one after fast typing).
  */
 class WorkingNotes(private val sink: Sink, draftId: String?) {
 
@@ -35,12 +41,12 @@ class WorkingNotes(private val sink: Sink, draftId: String?) {
         private set
 
     /** The draft, made now if there isn't one yet. */
-    suspend fun ensureDraft(): String = lock.withLock { draftLocked() }
+    suspend fun ensureDraft(): String = withContext(NonCancellable) { lock.withLock { draftLocked() } }
 
     private suspend fun draftLocked(): String = draftId ?: sink.create().also { draftId = it }
 
     /** Saves [text] as the note in [slot]: added the first time, edited after, removed when it's cleared. */
-    suspend fun save(slot: Int, kind: String, text: String, meta: Meta = Meta()) = lock.withLock {
+    suspend fun save(slot: Int, kind: String, text: String, meta: Meta = Meta()) = withContext(NonCancellable) { lock.withLock {
         val clean = text.trim()
         val current = saved[slot]
         when {
@@ -58,7 +64,7 @@ class WorkingNotes(private val sink: Sink, draftId: String?) {
             }
         }
         Unit
-    }
+    } }
 
     /** The next save in [slot] starts a new note; the one saved so far stays in the draft. */
     suspend fun forget(slot: Int) = lock.withLock { saved.remove(slot); Unit }

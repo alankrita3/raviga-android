@@ -7,6 +7,7 @@ import com.raviga.app.ui.capture.CaptureViewModel.State
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -110,6 +111,25 @@ class WorkingNotesTest {
         listOf("A", "A bakery", "A bakery app").map { text -> async { notes.save(CaptureViewModel.TAB_TYPE, "text", text) } }.awaitAll()
         assertEquals(1, fake.created)
         assertEquals(1, fake.notes(notes.draftId!!).size)
+    }
+
+    /** QA 2026-11-02: a newer keystroke cancels the pending save; one that was mid-write must still count. */
+    @Test fun aSaveCancelledMidWriteLeavesNoEmptyDraftAndNoDoubleNote() = runTest {
+        val slow = object : WorkingNotes.Sink by FakeDrafts() {
+            val real = FakeDrafts()
+            override suspend fun create(): String = real.create().also { delay(50) }       // written, then a pause
+            override suspend fun add(draftId: String, kind: String, text: String, meta: WorkingNotes.Meta) =
+                real.add(draftId, kind, text, meta).also { delay(50) }
+            override suspend fun edit(draftId: String, inputId: String, text: String) = real.edit(draftId, inputId, text)
+            override suspend fun remove(draftId: String, inputId: String) = real.remove(draftId, inputId)
+        }
+        val notes = WorkingNotes(slow, null)
+        val first = launch { notes.save(CaptureViewModel.TAB_TYPE, "text", "A bak") }
+        delay(20)
+        first.cancel()                                   // the next keystroke arrives mid-create
+        notes.save(CaptureViewModel.TAB_TYPE, "text", "A bakery app")
+        assertEquals("one draft, not an empty one beside it", 1, slow.real.created)
+        assertEquals(listOf("text" to "A bakery app"), slow.real.notes(notes.draftId!!))
     }
 
     // ----- What's on screen is what gets saved -----
