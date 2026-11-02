@@ -93,7 +93,10 @@ fun Illustration(
  * content (the quote's price, not a picture filling the view). Pictures carry no information.
  */
 @Composable
-private fun screenIsShort(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
+private fun screenIsShort(): Boolean {
+    val height = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height
+    return with(androidx.compose.ui.platform.LocalDensity.current) { height.toDp() } < 480.dp
+}
 
 /** A full-bleed picture at the top of a screen, under the status bar, with rounded bottom corners. */
 @Composable
