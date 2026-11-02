@@ -6,6 +6,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 release/
+# ...but not the release source set (build 8 gate: the release build's stand-ins live there)
+!app/src/release/
 *.apk
 *.aab
 *.ap_
