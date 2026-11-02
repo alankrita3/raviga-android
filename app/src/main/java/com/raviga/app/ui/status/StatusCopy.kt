@@ -128,7 +128,11 @@ object StatusCopy {
         "upgrade_required" -> "Update Raviga from Google Play to continue."
         "rate_limited" -> "Too many requests. Wait a moment and try again."
         "ai_unavailable" -> "The AI is busy right now. Try again in a few minutes."   // R-074: also when its usage limit is hit
-        "not_found" -> "That no longer exists."
+        // Gate line "every contract section 2 error has a plain message and a next step": iOS's words (11-03).
+        "not_found" -> "That isn't on this account any more. Go back and refresh."
+        "internal" -> "Something went wrong on our side. Try again in a moment."
+        "conflict" -> "That was already sent. Refresh to see the latest."
+        "permission_denied" -> "That isn't allowed for this account."
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
         "unauthenticated" -> "This phone is no longer linked. Move your projects here with a recovery key."
         com.raviga.app.data.api.ApiException.BEFORE_CONSENT -> "Agree to the terms and privacy policy first."

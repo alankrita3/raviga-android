@@ -55,6 +55,8 @@ open class ApiException(
         const val RATE_LIMITED = "rate_limited"
         const val AI_UNAVAILABLE = "ai_unavailable"
         const val INTERNAL = "internal"
+        /** 409: an idempotency key reused with a different body (contract section 2). */
+        const val CONFLICT = "conflict"
         const val CONTENT_REJECTED = "content_rejected"
         const val FILE_UNSUPPORTED = "file_unsupported"
         const val FILE_UNREADABLE = "file_unreadable"
@@ -95,7 +97,8 @@ open class ApiException(
             423 -> DOCUMENT_LOCKED
             426 -> UPGRADE_REQUIRED
             429 -> RATE_LIMITED
-            503 -> AI_UNAVAILABLE
+            // Any other bare status, a 503 without a code included, is "on our side" (as iOS); a coded
+            // ai_unavailable keeps its own line.
             else -> INTERNAL
         }
     }

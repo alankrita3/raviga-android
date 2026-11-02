@@ -5,6 +5,7 @@ import com.raviga.app.data.api.ProjectSummary
 import com.raviga.app.ui.status.StatusCopy
 import com.raviga.app.ui.theme.Ink
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -85,5 +86,21 @@ class StatusCopyTest {
         assertEquals("3 notes not in the brief yet", StatusCopy.notesNotInBrief(3))
         assertEquals("Add it to the brief", StatusCopy.addNotesToBrief(1))
         assertEquals("Add them to the brief", StatusCopy.addNotesToBrief(2))
+    }
+
+    /** Gate: every contract section 2 error code has its own plain line (none falls to the generic one); iOS's words. */
+    @Test fun everyContractErrorHasItsOwnLine() {
+        val codes = listOf(
+            "unauthenticated", "permission_denied", "consent_required", "not_found", "invalid_argument",
+            "github_user_not_found", "invalid_state", "quote_stale", "insufficient_credits", "revision_limit_reached",
+            "active_projects", "aws_role_not_ready", "link_code_invalid", "otp_invalid", "upgrade_required",
+            "rate_limited", "content_rejected", "account_restricted", "ai_unavailable", "conflict", "internal",
+        )
+        val generic = StatusCopy.errorLine("no_such_code", null)
+        for (code in codes) assertNotEquals(code, generic, StatusCopy.errorLine(code, null))
+        assertEquals("Something went wrong on our side. Try again in a moment.", StatusCopy.errorLine("internal", "Internal Server Error"))
+        assertEquals("That isn't on this account any more. Go back and refresh.", StatusCopy.errorLine("not_found", null))
+        assertEquals("That was already sent. Refresh to see the latest.", StatusCopy.errorLine("conflict", null))
+        assertEquals("That isn't allowed for this account.", StatusCopy.errorLine("permission_denied", null))
     }
 }
