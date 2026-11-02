@@ -200,9 +200,9 @@ class CaptureViewModel(
         listenJob = viewModelScope.launch {
             container.dictation.listen(speech.engine).collect { event ->
                 when (event) {
-                    is DictationEngine.Event.Partial -> _state.update { it.copy(partial = event.text) }
+                    is DictationEngine.Event.Partial -> _state.update { heard(it, event) }
                     is DictationEngine.Event.Utterance -> {
-                        _state.update { it.copy(committed = it.committed + event.text, partial = "") }
+                        _state.update { heard(it, event) }
                         scheduleSave()
                     }
                     is DictationEngine.Event.Level -> _state.update { it.copy(level = DictationEngine.levelFromRms(event.rmsDb)) }
@@ -293,15 +293,13 @@ class CaptureViewModel(
             TAB_UPLOAD -> return
             TAB_TYPE -> _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = s.typed.trim()) }
             else -> {
-                val fresh = s.committed.drop(consumedUtterances).joinToString(" ")
+                val consumed = consumedUtterances
                 consumedUtterances = s.committed.size
-                _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = joinText(it.transcript, fresh)) }
+                _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = spokenReview(it.transcript, it.committed, consumed)) }
             }
         }
         scheduleSave()
     }
-
-    private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 
     /**
      * "Record more" / "Edit what I typed" on review: the note continues in the same mode (new
@@ -525,6 +523,22 @@ class CaptureViewModel(
 
     companion object {
         const val SAVE_DELAY_MS = 500L
+
+        /** R-075: a finished utterance goes after the ones before it; only the live partial is ever replaced. */
+        fun heard(s: State, event: DictationEngine.Event): State = when (event) {
+            is DictationEngine.Event.Partial -> s.copy(partial = event.text)
+            is DictationEngine.Event.Utterance -> s.copy(committed = s.committed + event.text, partial = "")
+            else -> s
+        }
+
+        /**
+         * "Done" while speaking: the utterances not yet under review ([consumed] were taken before) join the end of
+         * what's under review, so "Record more" adds to the note instead of replacing it.
+         */
+        fun spokenReview(transcript: String, committed: List<String>, consumed: Int): String =
+            joinText(transcript, committed.drop(consumed).joinToString(" "))
+
+        private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 
         /**
          * The text of the note being made, as it stands on screen: the typed text, the speech so far (joined to

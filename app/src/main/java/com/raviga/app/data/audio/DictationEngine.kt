@@ -57,6 +57,29 @@ class DictationEngine(private val context: Context) {
         data class Error(val code: Int, val fatal: Boolean) : Event
     }
 
+    /**
+     * R-075: what one recogniser session after another means for the note. The recogniser stops at every pause and
+     * a new session starts; each session's finished text is its own utterance, added after the ones before (the
+     * screen replaces only the live partial). A session that ends without a result (an error after words were
+     * heard, or an empty result) keeps the words it last showed, so nothing heard is dropped across a pause.
+     */
+    class SessionText {
+        private var heard = ""
+
+        fun partial(text: String?): Event.Partial? = text?.takeIf { it.isNotBlank() }?.let { heard = it; Event.Partial(it) }
+
+        fun result(text: String?): Event.Utterance? = finish(text)
+
+        /** The session ended on an error: whatever it showed is kept as the utterance. */
+        fun ended(): Event.Utterance? = finish(null)
+
+        private fun finish(text: String?): Event.Utterance? {
+            val words = text?.takeIf { it.isNotBlank() } ?: heard.takeIf { it.isNotBlank() }
+            heard = ""
+            return words?.let { Event.Utterance(it) }
+        }
+    }
+
     sealed interface Availability {
         /** [languageTag] is the on-device model that will be used. */
         data class Ready(val languageTag: String) : Availability
@@ -146,6 +169,7 @@ class DictationEngine(private val context: Context) {
         // Busy/client errors in a row: past a few, the recognizer is stuck rather than idle.
         var stuck = 0
         val intent = intent(Locale.forLanguageTag(ready.languageTag))
+        val session = SessionText()
 
         fun restart() {
             if (!active) return
@@ -166,16 +190,15 @@ class DictationEngine(private val context: Context) {
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {}
             override fun onPartialResults(partialResults: Bundle?) {
-                val text = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-                if (!text.isNullOrBlank()) trySend(Event.Partial(text))
+                session.partial(partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull())?.let { trySend(it) }
             }
             override fun onResults(results: Bundle?) {
-                val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-                if (!text.isNullOrBlank()) trySend(Event.Utterance(text))
+                session.result(results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull())?.let { trySend(it) }
                 stuck = 0
                 restart()
             }
             override fun onError(error: Int) {
+                session.ended()?.let { trySend(it) }
                 val silence = error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
                 val hiccup = error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT
                 if (hiccup) stuck++ else if (silence) stuck = 0
