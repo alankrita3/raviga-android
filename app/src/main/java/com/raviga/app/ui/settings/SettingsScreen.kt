@@ -51,6 +51,8 @@ fun SettingsScreen(nav: NavController) {
     val legal = state.config.legal
     val github = state.me?.deliveryTargets?.githubUsername.orEmpty()
     val aws = state.me?.deliveryTargets?.aws
+    var notificationsOn by remember { mutableStateOf(Notifications.canPost(context)) }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { notificationsOn = Notifications.canPost(context) }
 
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
@@ -65,7 +67,7 @@ fun SettingsScreen(nav: NavController) {
             )
             RaRow(
                 title = "Notifications",
-                subtitle = if (Notifications.canPost(context) && vm.pushConfigured) "On" else if (!vm.pushConfigured) "Not set up on this build" else "Off",
+                subtitle = if (notificationsOn && vm.pushConfigured) "On" else if (!vm.pushConfigured) "Not set up on this build" else "Off",
                 onClick = { nav.navigate(Routes.NOTIFICATIONS) },
             )
             // R-079, as iOS: with an account, the key and link code, and the recovery email; without one, the way in.

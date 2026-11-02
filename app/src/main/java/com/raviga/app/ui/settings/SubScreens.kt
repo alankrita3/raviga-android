@@ -146,6 +146,8 @@ fun NotificationsScreen(nav: NavController) {
     val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
     val context = LocalContext.current
     var granted by remember { mutableStateOf(Notifications.canPost(context)) }
+    // Back from system settings: show what the phone says now.
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { granted = Notifications.canPost(context) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
 
     ScreenScaffold(topBar = { RaTopBar(title = "Notifications", onBack = { nav.popBackStack() }) }) { padding ->

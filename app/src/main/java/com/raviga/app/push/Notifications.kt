@@ -30,9 +30,16 @@ object Notifications {
         manager.createNotificationChannel(channel)
     }
 
+    /**
+     * Whether a notification would show: the permission (Android 13+) and the phone's own switch for this app, which
+     * on Android 12 and earlier is the only one (QA M4: turned off in system settings, the app still said "On").
+     */
     fun canPost(context: Context): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+            (
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                )
 
     fun projectDeepLink(projectId: String): Uri = "raviga://project/$projectId".toUri()
 
