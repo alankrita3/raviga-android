@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
+The PM reads this file if the session has closed. Updated 2026-11-03 00:15.
 
 ## In flight
 
@@ -17,8 +17,8 @@ The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
     beta5) where the phone already has it; client renames never replaced. OnePlus checked (fallback; no Nano there).
   - Suite P1 in progress (results in `qa/results/2026-11-02-android.md`): N1-N8, M4, O8 PASS (fixes: O8 removed-phone
     notice f1ed6da, M4 notifications Off on Android 12 909fda1, N4 drafts line fccde21; plus an empty duplicate draft
-    after fast typing, f5142e0). P1 and P2 (offline half) PASS on the emulator (PM's OK). P4 battery PASS. P6 running
-    (backgrounded 23:09, check at 00:09).
+    after fast typing, f5142e0). P1 and P2 (offline half) PASS on the emulator (PM's OK). P4 battery PASS. P6 PASS (Home's
+    "Edited …" now recomputed on return, 4e9251d). B6 re-run PASS with backend's per-client terms_bump (a real re-ask).
   - Gate: "no demo or debug code in Release" done (11667ee: demo backend in src/debug, demo UI behind
     BuildConfig.DEBUG, strings check clean); logs/analytics/secrets and `!!` lines re-checked and ticked.
   - I3 code done (4fa33a2, as iOS): expired quote says so from expiresAt (clock ticks at expiry), server's quote_stale
