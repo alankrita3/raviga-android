@@ -243,7 +243,7 @@ private fun CreditsPill(balance: Int, onClick: () -> Unit) {
 
 /** One project on Home: where it stands, its name, and what it cost. */
 @Composable
-private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit, onLongClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit, modifier: Modifier = Modifier, onLongClick: (() -> Unit)? = null) {
     val line = buildString {
         append(row.line)
         if (row.unread > 0) append(" · ${row.unread} new")

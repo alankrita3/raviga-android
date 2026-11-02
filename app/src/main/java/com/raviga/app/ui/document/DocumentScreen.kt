@@ -29,6 +29,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,7 +109,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     var backToPending by remember { mutableStateOf(false) }
 
     // The document reveal: sections fade in one after another, 90 ms apart, once.
-    var revealed by remember { mutableStateOf(if (reveal) -1 else Int.MAX_VALUE) }
+    var revealed by remember { mutableIntStateOf(if (reveal) -1 else Int.MAX_VALUE) }
     LaunchedEffect(reveal, document?.version) {
         if (reveal && document != null && revealed < 0) {
             for (i in 0..document.sections.size) {
