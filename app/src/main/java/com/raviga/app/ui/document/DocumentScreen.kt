@@ -1,5 +1,7 @@
 package com.raviga.app.ui.document
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -276,10 +278,18 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                                     Spacer(Modifier.height(20.dp))
                                 }
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    SectionHeading(section.heading.ifBlank { SectionIds.headings[section.id] ?: section.id }, Modifier.weight(1f))
+                                    val heading = section.heading.ifBlank { SectionIds.headings[section.id] ?: section.id }
+                                    SectionHeading(heading, Modifier.weight(1f))
                                     if (editable) {
-                                        InlineAction("Edit", enabled = state.busyMessage == null, onClick = { nav.navigate(Routes.section(draftId, section.id)) })
-                                        InlineAction("Regenerate", enabled = state.busyMessage == null, onClick = { vm.openRegenerate(section.id) })
+                                        // QA R4: TalkBack says which section ("Edit Summary"), not "Edit" eight times.
+                                        InlineAction(
+                                            "Edit", enabled = state.busyMessage == null, onClick = { nav.navigate(Routes.section(draftId, section.id)) },
+                                            modifier = Modifier.semantics { contentDescription = "Edit $heading" },
+                                        )
+                                        InlineAction(
+                                            "Regenerate", enabled = state.busyMessage == null, onClick = { vm.openRegenerate(section.id) },
+                                            modifier = Modifier.semantics { contentDescription = "Regenerate $heading" },
+                                        )
                                     }
                                 }
                                 Spacer(Modifier.height(10.dp))

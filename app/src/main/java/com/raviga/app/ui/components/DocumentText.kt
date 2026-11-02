@@ -1,5 +1,7 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,10 +23,10 @@ import androidx.compose.ui.unit.dp
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 
-/** Bricolage section heading as the document's voice. */
+/** Bricolage section heading as the document's voice. A heading for TalkBack's heading navigation (QA R4). */
 @Composable
 fun SectionHeading(text: String, modifier: Modifier = Modifier, color: Color = Ink.ink) {
-    Text(text, style = RaType.heading, color = color, modifier = modifier)
+    Text(text, style = RaType.heading, color = color, modifier = modifier.semantics { heading() })
 }
 
 /**

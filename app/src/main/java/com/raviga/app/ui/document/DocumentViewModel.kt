@@ -70,7 +70,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val drafts = container.drafts
         viewModelScope.launch {
             drafts.draft(id).collect { d ->
-                _state.update { it.copy(draft = d, loading = false) }
+                // QA P2: a refusal ("Tell us a bit more...") was about the notes as they were; once they change it's stale.
+                _state.update { s -> s.copy(draft = d, loading = false, error = s.error.takeIf { s.draft?.inputs == d?.inputs }) }
                 d?.serverProjectId?.let { sid -> serverId.value = sid }
             }
         }
