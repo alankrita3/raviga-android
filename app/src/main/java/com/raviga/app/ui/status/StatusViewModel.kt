@@ -106,7 +106,11 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
             _state.update { it.copy(busy = true, error = null) }
             runCatching { block() }
                 .onSuccess { onSuccess(); runCatching { container.credits.refresh() } }
-                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+                .onFailure { e ->
+                    _state.update { it.copy(error = e.userLine()) }
+                    // R-092 #39 (iOS review): the server said no (invalid_state, rounds used up): show where it really is.
+                    runCatching { container.projects.refresh(projectId) }
+                }
             _state.update { it.copy(busy = false) }
         }
     }
