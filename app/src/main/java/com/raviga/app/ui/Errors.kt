@@ -14,10 +14,14 @@ fun Throwable.userLine(): String = when (this) {
                 "Agree to the updated terms to continue."
             // A paused account: the server's message says for how long.
             code == ApiException.RATE_LIMITED && detailString("reason") == "paused" && server != null -> server
+            // The server's invalid_state text is written for the team ("Only a submitted project can be approved"):
+            // the plain line instead, as iOS. The app's own (httpStatus 0, "Write the brief first.") keep their words.
+            code == ApiException.INVALID_STATE && httpStatus != 0 -> StatusCopy.errorLine(code, null)
             else -> StatusCopy.errorLine(code, server)
         }
     }
-    else -> StatusCopy.errorLine("internal", message)
+    // Not from the server: the app's own words when it wrote some ("Couldn't save the draft"), else the plain line.
+    else -> message?.takeIf { it.isNotBlank() } ?: StatusCopy.errorLine("unknown", null)
 }
 
 fun Throwable.apiCode(): String? = (this as? ApiException)?.code

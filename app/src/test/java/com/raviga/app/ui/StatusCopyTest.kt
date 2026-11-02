@@ -103,4 +103,14 @@ class StatusCopyTest {
         assertEquals("That was already sent. Refresh to see the latest.", StatusCopy.errorLine("conflict", null))
         assertEquals("That isn't allowed for this account.", StatusCopy.errorLine("permission_denied", null))
     }
+
+    /** invalid_state, as iOS: the server's team-facing text is not shown; the app's own words are. */
+    @Test fun invalidStateFromTheServerReadsPlainly() {
+        val server = com.raviga.app.data.api.ApiException("invalid_state", 409, "Only a submitted project can be approved")
+        assertEquals("That isn't possible at this stage.", server.userLine())
+        val local = com.raviga.app.data.api.ApiException("invalid_state", message = "Write the brief first.")
+        assertEquals("Write the brief first.", local.userLine())
+        assertEquals("Couldn't save the draft", java.io.IOException("Couldn't save the draft").userLine())
+        assertEquals("Something went wrong. Try again.", IllegalStateException().userLine())
+    }
 }
