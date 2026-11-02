@@ -13,8 +13,10 @@ The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
     H9 brief size, F5 10-note limit, G2 save on kill, G7 swipe spring-back), voice blocked (no recogniser).
   - R-079 done (d202008, pushed): recovery email, link codes, phones with access, sign out this phone, Protect your
     credits; checked on the OnePlus (dev and demo). Lint warnings in code: 0 (d23f6cd).
-  - Next: R-082 (auto-titles), then suite P1 (L, M, N, O, P) and P2 (Q, R); release-APK inspection; then the
-    independent review; build only with her yes.
+  - R-082 done (f5f5645, pushed): drafts named from the first note with iOS's rules; Gemini Nano (ML Kit Prompt API
+    beta5) where the phone already has it; client renames never replaced. OnePlus checked (fallback; no Nano there).
+  - Next: suite P1 (L, M, N, O, P) and P2 (Q, R) on the OnePlus; release-APK inspection; then the independent
+    review; build only with her yes. R-083 (resume a running job after a kill) after the suite, per the PM.
   - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
     the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
     the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw. The OnePlus's demo client cl_01m63jpnye... is kept; restore it
