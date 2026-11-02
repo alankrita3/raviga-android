@@ -1,5 +1,13 @@
 package com.raviga.app.ui.home
 
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.SwipeToDismissBox
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,6 +42,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,6 +93,18 @@ fun HomeScreen(nav: NavController) {
             projectTitle = null,
             onPick = { tab -> chooser = false; nav.navigateAfterConsent(container.session.agreed, Routes.capture(tab = tab)) },
             onDismiss = { chooser = false },
+        )
+    }
+    // A draft on this phone, swiped or long-pressed: ask before deleting it (same words as the brief's "Delete").
+    var confirmDelete by remember { mutableStateOf<HomeViewModel.Row?>(null) }
+    confirmDelete?.let { row ->
+        AlertDialog(
+            onDismissRequest = { confirmDelete = null },
+            containerColor = Ink.surface,
+            title = { Text("Delete this draft?", style = RaType.heading, color = Ink.ink) },
+            text = { Text("The description, the brief and all its versions are deleted. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
+            confirmButton = { TextButton(onClick = { confirmDelete = null; vm.deleteDraft(row.id) }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )
     }
 
@@ -164,11 +186,48 @@ fun HomeScreen(nav: NavController) {
                         )
                     }
                     items(summaries, key = { it.id }) { row ->
-                        ProjectTile(row, onClick = { nav.navigate(row.route) })
+                        if (row.localDraft) {
+                            DeletableDraft(row, onClick = { nav.navigate(row.route) }, onDelete = { confirmDelete = row })
+                        } else {
+                            ProjectTile(row, onClick = { nav.navigate(row.route) })
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * A draft only on this phone: swipe it left, or long-press it, to delete it (Home asks first). Nothing was
+ * sent, so nothing else is touched.
+ */
+@Composable
+private fun DeletableDraft(row: HomeViewModel.Row, onClick: () -> Unit, onDelete: () -> Unit) {
+    val swipe = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) onDelete()
+            false   // the tile springs back; the confirm decides
+        },
+    )
+    SwipeToDismissBox(
+        state = swipe,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                Modifier.fillMaxSize().clip(RoundedCornerShape(Ra.tileRadius)).background(Ink.brick).padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Text("Delete", style = RaType.button, color = Ink.surface)
+            }
+        },
+    ) {
+        ProjectTile(
+            row,
+            onClick = onClick,
+            onLongClick = onDelete,
+            modifier = Modifier.semantics { customActions = listOf(CustomAccessibilityAction("Delete draft") { onDelete(); true }) },
+        )
     }
 }
 
@@ -191,12 +250,12 @@ private fun CreditsPill(balance: Int, onClick: () -> Unit) {
 
 /** One project on Home: where it stands, its name, and what it cost. */
 @Composable
-private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit) {
+private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit, onLongClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val line = buildString {
         append(row.line)
         if (row.unread > 0) append(" · ${row.unread} new")
     }
-    Row(Modifier.tile(padding = 18.dp, onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.tile(padding = 18.dp, onClick = onClick, onLongClick = onLongClick), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusMark(if (row.refused) ProjectStatus.REJECTED else row.status)

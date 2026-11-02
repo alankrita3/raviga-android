@@ -151,6 +151,24 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         }
     }
 
+    /** Edits one note of a draft with no brief yet; the note lives only on the phone. */
+    fun editNote(inputId: String, text: String) {
+        val draftId = _state.value.draft?.id ?: return
+        viewModelScope.launch {
+            runCatching { container.drafts.editInput(draftId, inputId, text) }
+                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+        }
+    }
+
+    /** Deletes one note of a draft with no brief yet (after the screen's confirm). */
+    fun deleteNote(inputId: String) {
+        val draftId = _state.value.draft?.id ?: return
+        viewModelScope.launch {
+            runCatching { container.drafts.removeInput(draftId, inputId) }
+                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+        }
+    }
+
     fun clearError() = _state.update { it.copy(error = null) }
 
     private fun busy(message: String, close: Boolean = false, block: suspend () -> Unit) {

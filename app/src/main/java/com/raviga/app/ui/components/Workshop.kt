@@ -1,5 +1,7 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -112,14 +114,21 @@ fun SpotIllustration(picture: Picture, size: Dp, modifier: Modifier = Modifier) 
 }
 
 /** White, softly bordered tile on the paper. For choices and grouped facts, not for every block of text. */
-fun Modifier.tile(padding: Dp = 16.dp, onClick: (() -> Unit)? = null): Modifier {
+@OptIn(ExperimentalFoundationApi::class)
+fun Modifier.tile(padding: Dp = 16.dp, onClick: (() -> Unit)? = null, onLongClick: (() -> Unit)? = null): Modifier {
     val shape = RoundedCornerShape(Ra.tileRadius)
     return this
         .fillMaxWidth()
         .clip(shape)
         .background(Ink.surface, shape)
         .border(Ra.hairline, Ink.rule, shape)
-        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .then(
+            when {
+                onLongClick != null -> Modifier.combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
+                onClick != null -> Modifier.clickable(onClick = onClick)
+                else -> Modifier
+            },
+        )
         .padding(padding)
 }
 

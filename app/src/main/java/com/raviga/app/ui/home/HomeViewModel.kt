@@ -31,6 +31,8 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         val refused: Boolean = false,
         /** What it cost, for projects that were paid for and not refunded. */
         val credits: Int? = null,
+        /** Only on this phone, never submitted: it can be deleted from Home. */
+        val localDraft: Boolean = false,
     )
 
     /**
@@ -53,6 +55,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
                 updatedAt = d.updatedAt,
                 route = Routes.document(d.id),
                 refused = d.isRefused,
+                localDraft = true,
             )
         }
         val byServerId = drafts.values.filter { it.serverProjectId != null }.associateBy { it.serverProjectId }
@@ -121,6 +124,11 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
             runCatching { container.credits.refresh(force) }
             _refreshing.value = false
         }
+    }
+
+    /** Deletes a draft that's only on this phone (after Home's confirm). Nothing to tell the server. */
+    fun deleteDraft(id: String) {
+        viewModelScope.launch { runCatching { container.drafts.delete(id) } }
     }
 
     suspend fun markNotificationsAsked() = container.prefs.setNotificationsAsked()

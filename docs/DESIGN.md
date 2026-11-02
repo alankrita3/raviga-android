@@ -141,7 +141,16 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   "Recording more" / "Adding more", and back returns to the review); document "Add more" (runs the
   sensitive-data check, saves the document as its own note, then shows the three choices with
   "Saved <file> to your draft." or "Saved N notes to your draft." and "Write the brief now").
-  Back from a document review picks another file.
+- Saved as you go (contract v0.6 section 8; her bug report, 2026-11-02): each note is written to the local draft
+  while it's made (`WorkingNotes`): typing and review edits half a second after the last change, each utterance,
+  a document as soon as it's read, and at once when the app goes to the background or Capture closes. The draft
+  is made with the first words and shows on Home as "Untitled draft" / "Notes, no brief yet". Back from review
+  leaves Capture (the note is already saved); it no longer bounces between review and editing.
+- A draft with notes but no brief (same spec as iOS): the notes are white tiles; tapping one opens a sheet, "Your
+  note", to edit the text ("Save") or "Delete note" (confirm "Delete this note?" / "It's removed from this draft on
+  your phone. This cannot be undone." Delete / Keep). "Write the brief" has the same "+" beside it as a written
+  brief, for voice, text or a document. On Home a draft only on this phone can be swiped left or long-pressed to
+  delete it, after the same "Delete this draft?" confirm as the brief's Delete.
 - Writing: "Writing your brief" with the job's step line in link blue; pricing: "Pricing your brief".
 - Sensitive data: "This looks like it includes <up to two kinds, then 'and other secrets'>." /
   "We never need passwords, keys or ID numbers to build your project, and it's safer not to share

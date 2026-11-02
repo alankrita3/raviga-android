@@ -39,6 +39,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.raviga.app.ui.components.tile
+import com.raviga.app.ui.components.BoxedEditor
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -89,6 +99,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     val draftId = draft?.id ?: projectId
     var confirmDelete by remember { mutableStateOf(false) }
     var chooser by remember { mutableStateOf(false) }
+    // The note open for editing (a draft with no brief yet), by input id.
+    var openNote by remember { mutableStateOf<String?>(null) }
 
     // The document reveal: sections fade in one after another, 90 ms apart, once.
     var revealed by remember { mutableStateOf(if (reveal) -1 else Int.MAX_VALUE) }
@@ -132,18 +144,19 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(Modifier.width(12.dp))
-                        // "Add more": a square plus beside the primary action.
-                        OutlinedIconButton(
-                            onClick = { chooser = true },
-                            enabled = state.busyMessage == null,
-                            modifier = Modifier.size(Ra.buttonHeight),
-                            shape = RoundedCornerShape(Ra.buttonRadius),
-                            border = BorderStroke(1.5.dp, Ink.ruleStrong),
-                        ) {
-                            Icon(Icons.Outlined.Add, contentDescription = "Add more", tint = Ink.ink)
-                        }
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { chooser = true })
                     }
-                    editable -> PrimaryButton("Write the brief", enabled = state.busyMessage == null && draft?.inputs?.isNotEmpty() == true, onClick = { vm.generate() })
+                    // No brief yet: the same "+" adds voice, text or a document to the notes (her spec, 2026-11-02).
+                    editable -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        PrimaryButton(
+                            "Write the brief",
+                            enabled = state.busyMessage == null && draft?.inputs?.isNotEmpty() == true,
+                            onClick = { vm.generate() },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { chooser = true })
+                    }
                     project != null -> PrimaryButton("View status", onClick = { nav.navigate(Routes.forProject(project.id, project.status)) })
                 }
             }
@@ -213,11 +226,14 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                                 Spacer(Modifier.height(16.dp))
                                 if (editable) SecondaryButton("Describe it", onClick = { chooser = true })
                             } else {
+                                // Each note opens to be edited or deleted (on the phone only).
                                 inputs.forEach { input ->
-                                    BodyText(input.text)
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(inputSource(input) + " " + Time.relative(input.createdAt), style = RaType.caption, color = Ink.graphite)
-                                    Spacer(Modifier.height(16.dp))
+                                    Column(Modifier.tile(onClick = if (editable && state.busyMessage == null) ({ openNote = input.id }) else null)) {
+                                        Text(input.text, style = RaType.body, color = Ink.ink, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(inputSource(input) + " " + Time.relative(input.createdAt), style = RaType.caption, color = Ink.graphite)
+                                    }
+                                    Spacer(Modifier.height(Ra.tileGap))
                                 }
                             }
                             Spacer(Modifier.height(Ra.sectionGap))
@@ -281,6 +297,21 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
         )
     }
 
+    openNote?.let { noteId ->
+        val input = draft?.inputs?.firstOrNull { it.id == noteId }
+        if (input == null) {
+            openNote = null
+        } else {
+            NoteSheet(
+                text = input.text,
+                source = inputSource(input) + " " + Time.relative(input.createdAt),
+                onSave = { vm.editNote(input.id, it); openNote = null },
+                onDelete = { vm.deleteNote(input.id); openNote = null },
+                onDismiss = { openNote = null },
+            )
+        }
+    }
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -289,6 +320,65 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             text = { Text("The description, the brief and all its versions are deleted. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
             confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteDraft() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
+        )
+    }
+}
+
+/** "Add more": a square plus beside the primary action. */
+@Composable
+private fun AddMoreButton(enabled: Boolean, onClick: () -> Unit) {
+    OutlinedIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(Ra.buttonHeight),
+        shape = RoundedCornerShape(Ra.buttonRadius),
+        border = BorderStroke(1.5.dp, Ink.ruleStrong),
+    ) {
+        Icon(Icons.Outlined.Add, contentDescription = "Add more", tint = Ink.ink)
+    }
+}
+
+/** One note of a draft with no brief yet: edit its text, or delete it after a confirm. Nothing leaves the phone. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NoteSheet(text: String, source: String, onSave: (String) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
+    var value by remember(text) { mutableStateOf(text) }
+    var confirm by remember { mutableStateOf(false) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Ink.paper,
+        dragHandle = null,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Ra.gutter)
+                .padding(top = 28.dp, bottom = 12.dp)
+                .navigationBarsPadding()
+                .imePadding(),
+        ) {
+            Text("Your note", style = RaType.title, color = Ink.ink)
+            Spacer(Modifier.height(6.dp))
+            Text(source, style = RaType.caption, color = Ink.graphite)
+            Spacer(Modifier.height(16.dp))
+            BoxedEditor(value = value, onValueChange = { value = it }, minHeight = 160.dp)
+            Spacer(Modifier.height(20.dp))
+            PrimaryButton("Save", enabled = value.isNotBlank() && value.trim() != text.trim(), onClick = { onSave(value) })
+            Spacer(Modifier.height(4.dp))
+            DestructiveButton("Delete note", onClick = { confirm = true })
+        }
+    }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false },
+            containerColor = Ink.surface,
+            title = { Text("Delete this note?", style = RaType.heading, color = Ink.ink) },
+            text = { Text("It's removed from this draft on your phone. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
+            confirmButton = { TextButton(onClick = { confirm = false; onDelete() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )
     }
 }

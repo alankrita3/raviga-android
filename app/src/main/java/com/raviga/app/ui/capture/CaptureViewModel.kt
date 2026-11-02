@@ -17,12 +17,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import com.raviga.app.data.drafts.WorkingNotes
 import kotlinx.coroutines.launch
 
 /**
  * Capture → review → Drafting, local-first (contract v0.6). Speech is
  * recognised on the phone, documents are read on the phone, and the notes are
- * saved in the local draft. Only their text goes to the AI to write the brief.
+ * saved in the local draft as they change ([WorkingNotes]): typing, each
+ * utterance, a document once it's read, edits on review. Leaving at any point
+ * keeps them; the draft shows on Home. Only their text goes to the AI to write
+ * the brief.
  *
  * Each note is one way of describing: "Record more" and "Edit what I typed"
  * continue the same note in the same mode, and "Add more" on a document saves
@@ -101,14 +105,23 @@ class CaptureViewModel(
 
     val isAppend: Boolean get() = mode == "append"
 
-    private var draftId: String? = initialDraftId.takeIf { it != "new" }
+    private val notes = WorkingNotes(
+        object : WorkingNotes.Sink {
+            override suspend fun create() = container.drafts.create().id
+            override suspend fun add(draftId: String, kind: String, text: String, meta: WorkingNotes.Meta) =
+                container.drafts.addInput(draftId, kind, text, meta.languageDetected, meta.fileName, meta.pageCount, meta.durationSec).id
+            override suspend fun edit(draftId: String, inputId: String, text: String) { container.drafts.editInput(draftId, inputId, text) }
+            override suspend fun remove(draftId: String, inputId: String) { container.drafts.removeInput(draftId, inputId) }
+        },
+        initialDraftId.takeIf { it != "new" },
+    )
+    private val draftId: String? get() = notes.draftId
+    private var saveJob: Job? = null
     private var listenJob: Job? = null
     private var timerJob: Job? = null
     private var pendingAfterConsent: (() -> Unit)? = null
     /** Utterances already moved into the transcript, so "Record more" adds only the new ones. */
     private var consumedUtterances = 0
-    /** The note saved for this transcript (id, text): a retry must not add it twice. */
-    private var savedInput: Pair<String, String>? = null
     /** Text the client chose to keep despite the sensitive-data warning. */
     private var acknowledgedText: String? = null
     /** The sensitive-data sheet is open for "Add more" on a document: carry on saving, not writing. */
@@ -143,13 +156,13 @@ class CaptureViewModel(
         _state.update { it.copy(tab = index, error = null) }
     }
 
-    fun setTyped(text: String) = _state.update { it.copy(typed = text) }
-    fun setTranscript(text: String) = _state.update { it.copy(transcript = text) }
+    fun setTyped(text: String) { _state.update { it.copy(typed = text) }; scheduleSave() }
+    fun setTranscript(text: String) { _state.update { it.copy(transcript = text) }; scheduleSave() }
 
     /** Emulators have no microphone and demos want a quick start: offer a canned description. */
     val offersSample: Boolean get() = container.isDemo || isEmulator()
 
-    fun useSample() = _state.update { it.copy(tab = TAB_TYPE, typed = SAMPLE_DESCRIPTION, error = null) }
+    fun useSample() { _state.update { it.copy(tab = TAB_TYPE, typed = SAMPLE_DESCRIPTION, error = null) }; scheduleSave() }
 
     private fun isEmulator(): Boolean {
         val fp = android.os.Build.FINGERPRINT.lowercase()
@@ -188,7 +201,10 @@ class CaptureViewModel(
             container.dictation.listen(speech.engine).collect { event ->
                 when (event) {
                     is DictationEngine.Event.Partial -> _state.update { it.copy(partial = event.text) }
-                    is DictationEngine.Event.Utterance -> _state.update { it.copy(committed = it.committed + event.text, partial = "") }
+                    is DictationEngine.Event.Utterance -> {
+                        _state.update { it.copy(committed = it.committed + event.text, partial = "") }
+                        scheduleSave()
+                    }
                     is DictationEngine.Event.Level -> _state.update { it.copy(level = DictationEngine.levelFromRms(event.rmsDb)) }
                     is DictationEngine.Event.Error -> if (event.fatal) {
                         stopListening()
@@ -207,6 +223,7 @@ class CaptureViewModel(
             val committed = if (s.partial.isNotBlank()) s.committed + s.partial else s.committed
             s.copy(listening = false, level = 0f, committed = committed, partial = "")
         }
+        scheduleSave()
     }
 
     private fun startTimer() {
@@ -234,7 +251,7 @@ class CaptureViewModel(
                 return@launch
             }
             // A new document is a new note, even if an earlier one was already saved.
-            savedInput = null
+            notes.forget(TAB_UPLOAD)
             acknowledgedText = null
             _state.update {
                 it.copy(
@@ -254,6 +271,8 @@ class CaptureViewModel(
                         file = FileRead(picked.name, result.pageCount, result.truncated, result.notice),
                     )
                 }
+                // Read on the phone: saved in the draft straight away.
+                persist()
             } catch (e: TextExtractor.Unreadable) {
                 _state.update { it.copy(phase = Phase.CAPTURE, reading = false, progressMessage = null, error = e.message) }
             } catch (e: Exception) {
@@ -279,14 +298,15 @@ class CaptureViewModel(
                 _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = joinText(it.transcript, fresh)) }
             }
         }
+        scheduleSave()
     }
 
     private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 
     /**
-     * Back from review. A recording or a typed description continues in the same mode (new
+     * "Record more" / "Edit what I typed" on review: the note continues in the same mode (new
      * speech joins the end; the typed editor gets the reviewed text, edits included). A
-     * document goes back to the picker; "Add more" is how it is kept.
+     * document's review offers "Add more" instead ([addMore]); back leaves, everything saved.
      */
     fun recordMore() {
         _state.update {
@@ -307,16 +327,14 @@ class CaptureViewModel(
         if (flagged(text)) return
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
-            val drafts = container.drafts
             try {
-                val id = draftId ?: drafts.create().id.also { draftId = it }
-                saveNote(id, s, text)
+                saveNote(s, text)
             } catch (e: Exception) {
                 _state.update { it.copy(saving = false, error = e.userLine()) }
                 return@launch
             }
             // The next part is a new note.
-            savedInput = null
+            notes.forget(TAB_UPLOAD)
             acknowledgedText = null
             _state.update {
                 it.copy(
@@ -377,7 +395,7 @@ class CaptureViewModel(
 
     /** Opens the sensitive-data sheet if [text] has something the client hasn't decided on yet. */
     private fun flagged(text: String): Boolean {
-        if (text == acknowledgedText || text == savedInput?.second) return false
+        if (text == acknowledgedText) return false
         val findings = SensitiveScan.scan(text)
         if (findings.isEmpty()) return false
         _state.update { it.copy(sensitive = SensitiveScan.title(findings), error = null) }
@@ -406,9 +424,13 @@ class CaptureViewModel(
         _state.update { it.copy(phase = Phase.DRAFTING, error = null, progress = null, progressMessage = "Reading your notes") }
         viewModelScope.launch {
             val drafts = container.drafts
-            val id = draftId ?: drafts.create().id.also { draftId = it }
+            val id = try {
+                notes.ensureDraft().also { saveNote(s, text) }
+            } catch (e: Exception) {
+                _state.update { it.copy(phase = Phase.TRANSCRIPT, error = e.userLine(), progress = null, progressMessage = null) }
+                return@launch
+            }
             try {
-                saveNote(id, s, text)
                 drafts.writeBrief(id) { st ->
                     _state.update { it.copy(progress = st.progress, progressMessage = st.message ?: it.progressMessage) }
                 }
@@ -419,34 +441,51 @@ class CaptureViewModel(
         }
     }
 
-    /** Saves the reviewed text as a note on this phone, or updates the one already saved for it. */
-    private suspend fun saveNote(id: String, s: State, text: String) {
-        val drafts = container.drafts
-        val saved = savedInput
-        when {
-            saved == null -> {
-                val voice = s.tab == TAB_SPEAK
-                val file = s.file?.takeIf { s.tab == TAB_UPLOAD }
-                val input = drafts.addInput(
-                    id = id,
-                    kind = when {
-                        file != null -> "file"
-                        voice -> "voice"
-                        else -> "text"
-                    },
-                    text = text,
-                    languageDetected = (s.speech as? Speech.Ready)?.engine?.languageTag?.takeIf { voice },
-                    fileName = file?.fileName,
-                    pageCount = file?.pageCount,
-                    durationSec = s.elapsedSec.takeIf { voice && it > 0 },
-                )
-                savedInput = input.id to text
-            }
-            saved.second != text -> {
-                drafts.editInput(id, saved.first, text)
-                savedInput = saved.first to text
-            }
+    /** Saves the reviewed text as this way's note on the phone (added once, then edited in place). */
+    private suspend fun saveNote(s: State, text: String) {
+        saveJob?.cancel()
+        notes.save(s.tab, kindOf(s.tab), text, metaOf(s))
+    }
+
+    // ----- Autosave (contract v0.6 section 8: saved on the phone as you go) -----
+
+    /** Saves what's on screen about half a second after the last change. */
+    private fun scheduleSave() {
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(SAVE_DELAY_MS)
+            persist()
         }
+    }
+
+    /** Saves now, even if this screen is going away (the app going to the background, or leaving Capture). */
+    fun flush() {
+        saveJob?.cancel()
+        val s = _state.value
+        container.appScope.launch { persist(s) }
+    }
+
+    private suspend fun persist(s: State = _state.value) {
+        val text = liveText(s, consumedUtterances) ?: return
+        // A failed save must not stop the person typing; the next change or leaving tries again.
+        runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }
+    }
+
+    private fun kindOf(tab: Int): String = when (tab) {
+        TAB_SPEAK -> "voice"
+        TAB_UPLOAD -> "file"
+        else -> "text"
+    }
+
+    private fun metaOf(s: State): WorkingNotes.Meta {
+        val file = s.file?.takeIf { s.tab == TAB_UPLOAD }
+        val voice = s.tab == TAB_SPEAK
+        return WorkingNotes.Meta(
+            languageDetected = (s.speech as? Speech.Ready)?.engine?.languageTag?.takeIf { voice },
+            fileName = file?.fileName,
+            pageCount = file?.pageCount,
+            durationSec = s.elapsedSec.takeIf { voice && it > 0 },
+        )
     }
 
     private suspend fun onWriteFailed(id: String, e: Exception, back: Phase = Phase.TRANSCRIPT) {
@@ -462,12 +501,7 @@ class CaptureViewModel(
             api?.code == ApiException.CONTENT_REJECTED && api.detailString("kind") == "policy" ->
                 _state.update { it.copy(done = id) }
             else -> {
-                // A quality refusal means this note isn't usable as it is: take it back out, so a
-                // fixed version replaces it instead of joining it.
-                if (api?.code == ApiException.CONTENT_REJECTED) {
-                    savedInput?.let { runCatching { container.drafts.removeInput(id, it.first) } }
-                    savedInput = null
-                }
+                // A quality refusal: the note stays saved, and the fixed text edits it in place.
                 _state.update { it.copy(phase = back, error = e.userLine(), progress = null, progressMessage = null) }
             }
         }
@@ -476,16 +510,40 @@ class CaptureViewModel(
     override fun onCleared() {
         listenJob?.cancel()
         timerJob?.cancel()
-        // A draft made here that never got a note is just noise on Home.
-        val id = draftId
-        if (id != null && savedInput == null && mode != "append") {
-            container.appScope.launch {
+        saveJob?.cancel()
+        // Leaving keeps what was said, typed or read (half an utterance included). A draft left with no note at
+        // all (everything cleared) is just noise on Home.
+        val s = _state.value
+        container.appScope.launch {
+            persist(s)
+            val id = draftId ?: return@launch
+            if (mode != "append") {
                 container.drafts.get(id)?.takeIf { it.inputs.isEmpty() && it.versions.isEmpty() }?.let { container.drafts.delete(it.id) }
             }
         }
     }
 
     companion object {
+        const val SAVE_DELAY_MS = 500L
+
+        /**
+         * The text of the note being made, as it stands on screen: the typed text, the speech so far (joined to
+         * what's under review when recording more), or the text under review. Null when there's nothing to save
+         * (a document still being read, the choices, writing).
+         */
+        fun liveText(s: State, consumedUtterances: Int): String? = when (s.phase) {
+            Phase.TRANSCRIPT -> if (s.reading) null else s.transcript
+            Phase.CAPTURE -> when (s.tab) {
+                TAB_TYPE -> s.typed
+                TAB_SPEAK -> {
+                    val fresh = (s.committed.drop(consumedUtterances) + s.partial).filter { it.isNotBlank() }.joinToString(" ")
+                    listOf(if (s.continuing) s.transcript else "", fresh).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
+                }
+                else -> null
+            }
+            else -> null
+        }
+
         const val TAB_SPEAK = 0
         const val TAB_TYPE = 1
         const val TAB_UPLOAD = 2

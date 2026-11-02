@@ -54,6 +54,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -88,6 +90,8 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val config by container.session.config.collectAsStateWithLifecycle()
+    // Going to the background (another app, the lock screen, being killed later): save what's on screen now.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.flush() }
 
     // Upload: the system picker, filtered to what the backend reads. "text/*" catches
     // Markdown files that providers label loosely; anything unreadable is refused politely.
@@ -139,7 +143,9 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
     val captureBack = captureBack(vm, state)
     BackHandler(enabled = state.phase == CaptureViewModel.Phase.TRANSCRIPT || state.phase == CaptureViewModel.Phase.DRAFTING || captureBack != null) {
         when (state.phase) {
-            CaptureViewModel.Phase.TRANSCRIPT -> if (!state.reading && !state.saving) vm.recordMore()
+            // The note under review is already saved on the phone, so back leaves (it used to bounce between
+            // review and editing). "Record more", "Edit what I typed" and "Add more" carry on instead.
+            CaptureViewModel.Phase.TRANSCRIPT -> if (!state.reading && !state.saving) nav.popBackStack()
             CaptureViewModel.Phase.CAPTURE -> captureBack?.invoke()
             else -> Unit
         }
@@ -148,7 +154,7 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
     AnimatedContent(targetState = state.phase, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "phase") { phase ->
         when (phase) {
             CaptureViewModel.Phase.CAPTURE -> CapturePhase(nav, vm, state, ::onMic, pickFile, config.limits.fileMaxBytes)
-            CaptureViewModel.Phase.TRANSCRIPT -> TranscriptPhase(vm, state)
+            CaptureViewModel.Phase.TRANSCRIPT -> TranscriptPhase(nav, vm, state)
             CaptureViewModel.Phase.CHOOSE -> ChoosePhase(nav, vm, state, onPickFile = pickFile)
             CaptureViewModel.Phase.DRAFTING -> DraftingPhase(state)
         }
@@ -347,7 +353,7 @@ private fun CapturePhase(
 }
 
 @Composable
-private fun TranscriptPhase(vm: CaptureViewModel, state: CaptureViewModel.State) {
+private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: CaptureViewModel.State) {
     val fromFile = state.tab == CaptureViewModel.TAB_UPLOAD
     val focus = remember { FocusRequester() }
     LaunchedEffect(state.focusEditor) { if (state.focusEditor > 0) runCatching { focus.requestFocus() } }
@@ -364,7 +370,7 @@ private fun TranscriptPhase(vm: CaptureViewModel, state: CaptureViewModel.State)
         return
     }
     ScreenScaffold(
-        topBar = { RaTopBar(onBack = { if (!state.saving) vm.recordMore() }) },
+        topBar = { RaTopBar(onBack = { if (!state.saving) nav.popBackStack() }) },
         bottomBar = {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
