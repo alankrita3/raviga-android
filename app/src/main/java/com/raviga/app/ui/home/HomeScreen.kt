@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -144,15 +145,10 @@ fun HomeScreen(nav: NavController) {
                         )
                         if (signedOut) {
                             Spacer(Modifier.height(24.dp))
-                            Text(
-                                "This phone was removed from your Raviga account, so it has started fresh. To bring your projects back, use your recovery key.",
-                                style = RaType.secondary,
-                                color = Ink.graphite,
+                            RemovedNotice(
+                                onRestore = { vm.dismissSignedOut(); nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) },
+                                onDismiss = { vm.dismissSignedOut() },
                             )
-                            Row {
-                                InlineAction("Use a recovery key", onClick = { vm.dismissSignedOut(); nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) })
-                                InlineAction("Dismiss", onClick = { vm.dismissSignedOut() }, color = Ink.graphite)
-                            }
                         }
                         if (vm.isDemo) {
                             Spacer(Modifier.height(24.dp))
@@ -175,6 +171,13 @@ fun HomeScreen(nav: NavController) {
                             modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
                         )
                     }
+                    // QA O8: removed from the account with drafts on the phone, the way back shows here too.
+                    if (signedOut) item(key = "removed") {
+                        RemovedNotice(
+                            onRestore = { vm.dismissSignedOut(); nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) },
+                            onDismiss = { vm.dismissSignedOut() },
+                        )
+                    }
                     items(summaries, key = { it.id }) { row ->
                         if (row.localDraft) {
                             DeletableDraft(row, onClick = { nav.navigate(row.route) }, onDelete = { confirmDelete = row })
@@ -184,6 +187,22 @@ fun HomeScreen(nav: NavController) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** This phone was signed out from another phone and started fresh: the way back (recovery key or email). */
+@Composable
+private fun RemovedNotice(onRestore: () -> Unit, onDismiss: () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            "This phone was removed from your Raviga account, so it has started fresh. To bring your projects back, use your recovery key or recovery email. Drafts on this phone are kept.",
+            style = RaType.body,
+            color = Ink.graphite,
+        )
+        Row(Modifier.offset(x = (-8).dp)) {
+            InlineAction("Restore my account", onClick = onRestore)
+            InlineAction("Dismiss", onClick = onDismiss, color = Ink.graphite)
         }
     }
 }
