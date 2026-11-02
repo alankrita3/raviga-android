@@ -1,6 +1,7 @@
 package com.raviga.app.ui.home
 
-import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.foundation.layout.Box
@@ -194,16 +195,17 @@ fun HomeScreen(nav: NavController) {
 @Composable
 private fun DeletableDraft(row: HomeViewModel.Row, onClick: () -> Unit, onDelete: () -> Unit) {
     val swipe = rememberSwipeToDismissBoxState()
-    // Swiped all the way: ask (Home's confirm), and the tile springs back; the confirm decides.
-    LaunchedEffect(swipe.currentValue) {
-        if (swipe.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            onDelete()
-            swipe.reset()
-        }
-    }
+    val scope = rememberCoroutineScope()
     SwipeToDismissBox(
         state = swipe,
         enableDismissFromStartToEnd = false,
+        // Swiped all the way: the tile springs back first, then Home asks; the confirm decides.
+        onDismiss = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                scope.launch { swipe.reset() }
+                onDelete()
+            }
+        },
         backgroundContent = {
             Box(
                 Modifier.fillMaxSize().clip(RoundedCornerShape(Ra.tileRadius)).background(Ink.brick).padding(horizontal = 24.dp),
