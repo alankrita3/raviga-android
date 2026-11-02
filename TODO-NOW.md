@@ -7,7 +7,8 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
   uploaded notes are saved in the local draft while they're made; drafts with no brief take more notes ("+"), and
-  notes can be edited or deleted; Home deletes a draft by swipe or long-press, with a confirm. Checked on the
+  notes can be edited or deleted; Home deletes a draft by swipe or long-press, with a confirm; a written brief
+  shows "N notes not in the brief yet" and adds them in one tap (c8fc19f, ecde5a3). Checked on the
   OnePlus on every exit path (screenshots in `~/Downloads/raviga-device-checks/2026-11-02-drafts/`). Speech can't
   be tried on the OnePlus (no on-device recogniser); it goes through the same autosave as typing.
 - **R-066 (her review of the iOS builds, for both apps; via the PM 10-30): done, reported to the PM.** Welcome
