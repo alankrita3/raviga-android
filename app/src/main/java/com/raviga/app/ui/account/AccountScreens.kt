@@ -164,7 +164,8 @@ private fun RecoveryKeySection(state: MovePhoneViewModel.State, vm: MovePhoneVie
     } else {
         Text("No key on this phone yet.", style = RaType.secondary, color = Ink.graphite)
         Spacer(Modifier.height(6.dp))
-        InlineAction(if (state.keyBusy) "Making" else "Make a key", enabled = !state.keyBusy, onClick = { vm.makeNewKey() }, modifier = Edge)
+        // R-092 #12: the account may have a key on another phone, and making one here stops that one: the same confirm.
+        InlineAction(if (state.keyBusy) "Making" else "Make a key", enabled = !state.keyBusy, onClick = { vm.askNewKey(true) }, modifier = Edge)
     }
     Spacer(Modifier.height(8.dp))
     Text("Anyone with this key can open your projects. Keep it private.", style = RaType.caption, color = Ink.ash)
