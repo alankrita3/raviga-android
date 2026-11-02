@@ -114,7 +114,12 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     fun openRegenerate(sectionId: String) = _state.update { it.copy(sheetSection = sectionId) }
     fun closeRegenerate() = _state.update { it.copy(sheetSection = null) }
 
-    fun regenerate(sectionId: String, instruction: String) = withAiConsent {
+    fun regenerate(sectionId: String, instruction: String) {
+        if (briefTooLong()) return
+        regenerateNow(sectionId, instruction)
+    }
+
+    private fun regenerateNow(sectionId: String, instruction: String) = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
         busy("Rereading the section", close = true) {
             container.drafts.regenerate(draftId, sectionId, instruction) { st ->
@@ -143,6 +148,7 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
             _state.update { it.copy(error = line) }
             return
         }
+        if (briefTooLong()) return
         writeBrief()
     }
 
@@ -183,6 +189,15 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    /** QA H9: a written brief over the section or total limit is refused before the call, in plain words. */
+    private fun briefTooLong(): Boolean {
+        val doc = _state.value.draft?.document ?: return false
+        val limits = container.session.config.value.limits
+        val line = BriefLimits.problem(doc, limits.textInputMaxChars, limits.documentMaxChars) ?: return false
+        _state.update { it.copy(error = line) }
+        return true
+    }
 
     // ----- AI consent right before the AI call (R-056 order; same on iOS) -----
 

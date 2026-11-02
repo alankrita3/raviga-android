@@ -139,9 +139,27 @@ class WorkingNotesTest {
     @Test fun aNoteOverTheLimitIsRefusedNotCut() {
         assertNull(CaptureViewModel.overLimit("a".repeat(20_000), 20_000))
         assertEquals(
-            "That's over the 20000 character limit. Shorten it, or save and add the rest as another note.",
+            "That's over the 20,000 character limit. Shorten it, or save and add the rest as another note.",
             CaptureViewModel.overLimit("a".repeat(20_001), 20_000),
         )
         assertNull("no limit from config: nothing to check", CaptureViewModel.overLimit("a".repeat(50_000), 0))
+    }
+
+    /** QA H9: a section or the whole brief over its limit is caught before an AI call, in iOS's words. */
+    @Test fun aBriefOverItsLimitsIsCaughtBeforeTheCall() {
+        fun doc(vararg bodies: String) = com.raviga.app.data.api.Document(
+            title = "T",
+            sections = bodies.mapIndexed { i, b -> com.raviga.app.data.api.Section(if (i == 0) "summary" else "screens", if (i == 0) "Summary" else "Screens", b) },
+        )
+        val limits = com.raviga.app.ui.document.BriefLimits
+        assertNull(limits.problem(doc("a".repeat(20_000), "b".repeat(20_000)), 20_000, 60_000))
+        assertEquals(
+            "The Screens section is over the 20,000 character limit. Shorten it, then try again.",
+            limits.problem(doc("ok", "b".repeat(20_001)), 20_000, 60_000),
+        )
+        assertEquals(
+            "The brief is over the 60,000 character limit. Shorten a section, then try again.",
+            limits.problem(doc("a".repeat(20_000), "b".repeat(20_000), "c".repeat(20_000)), 20_000, 60_000),
+        )
     }
 }

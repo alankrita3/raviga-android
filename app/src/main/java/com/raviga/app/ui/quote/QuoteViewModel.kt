@@ -1,5 +1,6 @@
 package com.raviga.app.ui.quote
 
+import com.raviga.app.ui.document.BriefLimits
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raviga.app.data.api.ApiException
@@ -74,6 +75,15 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
      * it instead of failing. Cleared once a submit lands.
      */
     private var submitKey: Pair<String, String>? = null
+
+    /** QA H9: a brief over the section or total limit is refused before the call, in plain words. */
+    private fun briefTooLong(): Boolean {
+        val doc = _state.value.draft?.document ?: return false
+        val limits = container.session.config.value.limits
+        val line = BriefLimits.problem(doc, limits.textInputMaxChars, limits.documentMaxChars) ?: return false
+        _state.update { it.copy(error = line) }
+        return true
+    }
 
     // ----- AI consent right before the AI call (R-056 order; same on iOS) -----
 
@@ -150,7 +160,12 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
 
     fun setGithub(value: String) = _state.update { it.copy(github = value, githubTouched = true, error = null) }
 
-    fun requestQuote() = withAiConsent {
+    fun requestQuote() {
+        if (briefTooLong()) return
+        requestQuoteNow()
+    }
+
+    private fun requestQuoteNow() = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
         if (_state.value.quoting) return@withAiConsent
         quotedOnce = true
@@ -165,7 +180,12 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
     }
 
-    fun submit() = withAiConsent {
+    fun submit() {
+        if (briefTooLong()) return
+        submitNow()
+    }
+
+    private fun submitNow() = withAiConsent {
         val s = _state.value
         val draft = s.draft ?: return@withAiConsent
         val github = s.github.trim()
