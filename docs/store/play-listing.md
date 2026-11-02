@@ -21,19 +21,21 @@ Custom software, built with AI. Describe it, approve the quote, get the code.
 
 Option A ("Say what you want built. See the price first, and get the code handed to you.") was not chosen.
 
-## Full description (4,000 max): 1,835
+## Full description (4,000 max): 1,882
 
 The opening (one paragraph), a blank line, then the body. Plain text: Play doesn't render Markdown, so headings are
 plain lines.
 
-Opening (240): iOS opening B, word for word, plus the sentence she added at its end ("AI does the building; our team
-checks each project before it's handed over."):
+Opening (265): iOS opening B, word for word, plus the sentence she added at its end ("AI does the building; our team
+checks each project before it's handed over."). R-073b (her yes, 2026-11-02): "a handover guide and simple steps to make
+it live" became "a handover guide. Go live in a few simple steps, or we'll do it for you.", as on Welcome step 4, here
+and in "Code handed to you":
 
 ```text
-Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code, a handover guide and simple steps to make it live. AI does the building; our team checks each project before it's handed over.
+Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code and a handover guide. Go live in a few simple steps, or we'll do it for you. AI does the building; our team checks each project before it's handed over.
 ```
 
-Body (1,593), the iOS body word for word, with the legal links on Raviga's domain:
+Body (1,615), the iOS body word for word, with the legal links on Raviga's domain:
 
 ```text
 Describe it your way
@@ -49,7 +51,7 @@ Built by AI, checked by experts
 The Raviga team builds every project using Claude, Anthropic's AI, and reviews it before it reaches you. Follow each step in the app, and answer the team's questions there.
 
 Code handed to you
-Your project arrives as a GitHub repository transferred to your account, with a handover guide and simple steps to make it live. Two revision rounds are included.
+Your project arrives as a GitHub repository transferred to your account, with a handover guide. Go live in a few simple steps, or we'll do it for you. Two revision rounds are included.
 
 Credits
 Projects are priced in credits (1 credit is US$10), bought in the app in packs of 10, 25 (plus 2 bonus), 50 (plus 6) and 100 (plus 15). Credits don't expire while your account exists, and a cancelled or declined project gets its credits back.
