@@ -15,6 +15,7 @@ import com.raviga.app.data.drafts.DraftTitle
 import com.raviga.app.data.drafts.LocalDraft
 import com.raviga.app.data.drafts.LocalInput
 import com.raviga.app.data.drafts.LocalVersion
+import com.raviga.app.data.drafts.PendingJob
 import com.raviga.app.data.drafts.Refusal
 import com.raviga.app.data.screening.SensitiveScan
 import com.raviga.app.util.Time
@@ -179,35 +180,122 @@ class DraftRepository(
      * doesn't reflect yet into the current brief.
      */
     suspend fun writeBrief(id: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+        // R-083: a draft or append job from before the app closed is collected, not paid for twice.
+        if (require(id).pendingJob?.kind.let { it == PendingJob.DRAFT || it == PendingJob.APPEND }) {
+            resumePending(id, onProgress)?.let { return@guarded it }
+        }
         val draft = require(id)
         val current = draft.document
+        val inputsUsed = draft.inputs.map { it.id }
         if (current == null) {
-            val result = ai.draft(draft.inputs.map { it.ai() }, draft.titleForTheAi, onProgress)
-            analytics?.briefGenerated(draft.inputs.size, result.document.sections.count { it.body.isNotBlank() })
-            commit(id, result.document, "draft", inputsUsed = draft.inputs.map { it.id }, notices = result.notices)
+            val result = tracked(id, { PendingJob(it, PendingJob.DRAFT, Time.nowIso(), inputsUsed) }) { started ->
+                ai.draft(draft.inputs.map { it.ai() }, draft.titleForTheAi, onProgress, started)
+            }
+            finishDraft(id, result, inputsUsed)
         } else {
             val fresh = draft.newInputs
             if (fresh.isEmpty()) return@guarded draft
-            val result = ai.append(current.body(), fresh.map { it.ai() }, onProgress)
-            commit(id, result.document, "append", inputsUsed = draft.inputs.map { it.id }, notices = result.notices)
+            val result = tracked(id, { PendingJob(it, PendingJob.APPEND, Time.nowIso(), inputsUsed) }) { started ->
+                ai.append(current.body(), fresh.map { it.ai() }, onProgress, started)
+            }
+            commit(id, result.document, "append", inputsUsed = inputsUsed, notices = result.notices)
         }
     }
 
     suspend fun regenerate(id: String, sectionId: String, instruction: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
         val draft = require(id)
         val current = draft.document ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-        val result = ai.regenerate(current.body(), sectionId, instruction, draft.inputs.map { it.ai() }, onProgress)
+        val result = tracked(id, { PendingJob(it, PendingJob.REGENERATE, Time.nowIso(), sectionId = sectionId) }) { started ->
+            ai.regenerate(current.body(), sectionId, instruction, draft.inputs.map { it.ai() }, onProgress, started)
+        }
+        finishRegenerate(id, result, sectionId)
+    }
+
+    // ----- R-083: a job the app was closed during -----
+
+    /**
+     * Runs an AI call with its job id kept on the draft from the moment the server accepts it. The result clears it
+     * (and so does a failure); a cancelled call (the screen closed) or a killed app keeps it, and [resumePending]
+     * collects the result the next time the draft or its quote opens.
+     */
+    private suspend fun <T> tracked(id: String, pending: (String) -> PendingJob, call: suspend (suspend (String) -> Unit) -> T): T {
+        try {
+            val result = call { jobId -> store.update(require(id).id) { it.copy(pendingJob = pending(jobId)) } }
+            clearPending(id)
+            return result
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Offline while it ran: the job goes on at the server; keep it to collect on the next try or open.
+            if ((e as? ApiException)?.code != ApiException.NETWORK) clearPending(id)
+            throw e
+        }
+    }
+
+    private suspend fun clearPending(id: String) {
+        val draft = get(id) ?: return
+        if (draft.pendingJob != null) store.update(draft.id) { it.copy(pendingJob = null) }
+    }
+
+    /**
+     * Collects a job started before the app closed, landing it exactly as the call would have. Null when none is
+     * pending. Past the 20-minute window, or when the server no longer has it: [ApiException.JOB_LOST].
+     */
+    suspend fun resumePending(id: String, onProgress: (JobState) -> Unit = {}, now: Long = System.currentTimeMillis()): LocalDraft? {
+        val draft = get(id) ?: return null
+        val pending = draft.pendingJob ?: return null
+        val started = Time.parse(pending.startedAt)?.toEpochMilli() ?: 0L
+        if (now - started > PendingJob.WINDOW_MS) {
+            clearPending(id)
+            throw ApiException(ApiException.JOB_LOST, message = "That stopped when the app closed. Try again.")
+        }
+        return guarded(id) {
+            try {
+                val landed = when (pending.kind) {
+                    PendingJob.QUOTE -> finishQuote(id, ai.resumeQuote(pending.jobId, onProgress), pending.baseVersion ?: (draft.current?.version ?: 0))
+                    PendingJob.REGENERATE -> finishRegenerate(id, ai.resumeDocument(pending.jobId, onProgress), pending.sectionId.orEmpty())
+                    PendingJob.APPEND -> {
+                        val result = ai.resumeDocument(pending.jobId, onProgress)
+                        commit(id, result.document, "append", inputsUsed = pending.inputsUsed, notices = result.notices)
+                    }
+                    else -> finishDraft(id, ai.resumeDocument(pending.jobId, onProgress), pending.inputsUsed)
+                }
+                clearPending(id)
+                landed
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: ApiException) {
+                if (e.code == ApiException.NETWORK) throw e   // still collectable later
+                clearPending(id)
+                if (e.code == ApiException.NOT_FOUND || e.code == ApiException.JOB_EXPIRED) {
+                    throw ApiException(ApiException.JOB_LOST, message = "That stopped when the app closed. Try again.")
+                }
+                throw e
+            }
+        }
+    }
+
+    private suspend fun finishDraft(id: String, result: com.raviga.app.data.api.AiDocumentResult, inputsUsed: List<String>): LocalDraft {
+        analytics?.briefGenerated(inputsUsed.size, result.document.sections.count { it.body.isNotBlank() })
+        return commit(id, result.document, "draft", inputsUsed = inputsUsed, notices = result.notices)
+    }
+
+    private suspend fun finishRegenerate(id: String, result: com.raviga.app.data.api.AiDocumentResult, sectionId: String): LocalDraft {
+        val current = require(id).document ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
         // Only the asked-for section changes; the rest stays exactly as the client left it.
         val regenerated = result.document.sections.firstOrNull { it.id == sectionId }
         val sections = current.sections.map { if (it.id == sectionId && regenerated != null) it.copy(body = regenerated.body) else it }
         val heading = current.section(sectionId)?.heading ?: SectionIds.headings[sectionId] ?: sectionId
-        commit(
+        return commit(
             id,
             AiDocument(current.title, sections, result.document.changeSummary ?: "Regenerated $heading"),
             "regenerate",
             notices = result.notices,
         )
     }
+
+    private suspend fun finishQuote(id: String, result: com.raviga.app.data.api.QuoteResult, version: Int): LocalDraft =
+        touch(id) { it.copy(quote = result.quote.copy(documentVersion = version), quoteToken = result.quoteToken, quotedVersion = version) }
 
     /** The client's own edits: a new version with these section bodies (and title, if given). */
     suspend fun saveEdit(id: String, title: String?, sections: List<SectionBody>): LocalDraft {
@@ -236,12 +324,13 @@ class DraftRepository(
     // ----- Quote and submit -----
 
     suspend fun quote(id: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+        if (require(id).pendingJob?.kind == PendingJob.QUOTE) resumePending(id, onProgress)?.let { return@guarded it }
         val draft = require(id)
         val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-        val result = ai.quote(current.document.body(), onProgress)
-        touch(id) {
-            it.copy(quote = result.quote.copy(documentVersion = current.version), quoteToken = result.quoteToken, quotedVersion = current.version)
+        val result = tracked(id, { PendingJob(it, PendingJob.QUOTE, Time.nowIso(), baseVersion = current.version) }) { started ->
+            ai.quote(current.document.body(), onProgress, started)
         }
+        finishQuote(id, result, current.version)
     }
 
     /** Creates the server project, charged. The brief stays here as the client's own copy. */

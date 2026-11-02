@@ -35,6 +35,8 @@ data class LocalDraft(
      * or [TITLE_USER], the client's own. Null otherwise (no title yet, or the brief's).
      */
     val titleSource: String? = null,
+    /** R-083: an AI job started for this draft whose result hasn't been collected yet (the app was closed). */
+    val pendingJob: PendingJob? = null,
 ) {
     val current: LocalVersion? get() = versions.lastOrNull()
     val document: Document? get() = current?.document
@@ -78,6 +80,33 @@ data class LocalVersion(
     val source: String,
     val changeSummary: String = "",
 )
+
+/**
+ * R-083 (as iOS): the server's job id, kept from the moment the server accepts the job until its result lands. A call
+ * the app was closed during keeps it, and opening the draft (or its quote) collects the result.
+ */
+@Serializable
+data class PendingJob(
+    val jobId: String,
+    /** draft | append | regenerate | quote */
+    val kind: String,
+    val startedAt: String,
+    /** draft and append: the notes the brief will reflect. */
+    val inputsUsed: List<String> = emptyList(),
+    /** regenerate: the section rewritten. */
+    val sectionId: String? = null,
+    /** quote: the brief version priced. */
+    val baseVersion: Int? = null,
+) {
+    companion object {
+        const val DRAFT = "draft"
+        const val APPEND = "append"
+        const val REGENERATE = "regenerate"
+        const val QUOTE = "quote"
+        /** The job's own 5 minutes plus the server's 15 to collect its result. */
+        const val WINDOW_MS = 20 * 60 * 1000L
+    }
+}
 
 /** Screening refused this brief; it is frozen and can only be deleted. */
 @Serializable

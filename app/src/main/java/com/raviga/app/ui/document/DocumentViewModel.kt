@@ -73,6 +73,7 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
                 // QA P2: a refusal ("Tell us a bit more...") was about the notes as they were; once they change it's stale.
                 _state.update { s -> s.copy(draft = d, loading = false, error = s.error.takeIf { s.draft?.inputs == d?.inputs }) }
                 d?.serverProjectId?.let { sid -> serverId.value = sid }
+                if (d?.pendingJob != null) resumeOnce(d.pendingJob.kind)
             }
         }
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -232,6 +233,21 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val action = pendingAi
         pendingAi = null
         action?.invoke()
+    }
+
+    private var resumed = false
+
+    /** R-083: a job this draft started before the app closed: its result, with the usual progress. Once per opening. */
+    private fun resumeOnce(kind: String) {
+        if (resumed || kind == com.raviga.app.data.drafts.PendingJob.QUOTE || _state.value.busyMessage != null) return
+        resumed = true
+        val draftId = _state.value.draft?.id ?: return
+        val message = if (kind == com.raviga.app.data.drafts.PendingJob.REGENERATE) "Rereading the section" else "Reading your notes"
+        busy(message) {
+            container.drafts.resumePending(draftId, { st ->
+                _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
+            })
+        }
     }
 
     private fun busy(message: String, close: Boolean = false, block: suspend () -> Unit) {

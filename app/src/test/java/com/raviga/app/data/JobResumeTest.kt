@@ -1,0 +1,157 @@
+package com.raviga.app.data
+
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.raviga.app.data.api.ApiException
+import com.raviga.app.data.api.JobRunner
+import com.raviga.app.data.api.RavigaApi
+import com.raviga.app.data.drafts.DraftStore
+import com.raviga.app.data.drafts.PendingJob
+import com.raviga.app.data.drafts.Sealer
+import com.raviga.app.data.local.CacheStore
+import com.raviga.app.data.repo.AiRepository
+import com.raviga.app.data.repo.DraftRepository
+import com.raviga.app.data.repo.ProjectRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Before
+import org.junit.Test
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
+
+/**
+ * R-083 (as iOS's JobResumeTests): an AI job's id is kept on the draft while it runs, kept when the call is cancelled
+ * or the app closes, collected on the next open, and given up past 20 minutes or when the server no longer has it.
+ */
+class JobResumeTest {
+
+    private lateinit var server: MockWebServer
+    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true; encodeDefaults = true }
+
+    @Before fun setUp() { server = MockWebServer().apply { start() } }
+    @After fun tearDown() { server.shutdown() }
+
+    private fun repo(): DraftRepository {
+        val api = Retrofit()
+        val store = DraftStore(Files.createTempDirectory("drafts").toFile(), json, Sealer.None)
+        return DraftRepository(store, AiRepository(api, json, JobRunner(api, json)), ProjectRepository(api, json, unusedCache()))
+    }
+
+    @Suppress("FunctionName")
+    private fun Retrofit(): RavigaApi = retrofit2.Retrofit.Builder()
+        .baseUrl(server.url("/v1/"))
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(RavigaApi::class.java)
+
+    /** Submitting isn't tested here, so the projects' cache is never touched: a placeholder without a Context. */
+    private fun unusedCache(): CacheStore {
+        val unsafeClass = Class.forName("sun.misc.Unsafe")
+        val unsafe = unsafeClass.getDeclaredField("theUnsafe").apply { isAccessible = true }.get(null)
+        return unsafeClass.getMethod("allocateInstance", Class::class.java).invoke(unsafe, CacheStore::class.java) as CacheStore
+    }
+
+    private val document = """{"document":{"title":"Dog Walking Booking App","sections":[{"id":"summary","heading":"Summary","body":"Owners book walkers."}]}}"""
+    private fun started(id: String = "j1") = MockResponse().setResponseCode(202).setBody("""{"job":{"jobId":"$id","type":"ai_draft","status":"queued"}}""")
+    private fun done(id: String = "j1", result: String = document) = MockResponse().setBody("""{"jobId":"$id","status":"done","progress":1,"result":$result}""")
+
+    private suspend fun draftWithNote(drafts: DraftRepository): String {
+        drafts.load()
+        val draft = drafts.create()
+        drafts.addInput(draft.id, "text", "A booking app for a dog walking service. Owners book a walker and pay by card.")
+        return draft.id
+    }
+
+    @Test fun aCallClosedMidwayKeepsItsJobAndTheNextOpenCollectsIt() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        server.enqueue(started())
+        // No poll answer yet: the call waits 2 s before its first poll, and the screen closes during that wait.
+        val call = launch { runCatching { drafts.writeBrief(id) } }
+        repeat(50) { if (drafts.get(id)?.pendingJob == null) delay(50) }
+        assertEquals("kept from the moment the server accepted it", "j1", drafts.get(id)?.pendingJob?.jobId)
+        call.cancel()
+        call.join()
+        val pending = drafts.get(id)?.pendingJob
+        assertNotNull("a cancelled call keeps it", pending)
+        assertEquals(PendingJob.DRAFT, pending?.kind)
+
+        server.enqueue(done())
+        val landed = drafts.resumePending(id)
+        assertEquals("Dog Walking Booking App", landed?.displayTitle)
+        assertNull("cleared once collected", drafts.get(id)?.pendingJob)
+        assertEquals("the notes count as in the brief", drafts.get(id)?.inputs?.map { it.id }, drafts.get(id)?.inputsInBrief)
+    }
+
+    @Test fun aFinishedCallLeavesNothingPending() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        server.enqueue(started())
+        server.enqueue(done())
+        drafts.writeBrief(id)
+        assertNull(drafts.get(id)?.pendingJob)
+    }
+
+    @Test fun pastTwentyMinutesItStoppedWhenTheAppClosed() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        server.enqueue(started())
+        val call = launch { runCatching { drafts.writeBrief(id) } }
+        repeat(50) { if (drafts.get(id)?.pendingJob == null) delay(50) }
+        call.cancel()
+        call.join()
+        try {
+            drafts.resumePending(id, now = System.currentTimeMillis() + PendingJob.WINDOW_MS + 1_000)
+            fail("expected job_lost")
+        } catch (e: ApiException) {
+            assertEquals(ApiException.JOB_LOST, e.code)
+        }
+        assertNull(drafts.get(id)?.pendingJob)
+    }
+
+    @Test fun aJobTheServerNoLongerHasStoppedToo() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        server.enqueue(started())
+        val call = launch { runCatching { drafts.writeBrief(id) } }
+        repeat(50) { if (drafts.get(id)?.pendingJob == null) delay(50) }
+        call.cancel()
+        call.join()
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":{"code":"not_found","message":"No such job"}}"""))
+        try {
+            drafts.resumePending(id)
+            fail("expected job_lost")
+        } catch (e: ApiException) {
+            assertEquals(ApiException.JOB_LOST, e.code)
+            assertEquals("That stopped when the app closed. Try again.", com.raviga.app.ui.status.StatusCopy.errorLine(e.code, e.message))
+        }
+        assertNull(drafts.get(id)?.pendingJob)
+    }
+
+    @Test fun writingTheBriefAgainCollectsThePendingJobInsteadOfPayingTwice() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        server.enqueue(started())
+        val call = launch { runCatching { drafts.writeBrief(id) } }
+        repeat(50) { if (drafts.get(id)?.pendingJob == null) delay(50) }
+        call.cancel()
+        call.join()
+        repeat(server.requestCount) { server.takeRequest(1, TimeUnit.SECONDS) }   // the first call's requests
+        val before = server.requestCount
+        server.enqueue(done())
+        drafts.writeBrief(id)
+        val paths = (before until server.requestCount).map { server.takeRequest(1, TimeUnit.SECONDS) }
+        assertTrue("no second POST", paths.none { it == null || it.method == "POST" && it.path?.contains("/ai/draft") == true })
+        assertEquals("Dog Walking Booking App", drafts.get(id)?.displayTitle)
+    }
+}

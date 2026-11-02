@@ -182,8 +182,30 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val s = _state.value
         val d = s.draft ?: return
         if (s.submitting || s.submittedProjectId != null) return
+        // R-083: a quote job from before the app closed is collected (resumeQuoteOnce), never asked for twice.
+        if (d.pendingJob != null) {
+            if (d.pendingJob.kind == com.raviga.app.data.drafts.PendingJob.QUOTE) resumeQuoteOnce()
+            return
+        }
         val editable = d.serverProjectId == null || s.project?.status == ProjectStatus.CHANGES_REQUESTED
         if (s.needsNewQuote && d.document != null && editable && !s.rejected && !quotedOnce) requestQuote()
+    }
+
+    private var resumedQuote = false
+
+    private fun resumeQuoteOnce() {
+        if (resumedQuote || _state.value.quoting) return
+        resumedQuote = true
+        val draftId = _state.value.draft?.id ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(quoting = true, progressMessage = "Sizing the work", progress = null, error = null) }
+            runCatching {
+                container.drafts.resumePending(draftId, { st ->
+                    _state.update { it.copy(progressMessage = st.message ?: it.progressMessage, progress = st.progress) }
+                })
+            }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+            _state.update { it.copy(quoting = false, progressMessage = null, progress = null) }
+        }
     }
 
     fun setGithub(value: String) = _state.update { it.copy(github = value, githubTouched = true, error = null) }

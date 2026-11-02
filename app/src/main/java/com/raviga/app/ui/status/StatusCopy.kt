@@ -152,6 +152,8 @@ object StatusCopy {
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
         // QA O6: a job whose result ran out (after the one automatic rerun): iOS's line, with the next step.
         "job_expired" -> "This is taking longer than usual. Try again."
+        // R-083, iOS's line: a job the app was closed during, past its window or no longer on the server.
+        "job_lost" -> "That stopped when the app closed. Try again."
         "unauthenticated" -> "This phone is no longer linked. Move your projects here with a recovery key."
         com.raviga.app.data.api.ApiException.BEFORE_CONSENT -> "Agree to the terms and privacy policy first."
         else -> fallback?.takeIf { it.isNotBlank() } ?: "Something went wrong. Try again."

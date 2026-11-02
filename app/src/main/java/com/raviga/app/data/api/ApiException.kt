@@ -67,6 +67,8 @@ open class ApiException(
         const val JOB_TIMEOUT = "job_timeout"
         /** Client-side: an AI result was gone (read or aged out) before we fetched it; rerun the call. */
         const val JOB_EXPIRED = "job_expired"
+        /** R-083: a job the app was closed during that can't be collected any more (past 20 minutes, or gone). */
+        const val JOB_LOST = "job_lost"
 
         fun from(t: Throwable, json: Json): ApiException = when (t) {
             is ApiException -> t
