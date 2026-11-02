@@ -104,12 +104,12 @@ fun SettingsScreen(nav: NavController) {
             )
             // Support asks for this; long-press copies it.
             clientId?.let { id ->
-                val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                val copy = com.raviga.app.ui.components.rememberCopier()
                 RaRow(
                     title = "Support ID",
                     subtitle = id,
                     modifier = Modifier.pointerInput(id) {
-                        detectTapGestures(onLongPress = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(id)) })
+                        detectTapGestures(onLongPress = { copy(id, false) })
                     },
                 )
             }

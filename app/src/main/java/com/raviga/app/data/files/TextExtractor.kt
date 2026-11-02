@@ -1,7 +1,7 @@
 package com.raviga.app.data.files
 
+import androidx.core.graphics.createBitmap
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -95,7 +95,7 @@ class TextExtractor(private val context: Context) {
                             val scale = 150f / 72f
                             val w = (page.width * scale).toInt().coerceIn(1, 2400)
                             val h = (page.height * scale).toInt().coerceIn(1, 3400)
-                            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                            val bitmap = createBitmap(w, h)
                             bitmap.eraseColor(Color.WHITE)
                             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                             val result = runCatching { recognizer.process(InputImage.fromBitmap(bitmap, 0)).await() }.getOrNull()

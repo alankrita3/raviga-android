@@ -1,5 +1,6 @@
 package com.raviga.app.push
 
+import androidx.core.net.toUri
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -33,7 +34,7 @@ object Notifications {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    fun projectDeepLink(projectId: String): Uri = Uri.parse("raviga://project/$projectId")
+    fun projectDeepLink(projectId: String): Uri = "raviga://project/$projectId".toUri()
 
     fun showProjectUpdate(context: Context, projectId: String, title: String, body: String) {
         if (!canPost(context)) return

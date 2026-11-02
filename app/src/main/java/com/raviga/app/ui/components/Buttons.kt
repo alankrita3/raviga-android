@@ -1,5 +1,13 @@
 package com.raviga.app.ui.components
 
+import android.os.Build
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
+import android.os.PersistableBundle
+import android.content.ClipDescription
+import android.content.ClipData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -181,6 +189,25 @@ fun LegalLinks(links: List<Pair<String, () -> Unit>>, modifier: Modifier = Modif
             shown.forEach {
                 if (inRow) { it.place(x, (height - it.height) / 2); x += it.width } else { it.place(0, y); y += it.height }
             }
+        }
+    }
+}
+
+/**
+ * Copies plain text to the clipboard ([LocalClipboard], whose set is a suspend call). [sensitive] text (a recovery
+ * key) is marked so Android 13+ doesn't show it in the clipboard preview.
+ */
+@Composable
+fun rememberCopier(): (text: String, sensitive: Boolean) -> Unit {
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    return remember(clipboard, scope) {
+        { text, sensitive ->
+            val clip = ClipData.newPlainText("Raviga", text)
+            if (sensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                clip.description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
+            }
+            scope.launch { clipboard.setClipEntry(ClipEntry(clip)) }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.raviga.app.data.local
 
+import androidx.core.content.edit
 import android.content.Context
 
 /** Debug-only switches read synchronously at process start. */
@@ -11,5 +12,5 @@ object DebugFlags {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(USE_DEMO, false)
 
     fun setUseDemoBackend(context: Context, value: Boolean) =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(USE_DEMO, value).commit()
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit(commit = true) { putBoolean(USE_DEMO, value) }
 }

@@ -1,5 +1,6 @@
 package com.raviga.app.ui.quote
 
+import com.raviga.app.ui.components.rememberCopier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.foundation.layout.Column
@@ -15,9 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -127,7 +126,7 @@ fun ConnectAwsScreen(nav: NavController) {
     val vm: ConnectAwsViewModel = viewModel { ConnectAwsViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
+    val copy = rememberCopier()
     val config by container.session.config.collectAsStateWithLifecycle()
 
     androidx.compose.runtime.LaunchedEffect(state.disconnected) { if (state.disconnected) nav.popBackStack() }
@@ -180,7 +179,7 @@ fun ConnectAwsScreen(nav: NavController) {
                     Text("External ID", style = RaType.body, color = Ink.graphite)
                     Spacer(Modifier.height(4.dp))
                     Text(target.externalId ?: "", style = RaType.body, color = Ink.ink)
-                    InlineAction("Copy", onClick = { clipboard.setText(AnnotatedString(target.externalId.orEmpty())) }, modifier = Modifier.padding(top = 2.dp))
+                    InlineAction("Copy", onClick = { copy(target.externalId.orEmpty(), false) }, modifier = Modifier.padding(top = 2.dp))
                 }
                 com.raviga.app.ui.components.Hairline()
                 KeyValueRow(

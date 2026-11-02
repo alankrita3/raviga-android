@@ -1,5 +1,6 @@
 package com.raviga.app.ui.settings
 
+import com.raviga.app.ui.components.rememberCopier
 import com.raviga.app.ui.components.SpotIllustration
 import com.raviga.app.ui.components.Picture
 import androidx.compose.foundation.layout.offset
@@ -36,9 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import com.raviga.app.ui.status.StatusCopy
@@ -312,7 +311,7 @@ fun RecoveryScreen(nav: NavController) {
     val container = LocalAppContainer.current
     val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
-    val clipboard = LocalClipboardManager.current
+    val copy = rememberCopier()
     var otherKey by remember { mutableStateOf("") }
     var confirmMove by remember { mutableStateOf(false) }
 
@@ -344,7 +343,7 @@ fun RecoveryScreen(nav: NavController) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Row {
-                    InlineAction("Copy", onClick = { clipboard.setText(AnnotatedString(key)) })
+                    InlineAction("Copy", onClick = { copy(key, true) })
                     InlineAction("Issue a new key", enabled = !state.busy, onClick = { vm.issueRecoveryKey() })
                 }
             } else {
