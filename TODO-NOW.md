@@ -17,14 +17,19 @@ The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
     beta5) where the phone already has it; client renames never replaced. OnePlus checked (fallback; no Nano there).
   - Suite P1 in progress (results in `qa/results/2026-11-02-android.md`): N1-N8, M4, O8 PASS (fixes: O8 removed-phone
     notice f1ed6da, M4 notifications Off on Android 12 909fda1, N4 drafts line fccde21; plus an empty duplicate draft
-    after fast typing, f5142e0). P4 battery PASS. P6 running (backgrounded 23:00, check at 00:00).
+    after fast typing, f5142e0). P1 and P2 (offline half) PASS on the emulator (PM's OK). P4 battery PASS. P6 running
+    (backgrounded 23:09, check at 00:09).
+  - Gate: "no demo or debug code in Release" done (11667ee: demo backend in src/debug, demo UI behind
+    BuildConfig.DEBUG, strings check clean); logs/analytics/secrets and `!!` lines re-checked and ticked.
+  - I3 (with the paid run): show the server's quote_stale message (backend's suggestion, contract 11 step 3) and check
+    the quote is marked expired from expiresAt before Submit.
   - Next: the paid P1 cases on 11-03's budget (today's ledger is at $2.91 of $3): L1-L8, M1-M3, M5, O1-O4, then O5-O7
     with backend's switches; P1-P3/P5 offline cases need the emulator (asked the PM; airplane mode cuts Wi-Fi adb).
     Then P2 (Q, R); release-APK inspection; the independent review; build only with her yes. R-083 after the suite.
   - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
     the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
     the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw; plus the O8 re-registrations cl_01m6ek2f8s00q5et6rse3jbjdh and
-    cl_01m6ekpkmp00ksmjy1tqf9ccab (backend has them). The recovery email on cl_01m6ehvcsp... is the SES test address. The OnePlus's demo client cl_01m63jpnye... is kept; restore it
+    cl_01m6ekpkmp00ksmjy1tqf9ccab (backend has them), and the emulator's P1/P2 client cl_01m6enrsky004dc42e71h7ppv2. The recovery email on cl_01m6ehvcsp... is the SES test address. The OnePlus's demo client cl_01m63jpnye... is kept; restore it
     on the phone with its key file in ~/Downloads after the suite. Backend deleted the emulator's R-076 client.
   - Backend 52fe82c on dev: the H10 notice names the file (no app change); an I3 quote-expiry switch
     (`team.py --stage dev fault quote_expiry --client <id> [--minutes N]`) for the expiry check in the suite.
