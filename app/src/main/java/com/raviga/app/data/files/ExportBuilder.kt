@@ -23,28 +23,29 @@ class ExportBuilder(
     private val drafts: DraftStore,
 ) {
     suspend fun write(serverZipUrl: String, target: Uri) = withContext(Dispatchers.IO) {
-        val out = context.contentResolver.openOutputStream(target, "w") ?: throw IOException("Couldn't open the file to save into.")
-        ZipOutputStream(out.buffered()).use { zip ->
-            if (!serverZipUrl.startsWith("demo:")) http.newCall(Request.Builder().url(serverZipUrl).build()).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("The download link has expired. Ask for a new one.")
-                ZipInputStream(response.body!!.byteStream()).use { input ->
-                    while (true) {
-                        val entry = input.nextEntry ?: break
-                        if (entry.name.startsWith("drafts/")) continue
-                        zip.putNextEntry(ZipEntry(entry.name))
-                        if (!entry.isDirectory) input.copyTo(zip)
-                        zip.closeEntry()
+        (context.contentResolver.openOutputStream(target, "w") ?: throw IOException("Couldn't open the file to save into.")).use { out ->
+            ZipOutputStream(out.buffered()).use { zip ->
+                if (!serverZipUrl.startsWith("demo:")) http.newCall(Request.Builder().url(serverZipUrl).build()).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("The download link has expired. Ask for a new one.")
+                    ZipInputStream(response.body!!.byteStream()).use { input ->
+                        while (true) {
+                            val entry = input.nextEntry ?: break
+                            if (entry.name.startsWith("drafts/")) continue
+                            zip.putNextEntry(ZipEntry(entry.name))
+                            if (!entry.isDirectory) input.copyTo(zip)
+                            zip.closeEntry()
+                        }
                     }
                 }
-            }
-            val local = drafts.exportJson()
-            zip.putNextEntry(ZipEntry("drafts/README.txt"))
-            zip.write(README.toByteArray(Charsets.UTF_8))
-            zip.closeEntry()
-            local.forEach { (id, json) ->
-                zip.putNextEntry(ZipEntry("drafts/$id.json"))
-                zip.write(json.toByteArray(Charsets.UTF_8))
+                val local = drafts.exportJson()
+                zip.putNextEntry(ZipEntry("drafts/README.txt"))
+                zip.write(README.toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
+                local.forEach { (id, json) ->
+                    zip.putNextEntry(ZipEntry("drafts/$id.json"))
+                    zip.write(json.toByteArray(Charsets.UTF_8))
+                    zip.closeEntry()
+                }
             }
         }
     }

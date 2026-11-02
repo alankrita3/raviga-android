@@ -18,7 +18,6 @@ import com.raviga.app.R
 object Notifications {
 
     fun ensureChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
         val id = context.getString(R.string.notification_channel_projects)
         if (manager.getNotificationChannel(id) != null) return
@@ -56,6 +55,10 @@ object Notifications {
             .setContentIntent(pending)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-        runCatching { NotificationManagerCompat.from(context).notify(projectId.hashCode(), notification) }
+        // canPost checked above; the permission can still be revoked in between.
+        try {
+            NotificationManagerCompat.from(context).notify(projectId.hashCode(), notification)
+        } catch (_: SecurityException) {
+        }
     }
 }

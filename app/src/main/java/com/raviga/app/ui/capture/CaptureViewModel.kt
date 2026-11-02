@@ -1,5 +1,6 @@
 package com.raviga.app.ui.capture
 
+import android.os.Build
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -194,6 +195,8 @@ class CaptureViewModel(
             if (speech is Speech.NotYet) checkSpeech()
             return
         }
+        // Ready only ever comes on Android 12+ (on-device recogniser); this says so to the compiler too.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         _state.update { it.copy(listening = true, error = null) }
         startTimer()
         listenJob?.cancel()

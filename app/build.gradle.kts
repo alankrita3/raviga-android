@@ -99,6 +99,7 @@ android {
     }
     lint {
         abortOnError = false
+        lintConfig = file("lint.xml")
     }
 }
 

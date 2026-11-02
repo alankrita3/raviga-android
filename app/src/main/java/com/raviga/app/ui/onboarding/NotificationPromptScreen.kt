@@ -1,6 +1,7 @@
 package com.raviga.app.ui.onboarding
 
 import android.Manifest
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,7 +52,10 @@ fun NotificationPromptScreen(nav: NavController, next: String) {
     ScreenScaffold(
         bottomBar = {
             BottomBar {
-                PrimaryButton("Allow notifications", onClick = { ask.launch(Manifest.permission.POST_NOTIFICATIONS) })
+                PrimaryButton("Allow notifications", onClick = {
+                    // Only shown on Android 13+ (NotificationAsk); older phones have no prompt to show.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ask.launch(Manifest.permission.POST_NOTIFICATIONS) else goOn()
+                })
                 Spacer(Modifier.height(4.dp))
                 TertiaryButton("Not now", onClick = goOn)
             }

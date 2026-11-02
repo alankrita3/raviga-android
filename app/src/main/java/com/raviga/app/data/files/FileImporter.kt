@@ -29,8 +29,8 @@ class FileImporter(private val context: Context) {
         var name = "Document"
         var size = -1L
         runCatching {
-            resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
-                if (c.moveToFirst()) {
+            resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null).use { c ->
+                if (c != null && c.moveToFirst()) {
                     c.getColumnIndex(OpenableColumns.DISPLAY_NAME).takeIf { it >= 0 }?.let { i -> c.getString(i)?.let { name = it } }
                     c.getColumnIndex(OpenableColumns.SIZE).takeIf { it >= 0 && !c.isNull(it) }?.let { i -> size = c.getLong(i) }
                 }
@@ -42,8 +42,7 @@ class FileImporter(private val context: Context) {
         val dir = File(context.cacheDir, "uploads").apply { mkdirs() }
         val out = File(dir, UUID.randomUUID().toString())
         try {
-            val input = resolver.openInputStream(uri) ?: throw Problem.Unreadable()
-            input.use { src ->
+            (resolver.openInputStream(uri) ?: throw Problem.Unreadable()).use { src ->
                 out.outputStream().use { dst ->
                     val buffer = ByteArray(64 * 1024)
                     var total = 0L

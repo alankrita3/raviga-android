@@ -77,6 +77,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
     val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId) }
     val state by vm.state.collectAsStateWithLifecycle()
+    val me by container.session.me.collectAsStateWithLifecycle()
     LifecycleResumeEffect(vm) {
         vm.onVisible()
         onPauseOrDispose { vm.onHidden() }
@@ -164,13 +165,13 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     }
 
                     val transfer = delivery?.transfer
-                    val github = project.submission?.githubUsername?.ifBlank { null } ?: container.session.me.value?.deliveryTargets?.githubUsername?.ifBlank { null }
+                    val github = project.submission?.githubUsername?.ifBlank { null } ?: me?.deliveryTargets?.githubUsername?.ifBlank { null }
                     // Pending is queued, not sent; its error (if any) is internal and never shown.
                     val transferLine = transfer?.let { GoLiveLogic.transferLine(if (it.status == "pending") it.copy(error = null) else it, github) }
                     if (transferLine != null) {
                         Labelled("Repository") {
-                            Text(transferLine, style = RaType.body, color = if (transfer?.status == "failed") Ink.brick else Ink.ink)
-                            if (transfer?.status == "awaiting_target" || transfer?.status == "failed") {
+                            Text(transferLine, style = RaType.body, color = if (transfer.status == "failed") Ink.brick else Ink.ink)
+                            if (transfer.status == "awaiting_target" || transfer.status == "failed") {
                                 InlineAction("Set GitHub username", onClick = { nav.navigate(Routes.DELIVERY_TARGETS) }, modifier = Modifier.offset(x = (-8).dp))
                             }
                         }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Build 8 gate (2026-11-02): Lint runs clean; each check silenced here is a false alarm, with the reason. -->
+<lint>
+    <!-- Push uses the Firebase Installation ID (onRegistered/onUnregistered, contract v0.8.2), not registration
+         tokens, so there is no onNewToken to implement. -->
+    <issue id="MissingFirebaseInstanceTokenRefresh" severity="ignore" />
+    <!-- The Android 12 splash icon must be drawn on a 288dp canvas (SplashScreen spec); the wordmark is one vector. -->
+    <issue id="VectorRaster">
+        <ignore path="src/main/res/drawable/ic_splash_wordmark.xml" />
+    </issue>
+    <!-- Inside Bouncy Castle (pulled in by PDFBox for encrypted PDFs); the app's own TLS is OkHttp's default trust. -->
+    <issue id="TrustAllX509TrustManager">
+        <ignore regexp="bcpkix" />
+    </issue>
+    <!-- These streams and the cursor are closed with Kotlin's use {}; Lint's Recycle check doesn't follow use on a
+         nullable result (openOutputStream/query/openInputStream). -->
+    <issue id="Recycle">
+        <ignore path="src/main/java/com/raviga/app/data/files/ExportBuilder.kt" />
+        <ignore path="src/main/java/com/raviga/app/data/files/FileImporter.kt" />
+    </issue>
+</lint>

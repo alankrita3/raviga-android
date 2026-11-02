@@ -12,9 +12,10 @@ import java.util.Locale
 /** ISO-8601 parsing and the short, human date formats the design calls for. */
 object Time {
     private val zone: ZoneId get() = ZoneId.systemDefault()
-    private val dayMonth = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
-    private val dayMonthYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
-    private val dayMonthTime = DateTimeFormatter.ofPattern("d MMM HH:mm", Locale.getDefault())
+    // Built per use, so a change of the phone's language while the app runs is picked up.
+    private val dayMonth get() = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+    private val dayMonthYear get() = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+    private val dayMonthTime get() = DateTimeFormatter.ofPattern("d MMM HH:mm", Locale.getDefault())
     private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
 
     fun now(): Instant = Instant.now()

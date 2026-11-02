@@ -55,6 +55,7 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
     val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId) }
     val state by vm.state.collectAsStateWithLifecycle()
+    val me by container.session.me.collectAsStateWithLifecycle()
     LifecycleResumeEffect(vm) {
         vm.onVisible()
         onPauseOrDispose { vm.onHidden() }
@@ -75,7 +76,7 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                     delivery = delivery,
                     status = project.status,
                     githubUsername = project.submission?.githubUsername?.ifBlank { null }
-                        ?: container.session.me.value?.deliveryTargets?.githubUsername?.ifBlank { null },
+                        ?: me?.deliveryTargets?.githubUsername?.ifBlank { null },
                     platforms = GoLiveLogic.platforms(brief?.section(SectionIds.PLATFORMS)?.body.orEmpty()),
                     hasPaidServices = brief?.section(SectionIds.INTEGRATIONS)?.body.orEmpty().isNotBlank(),
                     includedRounds = state.config.revisions.includedRounds,
