@@ -247,15 +247,16 @@ class DraftRepository(
         val sections = doc.sections.map { s ->
             s.copy(heading = s.heading.ifBlank { d.document?.section(s.id)?.heading ?: SectionIds.headings[s.id] ?: s.id })
         }
+        val createdAt = Time.nowIso()
         val document = Document(
             version = number,
             title = doc.title.ifBlank { d.document?.title ?: d.title },
             sections = sections,
-            createdAt = Time.nowIso(),
+            createdAt = createdAt,
             source = source,
             changeSummary = doc.changeSummary,
         )
-        val version = LocalVersion(number, document, document.createdAt!!, source, doc.changeSummary.orEmpty())
+        val version = LocalVersion(number, document, createdAt, source, doc.changeSummary.orEmpty())
         // The server redacted something it should never have seen; take it out of the local notes too.
         val inputs = if (notices.isEmpty()) d.inputs else d.inputs.map { it.copy(text = SensitiveScan.redact(it.text)) }
         d.copy(

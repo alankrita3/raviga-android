@@ -128,7 +128,7 @@ fun HomeScreen(nav: NavController) {
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (refreshing && summaries.isNotEmpty()) ProgressRule(Modifier.padding(horizontal = Ra.gutter)) else Spacer(Modifier.height(4.dp))
             when {
-                error != null && summaries.isEmpty() -> ErrorState(error!!, onRetry = { vm.refresh() })
+                error != null && summaries.isEmpty() -> ErrorState(error.orEmpty(), onRetry = { vm.refresh() })
                 summaries.isEmpty() && loadedOnce -> {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
                         Spacer(Modifier.height(12.dp))

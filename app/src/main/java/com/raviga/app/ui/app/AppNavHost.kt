@@ -62,7 +62,7 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
     if (!state.ready) {
         if (state.error != null) {
             ScreenScaffold { padding ->
-                ErrorState(state.error!!, Modifier.padding(padding), onRetry = { app.bootstrap() })
+                ErrorState(state.error.orEmpty(), Modifier.padding(padding), onRetry = { app.bootstrap() })
             }
         } else {
             LaunchScreen()

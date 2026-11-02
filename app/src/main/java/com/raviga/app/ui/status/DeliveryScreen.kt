@@ -110,7 +110,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
         },
     ) { padding ->
         when {
-            project == null && state.error != null -> ErrorState(state.error!!, Modifier.padding(padding), onRetry = { vm.refresh() })
+            project == null && state.error != null -> ErrorState(state.error.orEmpty(), Modifier.padding(padding), onRetry = { vm.refresh() })
             project == null -> Column(Modifier.fillMaxSize().padding(padding)) { ProgressRule(Modifier.padding(horizontal = Ra.gutter)) }
             else -> Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
                 val delivery = project.delivery

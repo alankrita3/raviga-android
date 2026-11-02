@@ -82,7 +82,8 @@ class ReRegisterAuthenticator(
         return runCatching {
             plainClient.newCall(request).execute().use { r ->
                 if (!r.isSuccessful) return null
-                val parsed = json.decodeFromString(RegisterDeviceResponse.serializer(), r.body!!.string())
+                val text = r.body?.string() ?: return null
+                val parsed = json.decodeFromString(RegisterDeviceResponse.serializer(), text)
                 sessionStore.set(parsed.clientId, parsed.accessToken, parsed.recoveryKey)
                 parsed
             }

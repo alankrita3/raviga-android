@@ -183,7 +183,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
         },
     ) { padding ->
         when {
-            draft == null && project == null && state.error != null -> ErrorState(state.error!!, Modifier.padding(padding), onRetry = { vm.refresh() })
+            draft == null && project == null && state.error != null -> ErrorState(state.error.orEmpty(), Modifier.padding(padding), onRetry = { vm.refresh() })
             draft == null && project == null && state.loading -> Column(Modifier.fillMaxSize().padding(padding)) { ProgressRule(Modifier.padding(horizontal = Ra.gutter)) }
             draft == null && project == null -> ErrorState("That draft is no longer on this phone.", Modifier.padding(padding), onRetry = { nav.popBackStack() })
             else -> LazyColumn(Modifier.fillMaxSize().padding(padding)) {
@@ -196,7 +196,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             Spacer(Modifier.height(8.dp))
                             Text("Writing your brief", style = RaType.title, color = Ink.ink)
                             Spacer(Modifier.height(8.dp))
-                            Text(state.busyMessage!!, style = RaType.secondary, color = Ink.link)
+                            Text(state.busyMessage.orEmpty(), style = RaType.secondary, color = Ink.link)
                             Spacer(Modifier.height(16.dp))
                             ProgressRule(progress = state.busyProgress?.takeIf { it > 0f })
                         }
@@ -208,7 +208,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         if (state.busyMessage != null) {
                             ProgressRule(progress = state.busyProgress?.takeIf { it > 0f })
                             Spacer(Modifier.height(8.dp))
-                            Text(state.busyMessage!!, style = RaType.caption, color = Ink.link)
+                            Text(state.busyMessage.orEmpty(), style = RaType.caption, color = Ink.link)
                             Spacer(Modifier.height(16.dp))
                         } else {
                             Spacer(Modifier.height(8.dp))

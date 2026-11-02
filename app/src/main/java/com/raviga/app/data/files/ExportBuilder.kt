@@ -27,7 +27,8 @@ class ExportBuilder(
             ZipOutputStream(out.buffered()).use { zip ->
                 if (!serverZipUrl.startsWith("demo:")) http.newCall(Request.Builder().url(serverZipUrl).build()).execute().use { response ->
                     if (!response.isSuccessful) throw IOException("The download link has expired. Ask for a new one.")
-                    ZipInputStream(response.body!!.byteStream()).use { input ->
+                    val body = response.body ?: throw IOException("The download came back empty. Ask for a new link.")
+                    ZipInputStream(body.byteStream()).use { input ->
                         while (true) {
                             val entry = input.nextEntry ?: break
                             if (entry.name.startsWith("drafts/")) continue
