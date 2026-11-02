@@ -13,6 +13,8 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -89,6 +91,7 @@ class TextExtractor(private val context: Context) {
                     val count = minOf(renderer.pageCount, maxPages)
                     val out = StringBuilder()
                     for (i in 0 until count) {
+                        currentCoroutineContext().ensureActive()   // R-092 #36: Stop takes effect between pages
                         onProgress("Reading page ${i + 1} of $count")
                         renderer.openPage(i).use { page ->
                             // About 150 dpi: enough for print, small enough for memory.
@@ -98,7 +101,14 @@ class TextExtractor(private val context: Context) {
                             val bitmap = createBitmap(w, h)
                             bitmap.eraseColor(Color.WHITE)
                             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            val result = runCatching { recognizer.process(InputImage.fromBitmap(bitmap, 0)).await() }.getOrNull()
+                            val result = try {
+                                recognizer.process(InputImage.fromBitmap(bitmap, 0)).await()
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                bitmap.recycle()
+                                throw e
+                            } catch (_: Exception) {
+                                null
+                            }
                             bitmap.recycle()
                             result?.textBlocks?.forEach { block -> out.append(block.text).append("\n\n") }
                         }
@@ -106,6 +116,8 @@ class TextExtractor(private val context: Context) {
                     return out.toString()
                 }
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e   // R-092 #36: a stopped read is stopped, not "no text found"
         } catch (e: Exception) {
             return ""
         } finally {

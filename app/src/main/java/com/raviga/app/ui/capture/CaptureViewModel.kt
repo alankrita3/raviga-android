@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import com.raviga.app.data.drafts.WorkingNotes
 import kotlinx.coroutines.launch
@@ -251,10 +252,20 @@ class CaptureViewModel(
 
     // ----- Upload (read on the device) -----
 
+    private var readJob: Job? = null
+
+    /** R-092 #36 (iOS review): a long scanned document can be stopped; nothing of it is kept. */
+    fun cancelReading() {
+        if (!_state.value.reading) return
+        readJob?.cancel()
+        readJob = null
+        _state.update { it.copy(phase = Phase.CAPTURE, tab = TAB_UPLOAD, reading = false, progress = null, progressMessage = null) }
+    }
+
     fun pickedFile(uri: Uri) {
         val limits = container.session.config.value.limits
         _state.update { it.copy(error = null) }
-        viewModelScope.launch {
+        readJob = viewModelScope.launch {
             val picked = try {
                 container.files.import(uri, limits.fileMaxBytes, limits.acceptedFileTypes)
             } catch (e: Exception) {
@@ -284,9 +295,13 @@ class CaptureViewModel(
                 }
                 // Read on the phone: saved in the draft straight away.
                 persist()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e   // stopped from the screen; cancelReading() has set it back
             } catch (e: TextExtractor.Unreadable) {
+                ensureActive()   // stopped meanwhile: no error to show
                 _state.update { it.copy(phase = Phase.CAPTURE, reading = false, progressMessage = null, error = e.message) }
             } catch (e: Exception) {
+                ensureActive()
                 _state.update { it.copy(phase = Phase.CAPTURE, reading = false, progressMessage = null, error = "Couldn't read that file. Try another copy, or paste the text instead.") }
             } finally {
                 // The file never leaves the phone, and doesn't stay on it either.

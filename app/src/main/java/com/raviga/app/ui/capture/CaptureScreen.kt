@@ -366,8 +366,12 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
     val focus = remember { FocusRequester() }
     LaunchedEffect(state.focusEditor) { if (state.focusEditor > 0) runCatching { focus.requestFocus() } }
     if (state.reading) {
-        // Reading a document on the phone.
-        ScreenScaffold(topBar = { RaTopBar() }) { padding ->
+        // Reading a document on the phone. R-092 #36: Stop, Back or the arrow stops it; nothing of it is kept.
+        BackHandler { vm.cancelReading() }
+        ScreenScaffold(
+            topBar = { RaTopBar(onBack = { vm.cancelReading() }) },
+            bottomBar = { BottomBar { SecondaryButton("Stop reading", onClick = { vm.cancelReading() }) } },
+        ) { padding ->
             Processing(
                 title = state.progressMessage ?: "Reading your document",
                 line = "Read on your phone. Long documents take a little longer.",
