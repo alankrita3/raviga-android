@@ -126,7 +126,7 @@ class AppContainer(private val app: Application) {
     )
     /** Contract v0.9 section 22. Collection follows consent.analytics.granted (init below); never in demo mode. */
     val analytics = com.raviga.app.data.analytics.Analytics(com.raviga.app.data.analytics.FirebaseAnalyticsSink(app))
-    val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects, analytics)
+    val drafts = com.raviga.app.data.repo.DraftRepository(draftStore, ai, projects, analytics) { session.config.value.limits.inputsPerProject }
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
     val credits = CreditsRepository(api, json, cache, billing, demoApi)
     val push = PushRegistrar(app, prefs, session, appScope)

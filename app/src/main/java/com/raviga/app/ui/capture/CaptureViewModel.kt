@@ -474,8 +474,11 @@ class CaptureViewModel(
 
     private suspend fun persist(s: State = _state.value) {
         val text = liveText(s, consumedUtterances) ?: return
-        // A failed save must not stop the person typing; the next change or leaving tries again.
-        runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }
+        // A failed save must not stop the person typing; the next change or leaving tries again. A refusal (the
+        // draft's note limit, QA F5) is shown, so nothing is dropped without a word.
+        runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }.onFailure { e ->
+            if ((e as? ApiException)?.code == ApiException.INVALID_ARGUMENT) _state.update { it.copy(error = e.userLine()) }
+        }
     }
 
     private fun kindOf(tab: Int): String = when (tab) {

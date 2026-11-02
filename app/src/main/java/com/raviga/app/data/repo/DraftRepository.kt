@@ -36,6 +36,8 @@ class DraftRepository(
     private val ai: AiRepository,
     private val projects: ProjectRepository,
     private val analytics: com.raviga.app.data.analytics.Analytics? = null,
+    /** limits.inputsPerProject from /config (QA F5): how many notes a draft can hold. */
+    private val maxNotes: () -> Int = { Int.MAX_VALUE },
 ) {
     val drafts: StateFlow<Map<String, LocalDraft>> = store.drafts
 
@@ -88,6 +90,7 @@ class DraftRepository(
             durationSec = durationSec,
             createdAt = Time.nowIso(),
         )
+        noteLimitProblem(get(id)?.inputs?.size ?: 0, maxNotes())?.let { throw ApiException(ApiException.INVALID_ARGUMENT, message = it) }
         val first = get(id)?.inputs?.isEmpty() == true
         touch(id) { it.copy(inputs = it.inputs + input) }
         if (first) {
@@ -278,4 +281,10 @@ class DraftRepository(
     }
 
     private fun LocalInput.ai() = AiInput(kind = kind, text = text, languageDetected = languageDetected, fileName = fileName)
+
+    companion object {
+        /** QA F5, iOS's words: a draft already holding [max] notes takes no more. */
+        fun noteLimitProblem(count: Int, max: Int): String? =
+            if (max in 1..count) "A project can have up to $max notes. Add the rest to an existing one." else null
+    }
 }

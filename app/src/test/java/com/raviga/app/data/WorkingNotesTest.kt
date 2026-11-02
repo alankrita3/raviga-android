@@ -162,4 +162,12 @@ class WorkingNotesTest {
             limits.problem(doc("a".repeat(20_000), "b".repeat(20_000), "c".repeat(20_000)), 20_000, 60_000),
         )
     }
+
+    /** QA F5: a draft holds at most limits.inputsPerProject notes; the 11th is refused with iOS's words. */
+    @Test fun aDraftTakesNoMoreThanTheNoteLimit() {
+        val limit = com.raviga.app.data.repo.DraftRepository
+        assertNull(limit.noteLimitProblem(9, 10))
+        assertEquals("A project can have up to 10 notes. Add the rest to an existing one.", limit.noteLimitProblem(10, 10))
+        assertNull("no limit from config", limit.noteLimitProblem(50, 0))
+    }
 }

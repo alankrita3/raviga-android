@@ -164,7 +164,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(Modifier.width(12.dp))
-                        AddMoreButton(enabled = state.busyMessage == null, onClick = { chooser = true })
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true })
                     }
                     // No brief yet: the same "+" adds voice, text or a document to the notes (her spec, 2026-11-02).
                     editable -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -175,7 +175,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(Modifier.width(12.dp))
-                        AddMoreButton(enabled = state.busyMessage == null, onClick = { chooser = true })
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true })
                     }
                     project != null -> PrimaryButton("View status", onClick = { nav.navigate(Routes.forProject(project.id, project.status)) })
                 }
@@ -248,7 +248,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             if (inputs.isEmpty()) {
                                 SectionHint("Nothing yet. Speak, type or upload a description.")
                                 Spacer(Modifier.height(16.dp))
-                                if (editable) SecondaryButton("Describe it", onClick = { chooser = true })
+                                if (editable) SecondaryButton("Describe it", onClick = { if (vm.canAddNote()) chooser = true })
                             } else {
                                 // Each note opens to be edited or deleted (on the phone only).
                                 inputs.forEach { input ->

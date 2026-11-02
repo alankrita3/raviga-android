@@ -190,6 +190,15 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
 
     fun clearError() = _state.update { it.copy(error = null) }
 
+    /** QA F5: "+" on a draft that already holds the most notes says so instead of opening the choices. */
+    fun canAddNote(): Boolean {
+        val count = _state.value.draft?.inputs?.size ?: return true
+        val line = com.raviga.app.data.repo.DraftRepository.noteLimitProblem(count, container.session.config.value.limits.inputsPerProject)
+            ?: return true
+        _state.update { it.copy(error = line) }
+        return false
+    }
+
     /** QA H9: a written brief over the section or total limit is refused before the call, in plain words. */
     private fun briefTooLong(): Boolean {
         val doc = _state.value.draft?.document ?: return false
