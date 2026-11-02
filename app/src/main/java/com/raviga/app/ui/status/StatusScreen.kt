@@ -174,11 +174,19 @@ fun StatusScreen(nav: NavController, projectId: String) {
     }
 
     if (confirmCancel) {
+        // R-092 #37 (iOS review): no draft is made on cancel; say what really happens to the brief.
+        val hasCopy = project?.let { container.drafts.get(it.id) } != null
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             containerColor = Ink.surface,
             title = { Text("Cancel this project?", style = RaType.heading, color = Ink.ink) },
-            text = { Text("Your ${project?.submission?.creditsCharged ?: 0} credits come back to your balance and the brief unlocks as a draft.", style = RaType.body, color = Ink.graphite) },
+            text = {
+                Text(
+                    "Your ${project?.submission?.creditsCharged ?: 0} credits come back to your balance. " +
+                        if (hasCopy) "We delete the brief from our servers; your copy stays on this phone to read." else "We delete the brief from our servers.",
+                    style = RaType.body, color = Ink.graphite,
+                )
+            },
             confirmButton = { TextButton(onClick = { confirmCancel = false; vm.cancel() }) { Text("Cancel project", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Keep it", style = RaType.button, color = Ink.ink) } },
         )
