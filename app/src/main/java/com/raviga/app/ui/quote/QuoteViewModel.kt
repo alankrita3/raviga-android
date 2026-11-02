@@ -144,7 +144,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
         viewModelScope.launch { container.credits.credits.collect { c -> if (c != null) _state.update { it.copy(balance = c.balance) } } }
         viewModelScope.launch { container.session.config.collect { c -> _state.update { it.copy(config = c) } } }
-        viewModelScope.launch {
+        // Signed out on this phone (R-079): nothing to refresh until the account comes back with the next AI step.
+        if (container.session.hasAccount) viewModelScope.launch {
             serverId.value?.let { sid -> runCatching { container.projects.refresh(sid) } }
             runCatching { container.credits.refresh() }
             runCatching { container.session.refreshMe() }

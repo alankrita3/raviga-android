@@ -29,6 +29,8 @@ data class Prefs(
     /** R-056: the versions the person on this phone agreed to. Device-level: a restored account keeps it. */
     val agreedTermsVersion: String? = null,
     val agreedPrivacyVersion: String? = null,
+    /** R-079: "Protect your credits" has been offered on this install (once, whichever button was tapped). */
+    val recoveryEmailPromptShown: Boolean = false,
 )
 
 class PrefsStore(private val context: Context) {
@@ -47,6 +49,7 @@ class PrefsStore(private val context: Context) {
             recoveryKeyShown = p[RECOVERY_SHOWN] ?: false,
             agreedTermsVersion = p[AGREED_TERMS],
             agreedPrivacyVersion = p[AGREED_PRIVACY],
+            recoveryEmailPromptShown = p[RECOVERY_EMAIL_PROMPT] ?: false,
         )
     }
 
@@ -79,6 +82,7 @@ class PrefsStore(private val context: Context) {
         it[PUSH_SYNCED] = false
     }
     suspend fun setRecoveryKeyShown() = context.dataStore.edit { it[RECOVERY_SHOWN] = true }
+    suspend fun setRecoveryEmailPromptShown() = context.dataStore.edit { it[RECOVERY_EMAIL_PROMPT] = true }
     suspend fun clear() = context.dataStore.edit { it.clear() }
 
     /** Forgets what belonged to the previous client; device-level choices stay. */
@@ -107,5 +111,6 @@ class PrefsStore(private val context: Context) {
         /** Pre-v0.8.2 FCM token; never sent again, removed on the next write. */
         val LEGACY_PUSH_TOKEN = stringPreferencesKey("push_token")
         val RECOVERY_SHOWN = booleanPreferencesKey("recovery_key_shown")
+        val RECOVERY_EMAIL_PROMPT = booleanPreferencesKey("recovery_email_prompt_shown")
     }
 }

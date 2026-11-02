@@ -94,6 +94,21 @@ class SessionStoreTest {
         assertNotEquals("deletion starts afresh", install, store.installId)
     }
 
+    /** R-079: restored by email or linked with a code, the phone must not keep showing the old client's key. */
+    @Test fun becomingAnotherClientDropsTheOldKeyUnlessOneWasTyped() {
+        val store = SessionStore(MemoryFile())
+        store.set("cl_old", "rat_old", "rark_old")
+        store.replace("cl_new", "rat_new", null)
+        assertEquals("cl_new", store.clientId)
+        assertEquals("rat_new", store.accessToken)
+        assertNull("the old client's key is gone", store.recoveryKey)
+        store.replace("cl_other", "rat_other", "rark_typed")
+        assertEquals("rark_typed", store.recoveryKey)
+        // A re-register of the same client (no key in the response) keeps the key it has.
+        store.set("cl_other", "rat_again", null)
+        assertEquals("rark_typed", store.recoveryKey)
+    }
+
     @Test fun aValueThatNoLongerOpensReadsAsMissing() {
         val prefs = MemoryPrefs()
         SealedFile(prefs, Reverse).put(mapOf(SessionStore.KEY_TOKEN to "rat"))

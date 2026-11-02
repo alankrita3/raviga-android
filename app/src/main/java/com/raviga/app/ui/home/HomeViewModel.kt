@@ -107,8 +107,9 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _refreshing.value = true
             container.drafts.load()
-            // R-056: before Agree there is no account to load; drafts are all there is.
-            if (!container.session.agreed) {
+            // R-056: before Agree there is no account to load; drafts are all there is. R-079: the same after "Sign out
+            // this phone", until something needs an account or the app starts again.
+            if (!container.session.agreed || (container.session.signedOutHere && !container.session.isRegistered)) {
                 container.projects.noAccountYet()
                 _refreshing.value = false
                 return@launch

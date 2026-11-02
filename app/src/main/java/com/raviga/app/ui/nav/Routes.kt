@@ -52,6 +52,7 @@ object Routes {
     const val DELIVERY_TARGETS = "settings/targets"
     const val PRIVACY = "settings/privacy"
     const val RECOVERY = "settings/recovery"
+    const val RECOVERY_EMAIL = "settings/recovery-email"
     const val FONTS = "settings/fonts"
     const val NOTIFICATIONS = "settings/notifications"
     /** R-066: the five welcome pages again, from Settings. */

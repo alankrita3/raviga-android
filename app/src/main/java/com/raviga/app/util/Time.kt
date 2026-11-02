@@ -52,6 +52,12 @@ object Time {
         return dayMonthTime.format(instant.atZone(zone))
     }
 
+    /** "14:02" (or "2:02 PM"), in the phone's own style: a link code's expiry. */
+    fun clock(iso: String?): String {
+        val instant = parse(iso) ?: return ""
+        return DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT).withLocale(Locale.getDefault()).format(instant.atZone(zone))
+    }
+
     /** "just now", "4 min ago", "2 h ago", "yesterday", "3 days ago", else short date. */
     fun relative(iso: String?): String {
         val instant = parse(iso) ?: return ""

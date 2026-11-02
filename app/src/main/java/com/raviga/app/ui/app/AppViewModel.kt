@@ -58,7 +58,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         if (!_state.value.ready) return
         viewModelScope.launch {
             val session = container.session
-            if (!session.agreed) { runCatching { session.refreshConfig() }; return@launch }
+            // No account (before Agree, or signed out here): only the public config.
+            if (!session.hasAccount) { runCatching { session.refreshConfig() }; return@launch }
             runCatching { session.refreshConfig(); session.refreshMe() }.onSuccess { me ->
                 if (session.needsLegal(me, session.config.value)) _state.update { it.copy(legalDue = true) }
             }

@@ -50,6 +50,7 @@ open class ApiException(
         const val ACTIVE_PROJECTS = "active_projects"
         const val AWS_ROLE_NOT_READY = "aws_role_not_ready"
         const val OTP_INVALID = "otp_invalid"
+        const val LINK_CODE_INVALID = "link_code_invalid"
         const val UPGRADE_REQUIRED = "upgrade_required"
         const val RATE_LIMITED = "rate_limited"
         const val AI_UNAVAILABLE = "ai_unavailable"

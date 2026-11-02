@@ -1,5 +1,7 @@
 package com.raviga.app.ui.credits
 
+import com.raviga.app.ui.account.ProtectCreditsSheet
+import com.raviga.app.ui.account.RecoveryEmailPrompt
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -75,6 +77,8 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         val notice: String? = null,
         val demoBilling: Boolean = false,
         val billingAvailable: Boolean = false,
+        /** R-079: offer a recovery email (once per install, after credits were added). */
+        val offerRecoveryEmail: Boolean = false,
     )
 
     private val _state = MutableStateFlow(State(demoBilling = container.credits.isDemoBilling, billingAvailable = container.billing.isAvailable))
@@ -91,16 +95,24 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         }
         viewModelScope.launch { container.events.collect { if (it is AppEvent.CreditsUpdated) runCatching { container.credits.refresh() } } }
         // R-056: before Agree there is no account yet, so no balance to fetch (and nothing may leave the phone).
-        if (container.session.agreed) viewModelScope.launch { runCatching { container.credits.refresh() }.onFailure { e -> if (_state.value.credits == null) _state.update { it.copy(error = e.userLine()) } } }
+        if (container.session.hasAccount) viewModelScope.launch { runCatching { container.credits.refresh() }.onFailure { e -> if (_state.value.credits == null) _state.update { it.copy(error = e.userLine()) } } }
     }
 
     fun buy(activity: Activity, pack: CreditPack) {
         if (_state.value.buying != null) return
         viewModelScope.launch {
             _state.update { it.copy(buying = pack.productId, error = null, notice = null) }
-            val outcome = runCatching { container.credits.purchase(activity, pack) }.getOrElse { PurchaseOutcome.Failed(it.userLine()) }
+            val outcome = runCatching {
+                // Signed out on this phone (R-079): the credits need an account, and the store must know it first.
+                if (!container.session.hasAccount) {
+                    container.session.ensureAccount()
+                    container.session.clientId?.let { container.billing.identify(it) }
+                }
+                container.credits.purchase(activity, pack)
+            }.getOrElse { PurchaseOutcome.Failed(it.userLine()) }
             // Confirmed means the balance synced (contract v0.9); bonus credits included.
             if (outcome == PurchaseOutcome.Success) container.analytics.creditsPurchased(pack.productId, pack.total)
+            if (outcome == PurchaseOutcome.Success && pack.total > 0) offerRecoveryEmailOnce()
             _state.update {
                 it.copy(
                     buying = null,
@@ -115,6 +127,15 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
     }
+
+    private suspend fun offerRecoveryEmailOnce() {
+        val shown = container.prefs.current().recoveryEmailPromptShown
+        if (!RecoveryEmailPrompt.shouldOffer(container.session.me.value, shown)) return
+        container.prefs.setRecoveryEmailPromptShown()
+        _state.update { it.copy(offerRecoveryEmail = true) }
+    }
+
+    fun recoveryEmailOffered() = _state.update { it.copy(offerRecoveryEmail = false) }
 
     fun restore() {
         viewModelScope.launch {
@@ -227,7 +248,8 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                     Spacer(Modifier.height(Ra.sectionGap))
                     Text("History", style = RaType.heading, color = Ink.ink)
                     Spacer(Modifier.height(4.dp))
-                    if (state.credits == null && state.error == null) ProgressRule(Modifier.padding(vertical = 12.dp))
+                    // No account on this phone (before Agree, or signed out): nothing to load, so no endless rule.
+                    if (state.credits == null && state.error == null && container.session.hasAccount) ProgressRule(Modifier.padding(vertical = 12.dp))
                     else if (state.credits?.ledger.isNullOrEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Text("No credits yet. Buy a pack to submit your first project.", style = RaType.body, color = Ink.graphite)
@@ -237,6 +259,13 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
             items(state.credits?.ledger.orEmpty(), key = { it.id }) { entry -> LedgerRow(entry) }
             item { Spacer(Modifier.height(32.dp)) }
         }
+    }
+
+    if (state.offerRecoveryEmail) {
+        ProtectCreditsSheet(
+            onAdd = { vm.recoveryEmailOffered(); nav.navigate(Routes.RECOVERY_EMAIL) },
+            onNotNow = { vm.recoveryEmailOffered() },
+        )
     }
 }
 

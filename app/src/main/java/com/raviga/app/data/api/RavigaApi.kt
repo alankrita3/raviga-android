@@ -37,6 +37,28 @@ interface RavigaApi {
     @POST("me/link-codes")
     suspend fun createLinkCode(@Body body: Empty = Empty()): LinkCodeResponse
 
+    // Recovery email and devices (contract 3.1-3.3)
+    @PUT("me/recovery-email")
+    suspend fun setRecoveryEmail(@Body body: RecoveryEmailRequest): PendingResponse
+
+    @POST("me/recovery-email/confirm")
+    suspend fun confirmRecoveryEmail(@Body body: OtpRequest): RecoveryEmailConfirmed
+
+    @DELETE("me/recovery-email")
+    suspend fun removeRecoveryEmail()
+
+    @POST("devices/recover")
+    suspend fun recoverByEmail(@Body body: RecoverByEmailRequest): Empty
+
+    @POST("devices/recover/confirm")
+    suspend fun recoverByEmailConfirm(@Body body: RecoverByEmailConfirmRequest): RegisterDeviceResponse
+
+    @GET("me/devices")
+    suspend fun devices(): DevicesResponse
+
+    @DELETE("me/devices/{deviceId}")
+    suspend fun revokeDevice(@Path("deviceId") deviceId: String)
+
     @GET("me")
     suspend fun me(): Me
 

@@ -11,6 +11,12 @@ import com.raviga.app.data.api.DeleteMeResponse
 import com.raviga.app.data.api.DeliveryTargets
 import com.raviga.app.data.api.DeliveryTargetsRequest
 import com.raviga.app.data.api.DeviceInfo
+import com.raviga.app.data.api.DeviceSummary
+import com.raviga.app.data.api.LinkCodeResponse
+import com.raviga.app.data.api.OtpRequest
+import com.raviga.app.data.api.RecoverByEmailConfirmRequest
+import com.raviga.app.data.api.RecoverByEmailRequest
+import com.raviga.app.data.api.RecoveryEmailRequest
 import com.raviga.app.data.api.RavigaApi
 import com.raviga.app.data.api.ExportResult
 import com.raviga.app.data.api.JobRunner
@@ -54,6 +60,16 @@ class SessionRepository(
     val recoveryKey: String? get() = sessionStore.recoveryKey
     val isRegistered: Boolean get() = sessionStore.isRegistered
 
+    /** There is an account on this phone: agreed here and registered (iOS's hasAccount). */
+    val hasAccount: Boolean get() = guard.agreed && sessionStore.isRegistered
+
+    /**
+     * R-079: this phone was signed out from Move to another phone in this run. Home then shows only the drafts, with
+     * no account, until something needs one ([ensureAccount]) or the app starts again (as iOS).
+     */
+    @Volatile var signedOutHere: Boolean = false
+        private set
+
     /** R-056: the person on this phone has agreed (any version). Until then [guard] lets only GET /config out. */
     val agreed: Boolean get() = guard.agreed
 
@@ -84,6 +100,16 @@ class SessionRepository(
         }
         refreshConfig()
         refreshMe()
+    }
+
+    /**
+     * The account an action needs: after "Sign out this phone" (or agreeing on the way to Restore and backing out)
+     * there is none until here. Registers, puts the agreement on it, and the container follows the new clientId.
+     */
+    suspend fun ensureAccount() {
+        if (!guard.agreed || sessionStore.isRegistered) return
+        completeConsent(ensureRegistered())
+        signedOutHere = false
     }
 
     suspend fun refreshConfig(): AppConfig {
@@ -171,12 +197,14 @@ class SessionRepository(
 
     /** v0.9: usage analytics. Never gates anything; AnalyticsGate follows the result. */
     suspend fun setAnalytics(granted: Boolean): ConsentState {
+        ensureAccount()
         val consent = apiCall(json) { api.putConsent(ConsentRequest(analytics = granted)) }
         updateMe { it.copy(consent = consent) }
         return consent
     }
 
     suspend fun setAiProcessing(granted: Boolean): ConsentState {
+        ensureAccount()
         val consent = apiCall(json) { api.putConsent(ConsentRequest(aiProcessing = granted)) }
         prefs.setAiAccepted(_config.value.legal.privacyVersion, allowed = granted)
         updateMe { it.copy(consent = consent) }
@@ -186,6 +214,7 @@ class SessionRepository(
     // ----- Delivery targets (section 12) -----
 
     suspend fun setDeliveryTargets(githubUsername: String?, awsAccountId: String?): DeliveryTargets {
+        ensureAccount()
         val targets = apiCall(json) {
             api.putDeliveryTargets(DeliveryTargetsRequest(githubUsername = githubUsername, awsAccountId = awsAccountId))
         }
@@ -196,6 +225,7 @@ class SessionRepository(
 
     /** Clears a target: the contract wants an explicit null for that. */
     suspend fun clearDeliveryTarget(github: Boolean = false, aws: Boolean = false): DeliveryTargets {
+        ensureAccount()
         val body = kotlinx.serialization.json.buildJsonObject {
             if (github) put("githubUsername", kotlinx.serialization.json.JsonNull)
             if (aws) put("awsAccountId", kotlinx.serialization.json.JsonNull)
@@ -212,7 +242,10 @@ class SessionRepository(
         return targets
     }
 
-    suspend fun awsConnect(): AwsConnectInfo = apiCall(json) { api.awsConnect() }
+    suspend fun awsConnect(): AwsConnectInfo {
+        ensureAccount()
+        return apiCall(json) { api.awsConnect() }
+    }
 
     suspend fun awsVerify(): AwsTarget {
         val aws = apiCall(json) { api.awsVerify() }
@@ -229,10 +262,11 @@ class SessionRepository(
     // ----- Recovery (section 3.3) -----
 
     suspend fun recover(recoveryKey: String): Me {
+        val key = recoveryKey.trim()
         val response = apiCall(json) {
             api.recoverDevice(
                 RecoverDeviceRequest(
-                    recoveryKey = recoveryKey.trim(),
+                    recoveryKey = key,
                     installId = sessionStore.installId,
                     appVersion = DeviceInfo.appVersion,
                     deviceModel = DeviceInfo.deviceModel,
@@ -240,11 +274,87 @@ class SessionRepository(
                 ),
             )
         }
-        // The container drops the previous client's projects and credits when the id changes.
-        sessionStore.set(response.clientId, response.accessToken, recoveryKey.trim())
+        return adopt(response.clientId, response.accessToken, key)
+    }
+
+    /** R-079: back in with the recovery email and its 6-digit code (contract 3.3). */
+    suspend fun recoverByEmail(email: String, otp: String): Me {
+        val response = apiCall(json) {
+            api.recoverByEmailConfirm(
+                RecoverByEmailConfirmRequest(
+                    email = email.trim(),
+                    otp = otp,
+                    installId = sessionStore.installId,
+                    appVersion = DeviceInfo.appVersion,
+                    deviceModel = DeviceInfo.deviceModel,
+                    osVersion = DeviceInfo.osVersion,
+                ),
+            )
+        }
+        return adopt(response.clientId, response.accessToken, null)
+    }
+
+    /** R-079: this phone joins the client whose other phone made [code] (contract 3.2). */
+    suspend fun link(code: String): Me {
+        val response = apiCall(json) { api.registerDevice(DeviceInfo.registerRequest(sessionStore.installId, linkCode = code.trim())) }
+        return adopt(response.clientId, response.accessToken, null)
+    }
+
+    /**
+     * This phone is now [clientId]. The container drops the previous client's projects and credits when the id
+     * changes. R-056: the person agreed on this phone; the restored account gets that consent, no second screen.
+     */
+    private suspend fun adopt(clientId: String, accessToken: String, recoveryKey: String?): Me {
+        sessionStore.replace(clientId, accessToken, recoveryKey)
+        signedOutHere = false
         refreshConfig()
-        // R-056: the person agreed on this phone moments ago; the restored account gets that consent, no second screen.
         return completeConsent(refreshMe())
+    }
+
+    /** Always 202, whether or not the email is on an account (no enumeration). */
+    suspend fun sendRecoveryCode(email: String) {
+        apiCall(json) { api.recoverByEmail(RecoverByEmailRequest(email.trim())) }
+    }
+
+    // ----- Recovery email, link codes and phones (sections 3.1-3.3, R-079) -----
+
+    suspend fun setRecoveryEmail(email: String) {
+        ensureAccount()
+        apiCall(json) { api.setRecoveryEmail(RecoveryEmailRequest(email.trim())) }
+    }
+
+    suspend fun confirmRecoveryEmail(otp: String): Me {
+        apiCall(json) { api.confirmRecoveryEmail(OtpRequest(otp)) }
+        return refreshMe()
+    }
+
+    suspend fun removeRecoveryEmail(): Me {
+        apiCall(json) { api.removeRecoveryEmail() }
+        return refreshMe()
+    }
+
+    suspend fun createLinkCode(): LinkCodeResponse {
+        ensureAccount()
+        return apiCall(json) { api.createLinkCode() }
+    }
+
+    suspend fun devices(): List<DeviceSummary> = apiCall(json) { api.devices() }.devices
+
+    suspend fun revokeDevice(deviceId: String) = apiCall(json) { api.revokeDevice(deviceId) }
+
+    /**
+     * "Sign out this phone": the server forgets this phone's token first, so a later start can't slip back into the
+     * account; then the identity goes. The install id, the agreement made here and the drafts all stay. If the server
+     * can't be told (offline), nothing changes and the error shows.
+     */
+    suspend fun signOutThisPhone(deviceId: String) {
+        try {
+            apiCall(json) { api.revokeDevice(deviceId) }
+        } catch (e: ApiException) {
+            if (!e.isUnauthenticated && e.code != ApiException.NOT_FOUND) throw e   // already gone is fine
+        }
+        signedOutHere = true
+        sessionStore.clear()
     }
 
     /** Issues a fresh recovery key (the old one stops working) and remembers it locally. */
@@ -259,6 +369,7 @@ class SessionRepository(
     // ----- Privacy (section 14) -----
 
     suspend fun exportData(onProgress: (JobState) -> Unit = {}): ExportResult {
+        ensureAccount()
         val job = apiCall(json) { api.exportData() }.job
         return jobs.await(job, ExportResult.serializer(), onProgress = onProgress)
     }

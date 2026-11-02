@@ -68,7 +68,21 @@ fun SettingsScreen(nav: NavController) {
                 subtitle = if (Notifications.canPost(context) && vm.pushConfigured) "On" else if (!vm.pushConfigured) "Not set up on this build" else "Off",
                 onClick = { nav.navigate(Routes.NOTIFICATIONS) },
             )
-            RaRow(title = "Move to another phone", subtitle = "Recovery key", onClick = { nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) })
+            // R-079, as iOS: with an account, the key and link code, and the recovery email; without one, the way in.
+            if (container.session.hasAccount) {
+                RaRow(title = "Move to another phone", subtitle = "Recovery key, link code", onClick = { nav.navigate(Routes.RECOVERY) })
+                RaRow(
+                    title = "Recovery email",
+                    subtitle = state.me?.recoveryEmail?.takeIf { it.verified }?.email ?: "Not set",
+                    onClick = { nav.navigate(Routes.RECOVERY_EMAIL) },
+                )
+            } else {
+                RaRow(
+                    title = "Restore my account",
+                    subtitle = "With a recovery key, recovery email or link code",
+                    onClick = { nav.navigateAfterConsent(container.session.agreed, Routes.RECOVERY) },
+                )
+            }
             RaRow(
                 title = "Privacy and data",
                 subtitle = "AI processing, download or delete your data, questions or complaints",

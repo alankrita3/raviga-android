@@ -22,6 +22,9 @@ import kotlin.math.ceil
  * review lifecycle on a timer so every screen can be exercised. Nothing here
  * talks to the network.
  */
+/** The demo backend's 6-digit code for the recovery email (R-079). */
+private const val DEMO_OTP = "123456"
+
 class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi {
 
     @Serializable
@@ -42,6 +45,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val resubmitted: Set<String> = emptySet(),
         val statusChangedAt: Map<String, String> = emptyMap(),
         val unread: Map<String, Int> = emptyMap(),
+        /** R-079: the confirmed recovery email, and one waiting for its code (always 123456 in demo). */
+        val recoveryEmail: String? = null,
+        val pendingEmail: String? = null,
     )
 
     @Serializable
@@ -104,6 +110,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         consent = s.consent,
         deliveryTargets = s.deliveryTargets,
         deviceCount = 1,
+        recoveryEmail = s.recoveryEmail?.let { RecoveryEmail(it, verified = true) },
     )
 
     private fun requireProject(s: State, id: String): Project =
@@ -318,6 +325,34 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         LinkCodeResponse(code = List(2) { UUID.randomUUID().toString().take(4).uppercase() }.joinToString("-"), expiresAt = Instant.now().plusSeconds(600).toString())
 
     override suspend fun me(): Me = readState { meOf(it) }
+
+    // R-079 in demo: one phone, and the email code is always 123456.
+    override suspend fun setRecoveryEmail(body: RecoveryEmailRequest): PendingResponse =
+        mutate { it.copy(pendingEmail = body.email.trim()) to PendingResponse("pending") }
+
+    override suspend fun confirmRecoveryEmail(body: OtpRequest): RecoveryEmailConfirmed = mutate { s ->
+        val email = s.pendingEmail ?: throw ApiException(ApiException.INVALID_STATE, 409, "Ask for a code first.")
+        if (body.otp != DEMO_OTP) throw ApiException(ApiException.OTP_INVALID, 400, "That code doesn't match.")
+        s.copy(recoveryEmail = email, pendingEmail = null) to RecoveryEmailConfirmed(email, Time.nowIso())
+    }
+
+    override suspend fun removeRecoveryEmail() = mutate { it.copy(recoveryEmail = null, pendingEmail = null) to Unit }
+
+    override suspend fun recoverByEmail(body: RecoverByEmailRequest): Empty = Empty()
+
+    override suspend fun recoverByEmailConfirm(body: RecoverByEmailConfirmRequest): RegisterDeviceResponse = readState {
+        if (it.recoveryEmail.equals(body.email.trim(), ignoreCase = true) && body.otp == DEMO_OTP) {
+            RegisterDeviceResponse(it.clientId, "dv_demo", it.accessToken, null, false)
+        } else {
+            throw ApiException(ApiException.OTP_INVALID, 400, "That code doesn't match.")
+        }
+    }
+
+    override suspend fun devices(): DevicesResponse = DevicesResponse(
+        listOf(DeviceSummary("dv_demo", "android", DeviceInfo.deviceModel, DeviceInfo.appVersion, lastSeenAt = Time.nowIso(), isCurrent = true)),
+    )
+
+    override suspend fun revokeDevice(deviceId: String) = Unit
 
     override suspend fun putPushToken(body: PushTokenRequest) = mutate { it.copy(pushToken = body.fid ?: body.token) to Unit }
 

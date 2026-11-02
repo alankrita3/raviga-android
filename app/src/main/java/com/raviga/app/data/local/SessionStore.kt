@@ -73,6 +73,16 @@ class SessionStore(private val file: SessionFile) : SessionTokens {
         _clientIdFlow.value = clientId
     }
 
+    /**
+     * This phone becomes another client (restored by key or email, or linked with a code): the old client's recovery
+     * key goes too, so the screen never shows a key that opens a different account. [recoveryKey] is the key typed in,
+     * or null when the phone came in another way.
+     */
+    fun replace(clientId: String, accessToken: String, recoveryKey: String?) {
+        file.put(mapOf(KEY_CLIENT_ID to clientId, KEY_TOKEN to accessToken, KEY_RECOVERY to recoveryKey))
+        _clientIdFlow.value = clientId
+    }
+
     /** Forgets the identity but keeps the installId so a re-register maps to the same client. */
     fun clear() {
         val install = installId

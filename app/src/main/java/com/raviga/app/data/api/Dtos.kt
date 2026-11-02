@@ -49,6 +49,50 @@ data class RecoveryKeyResponse(val recoveryKey: String)
 @Serializable
 data class LinkCodeResponse(val code: String, val expiresAt: String? = null)
 
+// ----- Recovery email and devices (contract 3.1-3.3, R-079) -----
+
+@Serializable
+data class RecoveryEmailRequest(val email: String)
+
+/** `202 { "status": "pending" }`: a 6-digit code is on its way. */
+@Serializable
+data class PendingResponse(val status: String = "")
+
+@Serializable
+data class OtpRequest(val otp: String)
+
+@Serializable
+data class RecoveryEmailConfirmed(val email: String = "", val verifiedAt: String? = null)
+
+/** `POST /devices/recover { email }`: always 202, even for an unknown email (no enumeration). */
+@Serializable
+data class RecoverByEmailRequest(val email: String)
+
+@Serializable
+data class RecoverByEmailConfirmRequest(
+    val email: String,
+    val otp: String,
+    val platform: String = "android",
+    val installId: String,
+    val appVersion: String,
+    val deviceModel: String,
+    val osVersion: String,
+)
+
+@Serializable
+data class DevicesResponse(val devices: List<DeviceSummary> = emptyList())
+
+@Serializable
+data class DeviceSummary(
+    val deviceId: String,
+    val platform: String = "",
+    val deviceModel: String? = null,
+    val appVersion: String? = null,
+    val createdAt: String? = null,
+    val lastSeenAt: String? = null,
+    val isCurrent: Boolean = false,
+)
+
 @Serializable
 /** Exactly one of [fid] (contract v0.8.2, the Firebase Installation ID) or [token] (older builds' FCM token). */
 data class PushTokenRequest(val fid: String? = null, val token: String? = null)

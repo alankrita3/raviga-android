@@ -1,12 +1,8 @@
 package com.raviga.app.ui.settings
 
-import com.raviga.app.ui.components.rememberCopier
 import com.raviga.app.ui.components.SpotIllustration
 import com.raviga.app.ui.components.Picture
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.border
-import androidx.compose.foundation.background
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -49,7 +45,6 @@ import androidx.navigation.NavController
 import com.raviga.app.push.Notifications
 import com.raviga.app.ui.LocalAppContainer
 import com.raviga.app.ui.components.BottomBar
-import com.raviga.app.ui.components.DestructiveButton
 import com.raviga.app.ui.components.RaRow
 import com.raviga.app.ui.components.RaTextField
 import com.raviga.app.ui.components.RaTopBar
@@ -61,7 +56,6 @@ import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.ProgressRule
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.components.SecondaryButton
-import com.raviga.app.ui.components.SectionHeading
 import com.raviga.app.ui.emailLink
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.openLink
@@ -302,77 +296,6 @@ fun PrivacyScreen(nav: NavController) {
             },
             confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteEverything() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
-        )
-    }
-}
-
-@Composable
-fun RecoveryScreen(nav: NavController) {
-    val container = LocalAppContainer.current
-    val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
-    val state by vm.state.collectAsStateWithLifecycle()
-    val copy = rememberCopier()
-    var otherKey by remember { mutableStateOf("") }
-    var confirmMove by remember { mutableStateOf(false) }
-
-    LaunchedEffect(state.recoveryKey) { if (state.recoveryKey != null) vm.markRecoveryKeyShown() }
-    LaunchedEffect(state.recovered) {
-        if (state.recovered) nav.navigate(if (state.recoveredNeedsTerms) Routes.TERMS else Routes.HOME) { popUpTo(0) { inclusive = true } }
-    }
-
-    ScreenScaffold(topBar = { RaTopBar(title = "Move to another phone", onBack = { nav.popBackStack() }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
-            Spacer(Modifier.height(8.dp))
-            Text("There is no account. This key is the only way to get your submitted projects and credits back after a reinstall or on a new phone. Keep it somewhere safe.", style = RaType.body, color = Ink.ink)
-            Spacer(Modifier.height(8.dp))
-            Text("Drafts stay on this phone: they are never sent anywhere, so a key can't move them.", style = RaType.secondary, color = Ink.graphite)
-            Spacer(Modifier.height(24.dp))
-            SectionHeading("This phone's key")
-            Spacer(Modifier.height(12.dp))
-            val key = state.recoveryKey
-            if (key != null) {
-                Text(
-                    key,
-                    style = RaType.heading,
-                    color = Ink.ink,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Ink.surface, RoundedCornerShape(Ra.fieldRadius))
-                        .border(Ra.hairline, Ink.rule, RoundedCornerShape(Ra.fieldRadius))
-                        .padding(Ra.fieldPadding),
-                )
-                Spacer(Modifier.height(8.dp))
-                Row {
-                    InlineAction("Copy", onClick = { copy(key, true) })
-                    InlineAction("Issue a new key", enabled = !state.busy, onClick = { vm.issueRecoveryKey() })
-                }
-            } else {
-                Text("No key on this phone yet.", style = RaType.body, color = Ink.graphite)
-                Spacer(Modifier.height(8.dp))
-                InlineAction("Issue a key", enabled = !state.busy, onClick = { vm.issueRecoveryKey() })
-            }
-            InlineNotice(state.notice, color = Ink.moss)
-            Spacer(Modifier.height(Ra.sectionGap))
-            SectionHeading("Bring projects here")
-            Spacer(Modifier.height(12.dp))
-            Text("Enter the key from your other phone. This phone then shows that phone's submitted projects and credits instead of its own. Drafts on this phone stay here.", style = RaType.body, color = Ink.graphite)
-            Spacer(Modifier.height(12.dp))
-            RaTextField(value = otherKey, onValueChange = { otherKey = it }, placeholder = "rark_…", singleLine = true, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false))
-            InlineNotice(state.error)
-            Spacer(Modifier.height(16.dp))
-            PrimaryButton("Move projects here", enabled = otherKey.isNotBlank() && !state.busy, loading = state.busy, onClick = { confirmMove = true })
-            Spacer(Modifier.height(32.dp))
-        }
-    }
-
-    if (confirmMove) {
-        AlertDialog(
-            onDismissRequest = { confirmMove = false },
-            containerColor = Ink.surface,
-            title = { Text("Switch to the other phone's projects?", style = RaType.heading, color = Ink.ink) },
-            text = { Text("Anything created on this phone stays reachable only with this phone's key.", style = RaType.body, color = Ink.graphite) },
-            confirmButton = { TextButton(onClick = { confirmMove = false; vm.recoverWith(otherKey) }) { Text("Switch", style = RaType.button, color = Ink.ink) } },
-            dismissButton = { TextButton(onClick = { confirmMove = false }) { Text("Keep this phone's", style = RaType.button, color = Ink.ink) } },
         )
     }
 }

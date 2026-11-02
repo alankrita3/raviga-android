@@ -24,14 +24,10 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         val exportUrl: String? = null,
         val exportMessage: String? = null,
         val deleted: Boolean = false,
-        val recoveryKey: String? = null,
-        val recovered: Boolean = false,
-        /** The restored account still has to agree to the current terms (a Play reviewer's demo account). */
-        val recoveredNeedsTerms: Boolean = false,
         val github: String = "",
     )
 
-    private val _state = MutableStateFlow(State(recoveryKey = container.session.recoveryKey))
+    private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
     val isDemo: Boolean get() = container.isDemo
@@ -119,41 +115,6 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(busy = false) }
         }
     }
-
-    // ----- recovery -----
-    fun issueRecoveryKey() {
-        viewModelScope.launch {
-            _state.update { it.copy(busy = true, error = null) }
-            runCatching { container.session.issueRecoveryKey() }
-                .onSuccess { key -> _state.update { it.copy(recoveryKey = key, notice = "New key issued. The old one no longer works.") } }
-                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busy = false) }
-        }
-    }
-
-    fun recoverWith(key: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(busy = true, error = null) }
-            runCatching { container.session.recover(key) }
-                .onSuccess { restored ->
-                    container.dismissSignedOut()
-                    // Contract order: recover, consent (recover() puts it), then the push target.
-                    container.push.identityChanged()
-                    container.syncAnalytics()
-                    runCatching { container.projects.refreshAll() }
-                    runCatching { container.credits.refresh() }
-                    // The restored account may not have agreed to the current terms (a Play reviewer's demo account
-                    // never has): the screen then goes to Terms instead of Home, rather than waiting for the first
-                    // refused AI call. Uses the account recover() returned, not the stored copy (reset on client change).
-                    val needsTerms = container.session.needsLegal(restored, container.session.config.value)
-                    _state.update { s -> s.copy(recovered = true, recoveredNeedsTerms = needsTerms, recoveryKey = container.session.recoveryKey) }
-                }
-                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busy = false) }
-        }
-    }
-
-    suspend fun markRecoveryKeyShown() = container.prefs.setRecoveryKeyShown()
 
     // ----- demo controls -----
     private val demo get() = container.demoApi

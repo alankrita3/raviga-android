@@ -44,7 +44,6 @@ import com.raviga.app.ui.quote.QuoteScreen
 import com.raviga.app.ui.settings.DeliveryTargetsScreen
 import com.raviga.app.ui.settings.NotificationsScreen
 import com.raviga.app.ui.settings.PrivacyScreen
-import com.raviga.app.ui.settings.RecoveryScreen
 import com.raviga.app.ui.settings.SettingsScreen
 import com.raviga.app.ui.status.DeliveryScreen
 import com.raviga.app.ui.status.StatusScreen
@@ -173,7 +172,8 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
         composable(Routes.SETTINGS) { SettingsScreen(nav) }
         composable(Routes.DELIVERY_TARGETS) { DeliveryTargetsScreen(nav) }
         composable(Routes.PRIVACY) { PrivacyScreen(nav) }
-        composable(Routes.RECOVERY) { RecoveryScreen(nav) }
+        composable(Routes.RECOVERY) { com.raviga.app.ui.account.MoveToAnotherPhoneScreen(nav) }
+        composable(Routes.RECOVERY_EMAIL) { com.raviga.app.ui.account.RecoveryEmailScreen(nav) }
         composable(Routes.FONTS) { com.raviga.app.ui.settings.FontsScreen(nav) }
         composable(Routes.NOTIFICATIONS) { NotificationsScreen(nav) }
     }
