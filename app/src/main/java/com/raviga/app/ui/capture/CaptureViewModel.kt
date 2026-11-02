@@ -414,6 +414,11 @@ class CaptureViewModel(
             _state.update { it.copy(error = "Say or type something about the project first.") }
             return
         }
+        // QA D4: limits.textInputMaxChars per note, the same words as iOS. The note stays saved as it is.
+        overLimit(text, container.session.config.value.limits.textInputMaxChars)?.let { line ->
+            _state.update { it.copy(error = line) }
+            return
+        }
         // Text goes to the AI from here on; ask once.
         if (needsConsent()) {
             pendingAfterConsent = { writeBrief() }
@@ -540,6 +545,14 @@ class CaptureViewModel(
          */
         fun spokenReview(transcript: String, committed: List<String>, consumed: Int): String =
             joinText(transcript, committed.drop(consumed).joinToString(" "))
+
+        /** Over the per-note limit: what to say (iOS's words), else null. */
+        fun overLimit(text: String, maxChars: Int): String? =
+            if (maxChars > 0 && text.length > maxChars) {
+                "That's over the $maxChars character limit. Shorten it, or save and add the rest as another note."
+            } else {
+                null
+            }
 
         private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 

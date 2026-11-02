@@ -134,4 +134,14 @@ class WorkingNotesTest {
         assertNull(CaptureViewModel.liveText(State(phase = Phase.CHOOSE), 0))
         assertNull(CaptureViewModel.liveText(State(phase = Phase.DRAFTING, transcript = "x"), 0))
     }
+
+    /** QA D4: a note over limits.textInputMaxChars is refused at "write the brief" with iOS's words; not cut. */
+    @Test fun aNoteOverTheLimitIsRefusedNotCut() {
+        assertNull(CaptureViewModel.overLimit("a".repeat(20_000), 20_000))
+        assertEquals(
+            "That's over the 20000 character limit. Shorten it, or save and add the rest as another note.",
+            CaptureViewModel.overLimit("a".repeat(20_001), 20_000),
+        )
+        assertNull("no limit from config: nothing to check", CaptureViewModel.overLimit("a".repeat(50_000), 0))
+    }
 }

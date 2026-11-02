@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import com.raviga.app.ui.capture.CaptureViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raviga.app.data.api.Document
@@ -135,7 +136,17 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     }
 
     /** "Write the brief" for a draft with notes but no brief, and "Add it to the brief" for notes not in it yet. */
-    fun generate() = withAiConsent {
+    fun generate() {
+        // QA D4: any note over limits.textInputMaxChars is refused before the call, as in Capture.
+        val max = container.session.config.value.limits.textInputMaxChars
+        _state.value.draft?.inputs?.firstNotNullOfOrNull { CaptureViewModel.overLimit(it.text, max) }?.let { line ->
+            _state.update { it.copy(error = line) }
+            return
+        }
+        writeBrief()
+    }
+
+    private fun writeBrief() = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
         busy("Reading your notes") {
             container.drafts.writeBrief(draftId) { st ->
