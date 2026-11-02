@@ -267,6 +267,8 @@ private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit, modifier: M
         append(row.line)
         if (row.unread > 0) append(" · ${row.unread} new")
     }
+    // QA R1 (as iOS fc9c380): at the large text sizes the status line and the title wrap in full instead of "...".
+    val large = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
     Row(modifier.tile(padding = 18.dp, onClick = onClick, onLongClick = onLongClick), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -280,12 +282,12 @@ private fun ProjectTile(row: HomeViewModel.Row, onClick: () -> Unit, modifier: M
                         row.unread > 0 -> Ink.link
                         else -> Ink.graphite
                     },
-                    maxLines = 1,
+                    maxLines = if (large) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             Spacer(Modifier.height(8.dp))
-            Text(row.title, style = RaType.heading, color = Ink.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(row.title, style = RaType.heading, color = Ink.ink, maxLines = if (large) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
             if (row.credits != null && row.status != ProjectStatus.DRAFT) {
                 Spacer(Modifier.height(6.dp))
                 Text("${row.credits} ${if (row.credits == 1) "credit" else "credits"}", style = RaType.caption, color = Ink.ash)

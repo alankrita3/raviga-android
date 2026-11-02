@@ -103,11 +103,21 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 } ?: Spacer(Modifier.height(8.dp))
                 Text(StatusCopy.projectTitle(project, container.drafts.get(project.id)?.displayTitle), style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val done = project.status == ProjectStatus.DELIVERED || project.status == ProjectStatus.ACCEPTED
+                // QA R1 (as iOS fc9c380): at the large text sizes the chip and the ref stack, nothing cut or broken mid-word.
+                val done = project.status == ProjectStatus.DELIVERED || project.status == ProjectStatus.ACCEPTED
+                val chip: @Composable () -> Unit = {
                     Chip(StatusCopy.detailTitle(project.status), tone = if (done) ChipTone.Blue else ChipTone.Plain, dot = StatusCopy.markColor(project.status))
-                    Spacer(Modifier.width(12.dp))
-                    Text(headerCaption(project), style = RaType.caption, color = Ink.graphite, maxLines = 2)
+                }
+                if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) {
+                    chip()
+                    Spacer(Modifier.height(8.dp))
+                    Text(headerCaption(project), style = RaType.caption, color = Ink.graphite)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        chip()
+                        Spacer(Modifier.width(12.dp))
+                        Text(headerCaption(project), style = RaType.caption, color = Ink.graphite, maxLines = 2)
+                    }
                 }
 
                 if (project.status == ProjectStatus.REJECTED) {

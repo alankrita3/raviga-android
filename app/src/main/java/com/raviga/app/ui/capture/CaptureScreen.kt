@@ -264,16 +264,24 @@ private fun CapturePhase(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = Ra.gutter)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // QA R1 (as iOS): at the large text sizes the accent menu goes under the tabs, not beside them.
+            val large = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
+            val tabs: @Composable () -> Unit = {
                 // Continuing a note stays in its mode, so the tabs make way for what is happening.
-                Box(Modifier.weight(1f)) {
-                    if (state.continuing) {
-                        Text(if (state.tab == CaptureViewModel.TAB_SPEAK) "Recording more" else "Adding more", style = RaType.bodyMedium, color = Ink.ink, modifier = Modifier.padding(vertical = 6.dp))
-                    } else {
-                        Segmented(listOf("Speak", "Type", "Upload"), state.tab, onSelect = { vm.selectTab(it) })
-                    }
+                if (state.continuing) {
+                    Text(if (state.tab == CaptureViewModel.TAB_SPEAK) "Recording more" else "Adding more", style = RaType.bodyMedium, color = Ink.ink, modifier = Modifier.padding(vertical = 6.dp))
+                } else {
+                    Segmented(listOf("Speak", "Type", "Upload"), state.tab, onSelect = { vm.selectTab(it) })
                 }
+            }
+            if (large) {
+                tabs()
                 if (state.tab == CaptureViewModel.TAB_SPEAK) AccentPicker(state.accent, enabled = !state.listening, onPick = { vm.selectAccent(it) })
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { tabs() }
+                    if (state.tab == CaptureViewModel.TAB_SPEAK) AccentPicker(state.accent, enabled = !state.listening, onPick = { vm.selectAccent(it) })
+                }
             }
             Spacer(Modifier.height(24.dp))
             if (state.tab == CaptureViewModel.TAB_UPLOAD) {

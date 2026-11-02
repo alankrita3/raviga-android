@@ -279,10 +279,12 @@ private fun LinkTile(
             Icon(icon, contentDescription = null, tint = if (dark) Ink.surface else Ink.blueInk, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(14.dp))
+        // QA R1: at the large text sizes the row wraps in full instead of "...".
+        val lines = if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) Int.MAX_VALUE else 1
         Column(Modifier.weight(1f)) {
-            Text(title, style = RaType.bodyMedium, color = Ink.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = RaType.bodyMedium, color = Ink.ink, maxLines = lines, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(3.dp))
-            Text(detail, style = RaType.caption, color = Ink.graphite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(detail, style = RaType.caption, color = Ink.graphite, maxLines = lines, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.width(4.dp))
         Icon(trailing, contentDescription = null, tint = Ink.ash, modifier = Modifier.size(18.dp))

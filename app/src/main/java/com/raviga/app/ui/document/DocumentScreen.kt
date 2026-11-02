@@ -277,9 +277,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                                     Hairline()
                                     Spacer(Modifier.height(20.dp))
                                 }
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    val heading = section.heading.ifBlank { SectionIds.headings[section.id] ?: section.id }
-                                    SectionHeading(heading, Modifier.weight(1f))
+                                val heading = section.heading.ifBlank { SectionIds.headings[section.id] ?: section.id }
+                                val actions: @Composable () -> Unit = {
                                     if (editable) {
                                         // QA R4: TalkBack says which section ("Edit Summary"), not "Edit" eight times.
                                         InlineAction(
@@ -290,6 +289,16 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                                             "Regenerate", enabled = state.busyMessage == null, onClick = { vm.openRegenerate(section.id) },
                                             modifier = Modifier.semantics { contentDescription = "Regenerate $heading" },
                                         )
+                                    }
+                                }
+                                // QA R1: at the large text sizes the actions go under the heading, so it never breaks mid-word.
+                                if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) {
+                                    SectionHeading(heading)
+                                    Row(Modifier.offset(x = (-8).dp)) { actions() }
+                                } else {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        SectionHeading(heading, Modifier.weight(1f))
+                                        actions()
                                     }
                                 }
                                 Spacer(Modifier.height(10.dp))

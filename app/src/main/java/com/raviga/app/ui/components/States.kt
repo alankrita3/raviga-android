@@ -1,5 +1,6 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -103,7 +104,8 @@ fun InlineNotice(text: String?, modifier: Modifier = Modifier, color: Color = In
 /** Capture's ways of describing: plain text tabs, the selected one in ink with a 2dp underline. */
 @Composable
 fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    Row(modifier.fillMaxWidth()) {
+    // QA R1 (as iOS fc9c380): at the largest text sizes the tabs scroll sideways instead of squeezing a label.
+    Row(modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
         options.forEachIndexed { i, label ->
             val on = i == selected
             Column(
@@ -114,7 +116,7 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
                     .semantics { this.selected = on }
                     .padding(vertical = 6.dp),
             ) {
-                Text(label, style = RaType.bodyMedium, color = if (on) Ink.ink else Ink.ash)
+                Text(label, style = RaType.bodyMedium, color = if (on) Ink.ink else Ink.ash, maxLines = 1, softWrap = false)
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) Ink.ink else Color.Transparent))
             }

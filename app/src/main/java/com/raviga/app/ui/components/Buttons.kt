@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,7 +74,7 @@ fun PrimaryButton(
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.fillMaxWidth().height(Ra.buttonHeight).graphicsLayer { scaleX = scale; scaleY = scale },
+        modifier = modifier.fillMaxWidth().heightIn(min = Ra.buttonHeight).graphicsLayer { scaleX = scale; scaleY = scale },
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Ink.ink,
@@ -92,7 +93,7 @@ fun PrimaryButton(
                 Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
             }
-            Text(text, style = RaType.button)
+            Text(text, style = RaType.button, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
@@ -109,7 +110,7 @@ fun SecondaryButton(
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.fillMaxWidth().height(Ra.buttonHeight),
+        modifier = modifier.fillMaxWidth().heightIn(min = Ra.buttonHeight),
         shape = ButtonShape,
         border = BorderStroke(1.5.dp, if (enabled) Ink.ruleStrong else Ink.rule),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink.ink, disabledContentColor = Ink.ash),
@@ -119,7 +120,7 @@ fun SecondaryButton(
             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
         }
-        Text(text, style = RaType.button)
+        Text(text, style = RaType.button, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -136,7 +137,7 @@ fun TertiaryButton(
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = (if (fullWidth) modifier.fillMaxWidth() else modifier).height(Ra.buttonHeight),
+        modifier = (if (fullWidth) modifier.fillMaxWidth() else modifier).heightIn(min = Ra.buttonHeight),
         shape = ButtonShape,
         colors = ButtonDefaults.textButtonColors(contentColor = color, disabledContentColor = Ink.ash),
     ) {
