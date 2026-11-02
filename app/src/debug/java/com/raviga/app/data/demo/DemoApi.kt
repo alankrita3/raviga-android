@@ -790,8 +790,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 brackets = listOf(
                     Bracket("micro", "Micro", 5, 11, "One job, one screen or a simple site", QuoteTimeline(1, 1)),
                     Bracket("starter", "Starter", 12, 22, "A focused app with a handful of screens", QuoteTimeline(1, 1)),
-                    Bracket("standard", "Standard", 23, 59, "A full product with accounts, payments or integrations", QuoteTimeline(1, 2)),
-                    Bracket("pro", "Pro", 60, 150, "Multiple platforms, complex data, admin tooling", QuoteTimeline(2, 4)),
+                    Bracket("standard", "Standard", 23, 49, "A full product with accounts, payments or integrations", QuoteTimeline(1, 2)),
+                    Bracket("pro", "Pro", 50, 150, "Multiple platforms, complex data, admin tooling", QuoteTimeline(2, 4)),
                     Bracket("enterprise", "Enterprise", 151, null, "Quoted as a custom engagement", null),
                 ),
                 validDays = 14,

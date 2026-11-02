@@ -47,7 +47,15 @@ class DtoDecodingTest {
         assertEquals(com.raviga.app.data.api.QuoteTimeline(1, 2), timelines["standard"])
         assertEquals(com.raviga.app.data.api.QuoteTimeline(2, 4), timelines["pro"])
         assertTrue("enterprise" in timelines && timelines["enterprise"] == null)
-        // The demo backend's config says the same.
+    }
+
+    /** Captured from dev GET /config on 2026-11-03 (contract v0.9.5: Standard 23-49, Pro 50-150). The demo says the same. */
+    @Test
+    fun `v095 config brackets and packs match the demo`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v095.json")!!)
+        val standard = config.quote.brackets.first { it.id == "standard" }
+        assertEquals(23, standard.minCredits)
+        assertEquals(50, config.quote.brackets.first { it.id == "pro" }.minCredits)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.quote.brackets.map { Triple(it.id, it.minCredits, it.timeline) }, demo.quote.brackets.map { Triple(it.id, it.minCredits, it.timeline) })
         assertEquals(config.credits.packs.map { it.priceHintUsd }, demo.credits.packs.map { it.priceHintUsd })
