@@ -21,8 +21,8 @@ The PM reads this file if the session has closed. Updated 2026-11-02 (evening).
     (backgrounded 23:09, check at 00:09).
   - Gate: "no demo or debug code in Release" done (11667ee: demo backend in src/debug, demo UI behind
     BuildConfig.DEBUG, strings check clean); logs/analytics/secrets and `!!` lines re-checked and ticked.
-  - I3 (with the paid run): show the server's quote_stale message (backend's suggestion, contract 11 step 3) and check
-    the quote is marked expired from expiresAt before Submit.
+  - I3 code done (4fa33a2, as iOS): expired quote says so from expiresAt (clock ticks at expiry), server's quote_stale
+    message shown, no automatic re-quote. Device check with backend's quote_expiry switch in the paid run.
   - Next: the paid P1 cases on 11-03's budget (today's ledger is at $2.91 of $3): L1-L8, M1-M3, M5, O1-O4, then O5-O7
     with backend's switches; P1-P3/P5 offline cases need the emulator (asked the PM; airplane mode cuts Wi-Fi adb).
     Then P2 (Q, R); release-APK inspection; the independent review; build only with her yes. R-083 after the suite.
