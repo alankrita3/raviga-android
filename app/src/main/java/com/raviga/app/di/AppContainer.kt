@@ -44,6 +44,8 @@ sealed interface AppEvent {
     data object SignedOut : AppEvent
     /** The terms or privacy policy changed; the client must agree again before content routes work. */
     data object LegalRequired : AppEvent
+    /** QA O7: the server answered 426; this version is too old to use. */
+    data object UpgradeRequired : AppEvent
 }
 
 /**
@@ -86,6 +88,7 @@ class AppContainer(private val app: Application) {
     val okHttp: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(AuthInterceptor { sessionStore.accessToken })
         .addInterceptor(com.raviga.app.data.api.ConsentInterceptor { emit(AppEvent.LegalRequired) })
+        .addInterceptor(com.raviga.app.data.api.UpgradeInterceptor { emit(AppEvent.UpgradeRequired) })
         .authenticator(ReRegisterAuthenticator(baseUrl, plainHttp, json, sessionStore, onSignedOut = ::onSignedOut))
         .apply {
             if (BuildConfig.DEBUG) addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))

@@ -125,7 +125,7 @@ object StatusCopy {
         "aws_role_not_ready" -> "AWS hasn't finished creating the role yet. Give it a minute and check again."
         "otp_invalid" -> "That recovery key doesn't match. Check it and try again."
         "link_code_invalid" -> "That link code is wrong or has expired."
-        "upgrade_required" -> "Update Raviga from the Play Store to continue."
+        "upgrade_required" -> "Update Raviga from Google Play to continue."
         "rate_limited" -> "Too many requests. Wait a moment and try again."
         "ai_unavailable" -> "The AI is busy right now. Try again in a few minutes."   // R-074: also when its usage limit is hit
         "not_found" -> "That no longer exists."

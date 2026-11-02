@@ -41,6 +41,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 when (it) {
                     AppEvent.SignedOut -> bootstrap(restart = true)
                     AppEvent.LegalRequired -> _state.update { s -> s.copy(legalDue = s.ready) }
+                    AppEvent.UpgradeRequired -> _state.update { s -> s.copy(ready = true, upgradeRequired = true) }
                     else -> Unit
                 }
             }
@@ -59,11 +60,18 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             val session = container.session
             // No account (before Agree, or signed out here): only the public config.
-            if (!session.hasAccount) { runCatching { session.refreshConfig() }; return@launch }
-            runCatching { session.refreshConfig(); session.refreshMe() }.onSuccess { me ->
+            if (!session.hasAccount) { runCatching { session.refreshConfig() }.onSuccess { tooOld(it) }; return@launch }
+            runCatching { session.refreshConfig().also { tooOld(it) }; session.refreshMe() }.onSuccess { me ->
                 if (session.needsLegal(me, session.config.value)) _state.update { it.copy(legalDue = true) }
             }
         }
+    }
+
+    /** QA O7: /config's minAppVersion for Android is above this build: the update screen, and nothing else. */
+    private fun tooOld(config: com.raviga.app.data.api.AppConfig): Boolean {
+        val tooOld = com.raviga.app.data.api.AppVersion.isBelow(com.raviga.app.BuildConfig.VERSION_NAME, config.minAppVersion["android"])
+        if (tooOld) _state.update { it.copy(ready = true, upgradeRequired = true) }
+        return tooOld
     }
 
     fun bootstrap(restart: Boolean = false) {
@@ -78,7 +86,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             if (!session.agreed) {
                 // R-056: no identity yet, and none until Agree. Welcome and Home work from the phone; /config is public.
                 try {
-                    session.refreshConfig()
+                    if (tooOld(session.refreshConfig())) return@launch
                 } catch (e: ApiException) {
                     if (e.code == ApiException.UPGRADE_REQUIRED) {
                         _state.update { it.copy(ready = true, upgradeRequired = true) }
@@ -91,6 +99,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             }
             try {
                 val me = session.completeConsent(session.ensureRegistered())
+                if (tooOld(session.config.value)) return@launch
                 launch { runCatching { container.push.syncIfNeeded() } }
                 launch { runCatching { container.projects.refreshAll(force = false) } }
                 launch { runCatching { container.credits.refresh(force = false) } }

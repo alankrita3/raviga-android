@@ -187,9 +187,13 @@ private fun UpgradeScreen() {
             Spacer(Modifier.height(48.dp))
             Text("Update Raviga", style = RaType.title, color = Ink.ink)
             Spacer(Modifier.height(16.dp))
-            Text("This version is too old to talk to Raviga. Update it from the Play Store to continue.", style = RaType.body, color = Ink.graphite)
+            // The same words as iOS (O7), with Google Play for the App Store.
+            Text(
+                "This version is too old to use. Update to the latest from Google Play to carry on. Your drafts stay on this phone.",
+                style = RaType.body, color = Ink.graphite,
+            )
             Spacer(Modifier.height(32.dp))
-            PrimaryButton("Open Play Store", onClick = { openLink(context, "https://play.google.com/store/apps/details?id=com.raviga.app") })
+            PrimaryButton("Open Google Play", onClick = { openLink(context, "https://play.google.com/store/apps/details?id=com.raviga.app") })
         }
     }
 }
