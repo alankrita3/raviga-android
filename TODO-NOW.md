@@ -24,6 +24,10 @@ The PM reads this file if the session has closed. Updated 2026-11-03 00:15.
   - M1 (paid run): tap a real Raviga notification with the app closed, in the background and in front; read
     `logcat -b crash` after each (iOS crashed on the tap). Pre-check 00:58 with the raviga://project link (unknown id):
     no crash in any state, stays on Home.
+  - O7 code done (bb823b1, as iOS): update screen on any 426 or minAppVersion above the build, iOS's words; asked
+    backend for a per-client 426 switch for the device check.
+  - Contract v0.9.5 (backend 45e4c02): new brackets (Standard 23-49, Pro 50-150) and rubric; demo matched (eb9e9a7).
+    In the paid I re-run expect I4 Micro, I5 higher and still Pro; tell backend after so it reads the rubric logs.
   - I3 code done (4fa33a2, as iOS): expired quote says so from expiresAt (clock ticks at expiry), server's quote_stale
     message shown, no automatic re-quote. Device check with backend's quote_expiry switch in the paid run.
   - Next: the paid P1 cases on 11-03's budget (today's ledger is at $2.91 of $3): L1-L8, M1-M3, M5, O1-O4, then O5-O7
