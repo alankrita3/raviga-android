@@ -161,8 +161,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 Spacer(Modifier.height(Ra.sectionGap))
                 Text(
                     if (deletedAt != null) {
-                        "We deleted this brief and its comments from our servers on ${Time.shortDate(deletedAt)}." +
-                            if (container.drafts.get(project.id) != null) " Your copy stays on this phone." else ""
+                        StatusCopy.deletedLine(Time.shortDate(deletedAt), hasCopy = container.drafts.get(project.id) != null)
                     } else {
                         "We keep this brief only to review and build it, and delete it from our servers when you accept the delivery."
                     },
@@ -181,11 +180,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
             containerColor = Ink.surface,
             title = { Text("Cancel this project?", style = RaType.heading, color = Ink.ink) },
             text = {
-                Text(
-                    "Your ${project?.submission?.creditsCharged ?: 0} credits come back to your balance. " +
-                        if (hasCopy) "We delete the brief from our servers; your copy stays on this phone to read." else "We delete the brief from our servers.",
-                    style = RaType.body, color = Ink.graphite,
-                )
+                Text(StatusCopy.cancelConfirmLine(project?.submission?.creditsCharged ?: 0, hasCopy), style = RaType.body, color = Ink.graphite)
             },
             confirmButton = { TextButton(onClick = { confirmCancel = false; vm.cancel() }) { Text("Cancel project", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Keep it", style = RaType.button, color = Ink.ink) } },

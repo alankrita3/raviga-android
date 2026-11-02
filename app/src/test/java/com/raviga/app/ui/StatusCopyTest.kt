@@ -138,4 +138,18 @@ class StatusCopyTest {
         val expired = com.raviga.app.data.api.ApiException("job_expired", message = "The result expired before it was read.")
         assertEquals("This is taking longer than usual. Try again.", expired.userLine())
     }
+
+    /** R-092 #37: iOS's words (26900b8); no draft is promised, and the copy only when there is one. */
+    @Test
+    fun `cancel and closed lines say what really happens`() {
+        assertEquals(
+            "Your 48 credits come back to your balance and the brief is deleted from our servers. Your copy stays on this phone.",
+            StatusCopy.cancelConfirmLine(48, hasCopy = true),
+        )
+        assertEquals("Your 1 credit comes back to your balance and the brief is deleted from our servers.", StatusCopy.cancelConfirmLine(1, hasCopy = false))
+        assertEquals("The brief is deleted from our servers.", StatusCopy.cancelConfirmLine(0, hasCopy = false))
+        assertEquals("We deleted this brief and its comments from our servers on 3 Nov.", StatusCopy.deletedLine("3 Nov", hasCopy = false))
+        assertTrue(StatusCopy.deletedLine("3 Nov", hasCopy = true).endsWith(" Your copy stays on this phone."))
+        assertTrue(listOf(StatusCopy.cancelConfirmLine(48, true), StatusCopy.deletedLine("3 Nov", true)).none { "draft" in it || "same brief" in it })
+    }
 }

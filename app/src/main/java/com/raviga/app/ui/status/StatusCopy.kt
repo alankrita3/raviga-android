@@ -89,6 +89,20 @@ object StatusCopy {
     fun mistakeSuffix(): String = if (supportEmail.isBlank()) "" else " If you think this is a mistake, write to $supportEmail."
 
     /** Screening paused new descriptions (429 rate_limited, reason "paused"), as iOS: for how long, in plain words. */
+    /**
+     * R-092 #37 (iOS review, iOS 26900b8): cancel makes no draft, and "Your copy stays on this phone" only when there is
+     * one (after a restore there may be none). The confirm says beforehand what the closed screen says after.
+     */
+    fun cancelConfirmLine(credits: Int, hasCopy: Boolean): String =
+        (if (credits > 0) "Your $credits ${if (credits == 1) "credit comes" else "credits come"} back to your balance and the brief is deleted from our servers."
+        else "The brief is deleted from our servers.") + copyLine(hasCopy)
+
+    /** The line under a closed project whose brief the server deleted. */
+    fun deletedLine(day: String, hasCopy: Boolean): String =
+        "We deleted this brief and its comments from our servers on $day." + copyLine(hasCopy)
+
+    private fun copyLine(hasCopy: Boolean) = if (hasCopy) " Your copy stays on this phone." else ""
+
     fun pausedLine(retryAfterSec: Int?): String =
         "Several descriptions were turned down, so new ones are paused" +
             (retryAfterSec?.let { " for about ${hours(it)}" } ?: " for a day") +
