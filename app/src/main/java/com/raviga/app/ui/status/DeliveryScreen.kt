@@ -167,14 +167,22 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     }
 
                     val transfer = delivery?.transfer
-                    val github = project.submission?.githubUsername?.ifBlank { null } ?: me?.deliveryTargets?.githubUsername?.ifBlank { null }
+                    // R-092 #28: the transfer goes to the current delivery target; the name given at submit only if none.
+                    val github = me?.deliveryTargets?.githubUsername?.ifBlank { null } ?: project.submission?.githubUsername?.ifBlank { null }
                     // Pending is queued, not sent; its error (if any) is internal and never shown.
                     val transferLine = transfer?.let { GoLiveLogic.transferLine(if (it.status == "pending") it.copy(error = null) else it, github) }
                     if (transferLine != null) {
                         Labelled("Repository") {
                             Text(transferLine, style = RaType.body, color = if (transfer.status == "failed") Ink.brick else Ink.ink)
-                            if (transfer.status == "awaiting_target" || transfer.status == "failed") {
+                            if (transfer.status == "awaiting_target") {
                                 InlineAction("Set GitHub username", onClick = { nav.navigate(Routes.DELIVERY_TARGETS) }, modifier = Modifier.offset(x = (-8).dp))
+                            }
+                            if (transfer.status == "failed" && StatusCopy.supportEmail.isNotBlank()) {
+                                InlineAction(
+                                    StatusCopy.supportEmail,
+                                    onClick = { com.raviga.app.ui.emailLink(context, StatusCopy.supportEmail, "Repository transfer for ${project.ref}") },
+                                    modifier = Modifier.offset(x = (-8).dp),
+                                )
                             }
                         }
                     }

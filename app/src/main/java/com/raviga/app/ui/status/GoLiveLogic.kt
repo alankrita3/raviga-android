@@ -97,7 +97,8 @@ object GoLiveLogic {
             "pending" -> "We're sending the repository to $name. GitHub will email you to accept it."
             "initiated" -> "Transfer sent to $name. Accept it from the email GitHub sent you."
             "accepted" -> "Transferred to $name."
-            "failed" -> "The transfer to $name failed" + (transfer.error?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ".")
+            // R-092 #29 (PM, her R-038): the server can't restart a failed transfer yet, so no "Try again": support sorts it.
+            "failed" -> "The transfer didn't go through. Write to support and we'll sort it out."
             else -> "We're sending the repository to $name."
         }
     }

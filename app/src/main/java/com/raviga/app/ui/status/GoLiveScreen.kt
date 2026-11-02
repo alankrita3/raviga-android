@@ -75,8 +75,8 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                 val steps = GoLiveLogic.steps(
                     delivery = delivery,
                     status = project.status,
-                    githubUsername = project.submission?.githubUsername?.ifBlank { null }
-                        ?: me?.deliveryTargets?.githubUsername?.ifBlank { null },
+                    githubUsername = me?.deliveryTargets?.githubUsername?.ifBlank { null }
+                        ?: project.submission?.githubUsername?.ifBlank { null },
                     platforms = GoLiveLogic.platforms(brief?.section(SectionIds.PLATFORMS)?.body.orEmpty()),
                     hasPaidServices = brief?.section(SectionIds.INTEGRATIONS)?.body.orEmpty().isNotBlank(),
                     includedRounds = state.config.revisions.includedRounds,

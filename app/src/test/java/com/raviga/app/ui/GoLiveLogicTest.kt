@@ -53,4 +53,15 @@ class GoLiveLogicTest {
         assertNull(steps[2].action)
         assertEquals("Transferred to your GitHub account.", steps[0].detail)
     }
+
+    /** R-092 #28/#29 (iOS review, PM): no bare "@", and a failed transfer points to support (no "Try again" yet). */
+    @Test fun transferLinesNeverReadBrokenAndAFailureGoesToSupport() {
+        val pending = com.raviga.app.data.api.Transfer(status = "pending")
+        assertEquals("We're sending the repository to your GitHub account. GitHub will email you to accept it.", GoLiveLogic.transferLine(pending, ""))
+        assertEquals("We're sending the repository to @octocat. GitHub will email you to accept it.", GoLiveLogic.transferLine(pending, "octocat"))
+        assertEquals(
+            "The transfer didn't go through. Write to support and we'll sort it out.",
+            GoLiveLogic.transferLine(com.raviga.app.data.api.Transfer(status = "failed", error = "GitHub said 422"), "octocat"),
+        )
+    }
 }
