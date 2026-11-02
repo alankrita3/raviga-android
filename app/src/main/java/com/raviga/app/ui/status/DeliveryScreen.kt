@@ -85,6 +85,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     val project = state.project
     val context = LocalContext.current
     var revisionSheet by remember { mutableStateOf(false) }
+    // R-092 #38 (as iOS): accepting can't be undone; it ends the revision rounds and deletes the brief from the server.
+    var confirmAccept by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
 
     ScreenScaffold(
@@ -103,7 +105,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
             if (project?.status != ProjectStatus.DELIVERED) return@ScreenScaffold
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                PrimaryButton("Accept delivery", loading = state.busy, onClick = { vm.accept() })
+                PrimaryButton("Accept delivery", loading = state.busy, onClick = { confirmAccept = true })
                 Spacer(Modifier.height(8.dp))
                 SecondaryButton("Request a revision", enabled = !state.busy, onClick = { revisionSheet = true })
             }
@@ -217,6 +219,25 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
         }
     }
 
+    if (confirmAccept) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmAccept = false },
+            containerColor = Ink.surface,
+            title = { Text("Accept this delivery?", style = RaType.heading, color = Ink.ink) },
+            text = {
+                Text(
+                    "This ends the revision rounds and deletes the brief from our servers. Your code and handover guide stay yours.",
+                    style = RaType.body, color = Ink.graphite,
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { confirmAccept = false; vm.accept() }) { Text("Accept", style = RaType.button, color = Ink.ink) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { confirmAccept = false }) { Text("Not yet", style = RaType.button, color = Ink.ink) }
+            },
+        )
+    }
     if (revisionSheet && project != null) {
         val remaining = (project.revisions.included - project.revisions.used).coerceAtLeast(0)
         val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
