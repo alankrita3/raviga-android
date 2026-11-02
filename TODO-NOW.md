@@ -5,10 +5,20 @@ The PM reads this file if the session has closed. Updated 2026-10-30.
 
 ## In flight
 
-- **R-074 (her yes via the PM, 2026-11-02): committed, waiting on one check.** "Stay in the loop" before Android's
-  notification prompt at the end of onboarding (once; Android 13+ only), Home's ask removed; AI busy line "Try again
-  in a few minutes." Tests pass. The button check needs Android 13+: the OnePlus is Android 12 (no prompt there by
-  design). Asked the PM whether to use the Raviga_API34 emulator or an Android 13+ phone. No build.
+- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): in progress.** Order:
+  1. Consent as one screen at the first Type/Speak/Upload/Restore/Buy credits (terms, privacy, AI switch off with
+     Continue disabled until on, analytics); drop the AI step at "Write the brief" (PM decision on R-056 + R-028).
+  2. Compiler warnings (4) and Lint errors (4); Lint warnings worth fixing.
+  3. QA suite v1 (`qa/QA-SUITE-v1.md`) P0 on the OnePlus, fresh throwaway clients; results in `qa/results/`.
+     Voice (C1-C7) blocked: no on-device recogniser on our Android hardware (PM). The OnePlus's demo client
+     cl_01m63jpnye... is kept (key file in ~/Downloads); restore it on the phone after the suite.
+  4. Account features to match iOS: devices list/remove, link a second device (code + QR), recovery email (strings
+     asked from raviga-ios).
+  5. Gate code lines: release-APK inspection (local release APK for testing approved), secret scan, OSV dependency
+     report, `!!` audit.
+  6. Row 37 RevenueCat Play app: needs her at the Mac (sign-ins, the key upload, two yeses in this chat).
+  Then P1/P2, the independent review, the signed gate file; the build only with her yes.
+- R-074 done (61b1f5f, emulator check passed); R-075 done (bb7c264); R-076 smoke done (voice blocked).
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
   uploaded notes are saved in the local draft while they're made; drafts with no brief take more notes ("+"), and
   notes can be edited or deleted; Home deletes a draft by swipe or long-press, with a confirm; a written brief
