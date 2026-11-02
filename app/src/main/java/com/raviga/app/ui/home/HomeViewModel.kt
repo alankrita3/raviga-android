@@ -86,6 +86,10 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    /** R-092 #4 (iOS review): drafts on this phone that couldn't be opened; kept as they are and tried again. */
+    private val _unreadableDrafts = MutableStateFlow(0)
+    val unreadableDrafts: StateFlow<Int> = _unreadableDrafts.asStateFlow()
+
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
 
@@ -111,6 +115,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _refreshing.value = true
             container.drafts.load()
+            _unreadableDrafts.value = container.draftStore.unreadable
             // R-056: before Agree there is no account to load; drafts are all there is. R-079: the same after "Sign out
             // this phone", until something needs an account or the app starts again.
             if (!container.session.agreed || (container.session.signedOutHere && !container.session.isRegistered)) {

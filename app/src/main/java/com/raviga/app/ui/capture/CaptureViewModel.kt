@@ -491,10 +491,23 @@ class CaptureViewModel(
         val text = liveText(s, consumedUtterances) ?: return
         // A failed save must not stop the person typing; the next change or leaving tries again. A refusal (the
         // draft's note limit, QA F5) is shown, so nothing is dropped without a word.
-        runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }.onFailure { e ->
-            if ((e as? ApiException)?.code == ApiException.INVALID_ARGUMENT) _state.update { it.copy(error = e.userLine()) }
-        }
+        runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }
+            .onSuccess { saveFailureShown = false }
+            .onFailure { e ->
+                when {
+                    (e as? ApiException)?.code == ApiException.INVALID_ARGUMENT -> _state.update { it.copy(error = e.userLine()) }
+                    // R-092 #4 (iOS review): a failed save (disk full) is said once, not swallowed; the text stays on screen
+                    // and the next change tries again.
+                    !saveFailureShown -> {
+                        saveFailureShown = true
+                        _state.update { it.copy(error = "Couldn't save your notes on this phone. Free some space; they stay here meanwhile.") }
+                    }
+                }
+            }
     }
+
+    /** One message per run of failed saves; a save that works resets it. */
+    @Volatile private var saveFailureShown = false
 
     private fun kindOf(tab: Int): String = when (tab) {
         TAB_SPEAK -> "voice"

@@ -85,6 +85,7 @@ fun HomeScreen(nav: NavController) {
     val error by vm.error.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val signedOut by vm.signedOut.collectAsStateWithLifecycle()
+    val unreadable by vm.unreadableDrafts.collectAsStateWithLifecycle()
     var chooser by remember { mutableStateOf(false) }
     if (chooser) {
         DescribeChooserSheet(
@@ -169,6 +170,13 @@ fun HomeScreen(nav: NavController) {
                             style = RaType.title,
                             color = Ink.ink,
                             modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
+                        )
+                    }
+                    if (unreadable > 0) item(key = "unreadable") {
+                        Text(
+                            if (unreadable == 1) "One draft on this phone couldn't be opened. It's kept as it is and tried again next time."
+                            else "$unreadable drafts on this phone couldn't be opened. They're kept as they are and tried again next time.",
+                            style = RaType.secondary, color = Ink.amber,
                         )
                     }
                     // QA O8: removed from the account with drafts on the phone, the way back shows here too.
