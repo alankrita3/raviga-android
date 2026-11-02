@@ -12,8 +12,8 @@ fun Throwable.userLine(): String = when (this) {
             // The terms changed: the app shows them again; the line just says why the action stopped.
             code == ApiException.CONSENT_REQUIRED && detailStrings("missing").any { it == "terms" || it == "privacy" } ->
                 "Agree to the updated terms to continue."
-            // A paused account: the server's message says for how long.
-            code == ApiException.RATE_LIMITED && detailString("reason") == "paused" && server != null -> server
+            // A paused account (QA O4, iOS's words): how long, from details.retryAfterSec.
+            code == ApiException.RATE_LIMITED && detailString("reason") == "paused" -> StatusCopy.pausedLine(detailInt("retryAfterSec"))
             // The server's invalid_state text is written for the team ("Only a submitted project can be approved"):
             // the plain line instead, as iOS. The app's own (httpStatus 0, "Write the brief first.") keep their words.
             code == ApiException.INVALID_STATE && httpStatus != 0 -> StatusCopy.errorLine(code, null)

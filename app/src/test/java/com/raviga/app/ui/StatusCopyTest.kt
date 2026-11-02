@@ -113,4 +113,20 @@ class StatusCopyTest {
         assertEquals("Couldn't save the draft", java.io.IOException("Couldn't save the draft").userLine())
         assertEquals("Something went wrong. Try again.", IllegalStateException().userLine())
     }
+
+    /** QA O4 (as iOS): a screening pause says for how long. */
+    @Test fun aPauseSaysForHowLong() {
+        assertEquals(
+            "Several descriptions were turned down, so new ones are paused for about 23 hours. Write to support if you think this is a mistake.",
+            StatusCopy.pausedLine(82_000),
+        )
+        assertEquals("1 minute", StatusCopy.hours(20))
+        assertEquals("40 minutes", StatusCopy.hours(2_400))
+        assertEquals("1 hour", StatusCopy.hours(3_600))
+        assertEquals("2 hours", StatusCopy.hours(3_601))
+        assertEquals(
+            "Several descriptions were turned down, so new ones are paused for a day. Write to support if you think this is a mistake.",
+            StatusCopy.pausedLine(null),
+        )
+    }
 }

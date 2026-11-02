@@ -88,6 +88,22 @@ object StatusCopy {
 
     fun mistakeSuffix(): String = if (supportEmail.isBlank()) "" else " If you think this is a mistake, write to $supportEmail."
 
+    /** Screening paused new descriptions (429 rate_limited, reason "paused"), as iOS: for how long, in plain words. */
+    fun pausedLine(retryAfterSec: Int?): String =
+        "Several descriptions were turned down, so new ones are paused" +
+            (retryAfterSec?.let { " for about ${hours(it)}" } ?: " for a day") +
+            ". Write to support if you think this is a mistake."
+
+    /** "40 minutes", "5 hours": iOS's DurationFormat.hours, rounded up to the hour past one hour. */
+    fun hours(seconds: Int): String {
+        if (seconds < 3600) {
+            val minutes = (maxOf(60, seconds) / 60.0).let { Math.round(it).toInt() }
+            return if (minutes == 1) "1 minute" else "$minutes minutes"
+        }
+        val whole = Math.ceil(seconds / 3600.0).toInt()
+        return if (whole == 1) "1 hour" else "$whole hours"
+    }
+
     /** The server's wording sometimes carries the appeal already; never say it twice. */
     fun hasAppeal(text: String?): Boolean {
         if (text.isNullOrBlank()) return false
