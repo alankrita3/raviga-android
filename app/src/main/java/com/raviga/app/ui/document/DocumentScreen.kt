@@ -104,7 +104,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     var confirmDelete by remember { mutableStateOf(false) }
     var chooser by remember { mutableStateOf(false) }
     // The note open for editing (a draft with no brief yet, or one not in the brief yet), by input id.
-    var openNote by remember { mutableStateOf<String?>(null) }
+    // R-092 #2: an open note survives the app being ended in the background (with its text, below).
+    var openNote by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     // Notes saved on the phone that the written brief doesn't reflect yet, and their list.
     val pendingNotes = if (document != null && editable) draft?.newInputs.orEmpty() else emptyList()
     var pendingSheet by remember { mutableStateOf(false) }
@@ -449,13 +450,22 @@ private fun PendingNotesSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NoteSheet(text: String, source: String, maxChars: Int, onSave: (String) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
-    var value by remember(text) { mutableStateOf(text) }
+    // R-092 #2 (iOS review): the edit survives the app being ended in the background, and closing with an unsaved
+    // change asks first (swipe-down is held while there is one).
+    var value by androidx.compose.runtime.saveable.rememberSaveable(text) { mutableStateOf(text) }
+    val changed = value.trim() != text.trim()
+    val changedNow by androidx.compose.runtime.rememberUpdatedState(changed)
+    var confirmDiscard by remember { mutableStateOf(false) }
+    val leave = { if (changed) confirmDiscard = true else onDismiss() }
     // R-092 #32 (iOS review): the note limit is checked here, before saving, not by the next AI call's 400.
     val tooLong = com.raviga.app.ui.capture.CaptureViewModel.overLimit(value, maxChars)
     var confirm by remember { mutableStateOf(false) }
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        onDismissRequest = leave,
+        sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { it != androidx.compose.material3.SheetValue.Hidden || !changedNow },
+        ),
         containerColor = Ink.paper,
         dragHandle = null,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -480,6 +490,16 @@ private fun NoteSheet(text: String, source: String, maxChars: Int, onSave: (Stri
             Spacer(Modifier.height(4.dp))
             DestructiveButton("Delete note", onClick = { confirm = true })
         }
+    }
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            containerColor = Ink.surface,
+            title = { Text("Discard your changes?", style = RaType.heading, color = Ink.ink) },
+            text = { Text("What you changed in this note isn't saved.", style = RaType.body, color = Ink.graphite) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; onDismiss() }) { Text("Discard", style = RaType.button, color = Ink.brick) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing", style = RaType.button, color = Ink.ink) } },
+        )
     }
     if (confirm) {
         AlertDialog(
