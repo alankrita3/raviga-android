@@ -71,6 +71,21 @@ fun QuoteScreen(nav: NavController, projectId: String) {
     val quote = state.quote
     val config = state.config
 
+    // AI consent round trip (R-056 order): opened right before the AI call, which carries on when it's allowed.
+    val aiConsent = nav.currentBackStackEntry?.savedStateHandle?.getStateFlow("ai_consent_granted", false)?.collectAsStateWithLifecycle()
+    LaunchedEffect(aiConsent?.value) {
+        if (aiConsent?.value == true) {
+            nav.currentBackStackEntry?.savedStateHandle?.set("ai_consent_granted", false)
+            vm.aiConsentGranted()
+        }
+    }
+    LaunchedEffect(state.needsAiConsent) {
+        if (state.needsAiConsent) {
+            vm.aiConsentRequested()
+            nav.navigate(Routes.AI_CONSENT)
+        }
+    }
+
     LaunchedEffect(state.submittedProjectId) {
         val id = state.submittedProjectId ?: return@LaunchedEffect
         nav.navigate(Routes.status(id)) { popUpTo(Routes.HOME); launchSingleTop = true }

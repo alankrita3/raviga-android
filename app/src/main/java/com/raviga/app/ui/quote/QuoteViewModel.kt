@@ -42,6 +42,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val githubTouched: Boolean = false,
         val submitting: Boolean = false,
         val error: String? = null,
+        /** AI processing isn't allowed yet: the screen shows "Before we send this to AI", then the action runs. */
+        val needsAiConsent: Boolean = false,
         /** Server id of the project once submit landed. */
         val submittedProjectId: String? = null,
     ) {
@@ -72,6 +74,30 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
      * it instead of failing. Cleared once a submit lands.
      */
     private var submitKey: Pair<String, String>? = null
+
+    // ----- AI consent right before the AI call (R-056 order; same on iOS) -----
+
+    private var pendingAi: (() -> Unit)? = null
+
+    /** Runs [action] now, or after "Before we send this to AI" when AI processing isn't allowed yet. */
+    private fun withAiConsent(action: () -> Unit) {
+        if (container.session.needsAiConsent(container.session.me.value)) {
+            pendingAi = action
+            _state.update { it.copy(needsAiConsent = true) }
+        } else {
+            action()
+        }
+    }
+
+    /** The screen has opened the consent screen; don't open it again on return. */
+    fun aiConsentRequested() = _state.update { it.copy(needsAiConsent = false) }
+
+    /** Allowed: carry on with what was asked. */
+    fun aiConsentGranted() {
+        val action = pendingAi
+        pendingAi = null
+        action?.invoke()
+    }
 
     private fun keyFor(body: String): String =
         submitKey?.takeIf { it.first == body }?.second
@@ -124,9 +150,9 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
 
     fun setGithub(value: String) = _state.update { it.copy(github = value, githubTouched = true, error = null) }
 
-    fun requestQuote() {
-        val draftId = _state.value.draft?.id ?: return
-        if (_state.value.quoting) return
+    fun requestQuote() = withAiConsent {
+        val draftId = _state.value.draft?.id ?: return@withAiConsent
+        if (_state.value.quoting) return@withAiConsent
         quotedOnce = true
         viewModelScope.launch {
             _state.update { it.copy(quoting = true, progressMessage = "Sizing the work", progress = null, error = null) }
@@ -139,13 +165,13 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
     }
 
-    fun submit() {
+    fun submit() = withAiConsent {
         val s = _state.value
-        val draft = s.draft ?: return
+        val draft = s.draft ?: return@withAiConsent
         val github = s.github.trim()
         if (github.isBlank()) {
             _state.update { it.copy(error = "Enter your GitHub username so we can hand over the code.") }
-            return
+            return@withAiConsent
         }
         viewModelScope.launch {
             _state.update { it.copy(submitting = true, error = null) }

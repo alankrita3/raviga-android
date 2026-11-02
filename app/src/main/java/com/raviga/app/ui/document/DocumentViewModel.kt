@@ -32,6 +32,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val project: Project? = null,
         val loading: Boolean = true,
         val error: String? = null,
+        /** AI processing isn't allowed yet: the screen shows "Before we send this to AI", then the action runs. */
+        val needsAiConsent: Boolean = false,
         val busyMessage: String? = null,
         val busyProgress: Float? = null,
         val sheetSection: String? = null,
@@ -111,8 +113,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     fun openRegenerate(sectionId: String) = _state.update { it.copy(sheetSection = sectionId) }
     fun closeRegenerate() = _state.update { it.copy(sheetSection = null) }
 
-    fun regenerate(sectionId: String, instruction: String) {
-        val draftId = _state.value.draft?.id ?: return
+    fun regenerate(sectionId: String, instruction: String) = withAiConsent {
+        val draftId = _state.value.draft?.id ?: return@withAiConsent
         busy("Rereading the section", close = true) {
             container.drafts.regenerate(draftId, sectionId, instruction) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
@@ -132,9 +134,9 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         }
     }
 
-    /** "Write the brief" for a draft that has notes but no brief yet. */
-    fun generate() {
-        val draftId = _state.value.draft?.id ?: return
+    /** "Write the brief" for a draft with notes but no brief, and "Add it to the brief" for notes not in it yet. */
+    fun generate() = withAiConsent {
+        val draftId = _state.value.draft?.id ?: return@withAiConsent
         busy("Reading your notes") {
             container.drafts.writeBrief(draftId) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
@@ -170,6 +172,30 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    // ----- AI consent right before the AI call (R-056 order; same on iOS) -----
+
+    private var pendingAi: (() -> Unit)? = null
+
+    /** Runs [action] now, or after "Before we send this to AI" when AI processing isn't allowed yet. */
+    private fun withAiConsent(action: () -> Unit) {
+        if (container.session.needsAiConsent(container.session.me.value)) {
+            pendingAi = action
+            _state.update { it.copy(needsAiConsent = true) }
+        } else {
+            action()
+        }
+    }
+
+    /** The screen has opened the consent screen; don't open it again on return. */
+    fun aiConsentRequested() = _state.update { it.copy(needsAiConsent = false) }
+
+    /** Allowed: carry on with what was asked. */
+    fun aiConsentGranted() {
+        val action = pendingAi
+        pendingAi = null
+        action?.invoke()
+    }
 
     private fun busy(message: String, close: Boolean = false, block: suspend () -> Unit) {
         viewModelScope.launch {
