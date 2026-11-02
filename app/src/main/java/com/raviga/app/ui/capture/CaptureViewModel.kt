@@ -1,5 +1,9 @@
 package com.raviga.app.ui.capture
 
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import android.os.SystemClock
 import com.raviga.app.ui.document.BriefLimits
 import android.os.Build
 import android.net.Uri
@@ -119,6 +123,8 @@ class CaptureViewModel(
     )
     private val draftId: String? get() = notes.draftId
     private var saveJob: Job? = null
+    /** When the oldest change not yet saved was made (uptime ms), 0 when everything is saved. */
+    @Volatile private var firstUnsavedAt = 0L
     private var listenJob: Job? = null
     private var timerJob: Job? = null
     private var pendingAfterConsent: (() -> Unit)? = null
@@ -459,20 +465,28 @@ class CaptureViewModel(
     /** Saves what's on screen about half a second after the last change. */
     private fun scheduleSave() {
         saveJob?.cancel()
-        saveJob = viewModelScope.launch {
-            delay(SAVE_DELAY_MS)
+        val now = SystemClock.uptimeMillis()
+        if (firstUnsavedAt == 0L) firstUnsavedAt = now
+        val wait = saveDelay(now, firstUnsavedAt)
+        // Off the main thread, so flush() can wait for a save in progress without blocking on it.
+        saveJob = viewModelScope.launch(Dispatchers.IO) {
+            delay(wait)
             persist()
         }
     }
 
-    /** Saves now, even if this screen is going away (the app going to the background, or leaving Capture). */
+    /**
+     * Saves now and waits for it (at most [FLUSH_TIMEOUT_MS]): the app is going to the background, and a kill right
+     * after (swiped away, QA G2) must find the words saved. The save runs on IO, never on the main thread it blocks.
+     */
     fun flush() {
         saveJob?.cancel()
         val s = _state.value
-        container.appScope.launch { persist(s) }
+        runBlocking(Dispatchers.IO) { withTimeoutOrNull(FLUSH_TIMEOUT_MS) { persist(s) } }
     }
 
     private suspend fun persist(s: State = _state.value) {
+        firstUnsavedAt = 0L
         val text = liveText(s, consumedUtterances) ?: return
         // A failed save must not stop the person typing; the next change or leaving tries again. A refusal (the
         // draft's note limit, QA F5) is shown, so nothing is dropped without a word.
@@ -535,6 +549,13 @@ class CaptureViewModel(
 
     companion object {
         const val SAVE_DELAY_MS = 500L
+        /** Typing without a pause still saves at least this often (QA G2: a kill within 1 s of a keystroke). */
+        const val SAVE_MAX_WAIT_MS = 1_000L
+        const val FLUSH_TIMEOUT_MS = 2_000L
+
+        /** Half a second after the last change, but never more than [SAVE_MAX_WAIT_MS] after the first unsaved one. */
+        fun saveDelay(now: Long, firstUnsavedAt: Long): Long =
+            minOf(SAVE_DELAY_MS, maxOf(0L, SAVE_MAX_WAIT_MS - (now - firstUnsavedAt)))
 
         /** R-075: a finished utterance goes after the ones before it; only the live partial is ever replaced. */
         fun heard(s: State, event: DictationEngine.Event): State = when (event) {

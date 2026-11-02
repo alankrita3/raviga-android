@@ -170,4 +170,11 @@ class WorkingNotesTest {
         assertEquals("A project can have up to 10 notes. Add the rest to an existing one.", limit.noteLimitProblem(10, 10))
         assertNull("no limit from config", limit.noteLimitProblem(50, 0))
     }
+
+    /** QA G2: half a second after the last change, but typing without a pause still saves every second. */
+    @Test fun savesAtLeastEverySecondWhileTyping() {
+        assertEquals(500L, CaptureViewModel.saveDelay(now = 1_000, firstUnsavedAt = 1_000))
+        assertEquals(300L, CaptureViewModel.saveDelay(now = 1_700, firstUnsavedAt = 1_000))
+        assertEquals(0L, CaptureViewModel.saveDelay(now = 2_200, firstUnsavedAt = 1_000))
+    }
 }
