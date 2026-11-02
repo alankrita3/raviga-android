@@ -120,7 +120,7 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
                     notice = when (outcome) {
                         PurchaseOutcome.Success -> "${pack.total} credits added."
                         PurchaseOutcome.Pending -> "Payment pending. Your credits arrive as soon as your bank confirms it."
-                        PurchaseOutcome.NotBookedYet -> "Payment received. Your credits will appear in a minute."
+                        PurchaseOutcome.NotBookedYet -> "Your purchase is confirmed. The credits arrive in a moment."   // R-092 #20, as iOS
                         else -> null
                     },
                 )
