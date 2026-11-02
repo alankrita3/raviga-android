@@ -207,6 +207,14 @@ private fun NewPhoneSection(state: MovePhoneViewModel.State, vm: MovePhoneViewMo
         Spacer(Modifier.height(6.dp))
     }
     Text("Restore with the recovery key from your old phone, or with a link code it just made.", style = RaType.secondary, color = Ink.graphite)
+    if (!state.hasAccount) {
+        // QA N4: on a fresh install, say before the restore that drafts don't come with it (local-first).
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Submitted projects and credits come back. Drafts stay on the phone they were written on.",
+            style = RaType.secondary, color = Ink.graphite,
+        )
+    }
     Spacer(Modifier.height(8.dp))
     Row(Edge) {
         RestoreChoice("Use recovery key", selected = state.restoreWay == RestoreWay.KEY) { vm.setRestoreWay(RestoreWay.KEY) }
