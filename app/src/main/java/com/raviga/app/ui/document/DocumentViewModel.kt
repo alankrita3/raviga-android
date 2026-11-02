@@ -43,7 +43,16 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val notices: List<String> = emptyList(),
         val supportEmail: String = "",
     ) {
-        val document: Document? get() = draft?.document ?: project?.document?.asDocument()
+        /**
+         * The brief shown. R-092 #34 (iOS review): a submitted brief that can't be edited (cancelled, closed, or a
+         * changes round never resubmitted) shows the version that was submitted, not later local edits.
+         */
+        val document: Document?
+            get() {
+                val submittedCopy = draft?.submittedVersion?.takeIf { draft.isSubmitted && !editable }
+                    ?.let { v -> draft.versions.firstOrNull { it.version == v }?.document }
+                return submittedCopy ?: draft?.document ?: project?.document?.asDocument()
+            }
         val status: String get() = project?.status ?: ProjectStatus.DRAFT
         /** Not submitted yet: it exists only on this phone. */
         val isLocalDraft: Boolean get() = draft != null && draft.serverProjectId == null
