@@ -87,7 +87,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     var revisionSheet by remember { mutableStateOf(false) }
     // R-092 #38 (as iOS): accepting can't be undone; it ends the revision rounds and deletes the brief from the server.
     var confirmAccept by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var message by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     ScreenScaffold(
         topBar = {
@@ -268,9 +268,11 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                 InlineNotice(state.error)
                 Spacer(Modifier.height(16.dp))
                 PrimaryButton("Send request", enabled = remaining > 0 && message.isNotBlank(), loading = state.busy, onClick = {
-                    vm.requestRevision(message)
-                    revisionSheet = false
-                    message = ""
+                    // Closed and cleared only once it's sent; a failure shows here with the message kept.
+                    vm.requestRevision(message) {
+                        revisionSheet = false
+                        message = ""
+                    }
                 })
             }
         }

@@ -98,13 +98,14 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
         container.projects.accept(projectId)
         container.analytics.deliveryAccepted(before?.quote?.bracketId, before?.revisions?.used ?: 0)
     }
-    fun requestRevision(message: String) = action { container.projects.requestRevision(projectId, message) }
+    /** R-092 #5 (iOS review): [onSent] runs only once the server has the request; a failure keeps the message. */
+    fun requestRevision(message: String, onSent: () -> Unit = {}) = action(onSent) { container.projects.requestRevision(projectId, message) }
 
-    private fun action(block: suspend () -> Unit) {
+    private fun action(onSuccess: () -> Unit = {}, block: suspend () -> Unit) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
             runCatching { block() }
-                .onSuccess { runCatching { container.credits.refresh() } }
+                .onSuccess { onSuccess(); runCatching { container.credits.refresh() } }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
         }
