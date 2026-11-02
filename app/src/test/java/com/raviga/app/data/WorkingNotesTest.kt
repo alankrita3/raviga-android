@@ -197,4 +197,18 @@ class WorkingNotesTest {
         assertEquals(300L, CaptureViewModel.saveDelay(now = 1_700, firstUnsavedAt = 1_000))
         assertEquals(0L, CaptureViewModel.saveDelay(now = 2_200, firstUnsavedAt = 1_000))
     }
+
+    /** R-092 #32 (iOS review): lengths count as the server does, code points, and a title is capped at 120. */
+    @Test fun limitsCountCodePointsAndCapTheTitle() {
+        val emoji = "\uD83C\uDF70"   // one cake emoji: 1 code point, 2 UTF-16 units
+        assertNull("20,000 emoji fit a 20,000 limit", CaptureViewModel.overLimit(emoji.repeat(20_000), 20_000))
+        assertEquals(
+            "That's over the 20,000 character limit. Shorten it, or save and add the rest as another note.",
+            CaptureViewModel.overLimit(emoji.repeat(20_001), 20_000),
+        )
+        val limits = com.raviga.app.ui.document.BriefLimits
+        assertNull(limits.titleProblem("a".repeat(120)))
+        assertNull(limits.titleProblem(emoji.repeat(120)))
+        assertEquals("A title can be up to 120 characters. Shorten it, then save.", limits.titleProblem("a".repeat(121)))
+    }
 }

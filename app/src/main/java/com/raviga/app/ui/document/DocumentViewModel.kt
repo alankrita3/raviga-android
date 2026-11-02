@@ -135,6 +135,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val clean = title.trim()
         // A brief always has a title; a draft's name can be cleared, and the first note names it again (R-082).
         if (clean.isBlank() && draft.document != null) return
+        // R-092 #32: the contract's 120-character title cap, checked here.
+        BriefLimits.titleProblem(clean)?.let { line -> _state.update { it.copy(error = line) }; return }
         viewModelScope.launch {
             runCatching {
                 if (draft.document != null) container.drafts.saveEdit(draft.id, clean, emptyList())

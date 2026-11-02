@@ -574,7 +574,7 @@ class CaptureViewModel(
 
         /** Over the per-note limit: what to say (iOS's words), else null. */
         fun overLimit(text: String, maxChars: Int): String? =
-            if (maxChars > 0 && text.length > maxChars) {
+            if (maxChars > 0 && com.raviga.app.ui.document.BriefLimits.length(text) > maxChars) {
                 "That's over the ${BriefLimits.grouped(maxChars)} character limit. Shorten it, or save and add the rest as another note."
             } else {
                 null

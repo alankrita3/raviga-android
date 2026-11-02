@@ -359,6 +359,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
         } else {
             NoteSheet(
                 text = input.text,
+                maxChars = container.session.config.value.limits.textInputMaxChars,
                 source = inputSource(input) + " " + Time.relative(input.createdAt),
                 onSave = { vm.editNote(input.id, it); close() },
                 onDelete = { vm.deleteNote(input.id); close() },
@@ -447,8 +448,10 @@ private fun PendingNotesSheet(
 /** One note of a draft with no brief yet: edit its text, or delete it after a confirm. Nothing leaves the phone. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteSheet(text: String, source: String, onSave: (String) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
+private fun NoteSheet(text: String, source: String, maxChars: Int, onSave: (String) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
     var value by remember(text) { mutableStateOf(text) }
+    // R-092 #32 (iOS review): the note limit is checked here, before saving, not by the next AI call's 400.
+    val tooLong = com.raviga.app.ui.capture.CaptureViewModel.overLimit(value, maxChars)
     var confirm by remember { mutableStateOf(false) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -471,8 +474,9 @@ private fun NoteSheet(text: String, source: String, onSave: (String) -> Unit, on
             Text(source, style = RaType.caption, color = Ink.graphite)
             Spacer(Modifier.height(16.dp))
             BoxedEditor(value = value, onValueChange = { value = it }, minHeight = 160.dp)
+            InlineNotice(tooLong)
             Spacer(Modifier.height(20.dp))
-            PrimaryButton("Save", enabled = value.isNotBlank() && value.trim() != text.trim(), onClick = { onSave(value) })
+            PrimaryButton("Save", enabled = tooLong == null && value.isNotBlank() && value.trim() != text.trim(), onClick = { onSave(value) })
             Spacer(Modifier.height(4.dp))
             DestructiveButton("Delete note", onClick = { confirm = true })
         }
