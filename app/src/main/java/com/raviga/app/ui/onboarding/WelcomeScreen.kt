@@ -75,7 +75,8 @@ private val steps = listOf(
     ),
     Step(
         "Ready before you know it",
-        "A working project, ready for your review, with the code, a handover guide and simple steps to make it live.",
+        // R-073, her approved wording (2026-11-02); also shown by Settings > How Raviga works.
+        "A working project, ready for your review, with the code and a handover guide. Go live in a few simple steps, or we'll do it for you.",
         Picture.Delivered,
     ),
 )

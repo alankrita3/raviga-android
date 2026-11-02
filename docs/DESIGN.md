@@ -111,7 +111,7 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   a timeline before anything starts. Nothing is charged until you submit."; "Built by AI, checked by
   experts" / "AI builds your project at speed. Experts recommend the right tech stack, or use yours, and
   review the work before it reaches you."; "Ready before you know it" / "A working project, ready for your
-  review, with the code, a handover guide and simple steps to make it live." (Steps 3 and 4 are the
+  review, with the code and a handover guide. Go live in a few simple steps, or we'll do it for you." (R-073) (Steps 3 and 4 are the
   founder's exact words, iOS 489412c.)
 - Founder rule: no other copy about who builds the project (team, AI, agents or robots) unless she approves it.
 - Consent ("Before you start" / "We've updated our terms") and Privacy and data, R-066: "What we don't keep" is
