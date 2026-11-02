@@ -8,10 +8,24 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import com.raviga.app.ui.theme.Ink
 
-/** Opens a URL in an in-app browser tab (paper toolbar), falling back to the system browser. */
+/**
+ * R-092 #23 (as iOS 1da76d6): only web addresses open. "https://..." and "http://..." as they are; a bare host
+ * ("legal.ravigaapps.com/terms") gets https; anything else (intent:, file:, javascript:...) is not opened.
+ */
+fun webUrl(url: String): String? {
+    val trimmed = url.trim()
+    if (trimmed.isEmpty()) return null
+    val scheme = trimmed.substringBefore(':', "").lowercase()
+    return when {
+        scheme == "https" || scheme == "http" -> trimmed.takeIf { it.substringAfter("://", "").isNotBlank() }
+        "://" !in trimmed && Regex("^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+(/.*)?$").matches(trimmed) -> "https://$trimmed"
+        else -> null
+    }
+}
+
+/** Opens a web address in an in-app browser tab (paper toolbar), falling back to the system browser. */
 fun openLink(context: Context, url: String) {
-    if (url.isBlank()) return
-    val uri = url.toUri()
+    val uri = webUrl(url)?.toUri() ?: return
     try {
         val params = CustomTabColorSchemeParams.Builder()
             .setToolbarColor(Ink.paper.value.toInt() and 0xFFFFFF or (0xFF shl 24))
