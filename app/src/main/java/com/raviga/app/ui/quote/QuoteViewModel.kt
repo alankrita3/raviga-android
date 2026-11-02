@@ -289,6 +289,18 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 runCatching { container.session.refreshMe() }
                 _state.update { it.copy(submitting = false, submittedProjectId = project.id) }
             }.onFailure { e ->
+                // R-092 #19 / R-091: a submit whose answer was lost, retried: the server names the project it already
+                // has. The draft becomes it, as after a submit, instead of being re-quoted and charged twice.
+                val existing = (e as? ApiException)?.takeIf { it.code == ApiException.QUOTE_STALE }?.detailString("projectId")
+                if (existing != null) {
+                    val adopted = runCatching { container.drafts.adoptSubmitted(draft.id, existing) }.getOrNull()
+                    if (adopted != null) {
+                        submitKey = null
+                        runCatching { container.credits.refresh() }
+                        _state.update { it.copy(submitting = false, submittedProjectId = adopted.id) }
+                        return@onFailure
+                    }
+                }
                 // quote_stale (QA I3, as iOS): the server's message says which case (expired, used, brief changed);
                 // the screen offers "Get a new quote". No quote is asked for on the person's behalf: it's an AI call.
                 if ((e as? ApiException)?.code == ApiException.QUOTE_STALE) {

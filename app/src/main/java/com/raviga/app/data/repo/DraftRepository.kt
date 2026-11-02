@@ -348,6 +348,24 @@ class DraftRepository(
         project
     }
 
+    /**
+     * R-092 #19 / backend R-091: the answer to a submit (or resubmit) was lost and the retry was told the brief is
+     * already project [projectId]. The draft becomes that project, as after the submit: the brief kept as the copy
+     * submitted, the used quote token dropped, so it isn't re-quoted and charged twice.
+     */
+    suspend fun adoptSubmitted(id: String, projectId: String): Project {
+        val project = projects.refresh(projectId)
+        touch(id) {
+            it.copy(
+                serverProjectId = projectId,
+                submittedVersion = it.current?.version ?: it.submittedVersion,
+                submittedAt = project.submission?.submittedAt ?: Time.nowIso(),
+                quoteToken = null,
+            )
+        }
+        return project
+    }
+
     suspend fun resubmit(id: String, idempotencyKey: String): Project = guarded(id) {
         val draft = require(id)
         val projectId = draft.serverProjectId ?: throw ApiException(ApiException.INVALID_STATE, message = "This brief hasn't been submitted.")
