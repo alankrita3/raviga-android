@@ -43,6 +43,20 @@ class SensitiveScanTest {
         assertEquals(emptyList<Kind>(), kinds("users reset their password by email"))
     }
 
+    /**
+     * QA H10: when the server reports it removed secrets ("We removed an API key and a card number..."), the phone's
+     * own copy of the note is redacted with this scanner (DraftRepository.commit). The fixture's fake key and card go.
+     */
+    @Test fun theQaFixtureKeyAndCardAreRemovedFromTheLocalNote() {
+        val note = "Please use our key\nsk-ant-api03-FAKE-EXAMPLE-0000-not-a-real-key-raviga-qa-fixture so the app can use it too.\n" +
+            "For the App Store and Play Store fees, charge the clinic card 4111 1111 1111 1111, expiry 12/30."
+        val redacted = SensitiveScan.redact(note)
+        assertEquals(listOf(Kind.API_KEY, Kind.CARD), kinds(note))
+        assertFalse(redacted.contains("sk-ant-"))
+        assertFalse(redacted.contains("4111 1111 1111 1111"))
+        assertTrue(redacted.contains("charge the clinic card [removed], expiry 12/30."))
+    }
+
     /** v0.9.4: a Claude key is removed whole, the "sk-ant-" prefix included. */
     @Test fun claudeKeyIsRemovedWhole() {
         val key = "sk-ant-api03-" + "Zx9_Qw-Er".repeat(10) + "AA"
