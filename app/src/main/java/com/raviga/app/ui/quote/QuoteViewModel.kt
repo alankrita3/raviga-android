@@ -147,7 +147,10 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         @OptIn(ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
             serverId.flatMapLatest { sid -> if (sid == null) flowOf(null) else container.projects.project(sid) }
-                .collect { p -> _state.update { it.copy(project = p) } }
+                .collect { p ->
+                    _state.update { it.copy(project = p) }
+                    maybeQuote()   // a resubmit's project status arrives after the draft
+                }
         }
         viewModelScope.launch {
             container.session.me.collect { me ->
@@ -170,10 +173,16 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
     }
 
+    /**
+     * Opening the quote for a brief with no current quote asks for one. Never while or after submitting: a submit
+     * clears the quote token, and with the project not loaded yet this used to ask for a new quote, an AI call nobody
+     * asked for (QA L1, 2026-11-03). A submitted brief is quoted again only once the team asked for changes.
+     */
     private fun maybeQuote() {
         val s = _state.value
         val d = s.draft ?: return
-        val editable = d.serverProjectId == null || s.project?.status == ProjectStatus.CHANGES_REQUESTED || s.project == null
+        if (s.submitting || s.submittedProjectId != null) return
+        val editable = d.serverProjectId == null || s.project?.status == ProjectStatus.CHANGES_REQUESTED
         if (s.needsNewQuote && d.document != null && editable && !s.rejected && !quotedOnce) requestQuote()
     }
 
