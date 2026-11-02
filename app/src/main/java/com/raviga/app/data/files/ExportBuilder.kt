@@ -23,11 +23,11 @@ class ExportBuilder(
     private val drafts: DraftStore,
 ) {
     suspend fun write(serverZipUrl: String, target: Uri) = withContext(Dispatchers.IO) {
-        (context.contentResolver.openOutputStream(target, "w") ?: throw IOException("Couldn't open the file to save into.")).use { out ->
+        (context.contentResolver.openOutputStream(target, "w") ?: throw com.raviga.app.data.UserFacingException("Couldn't open the file to save into.")).use { out ->
             ZipOutputStream(out.buffered()).use { zip ->
                 if (!serverZipUrl.startsWith("demo:")) http.newCall(Request.Builder().url(serverZipUrl).build()).execute().use { response ->
-                    if (!response.isSuccessful) throw IOException("The download link has expired. Ask for a new one.")
-                    val body = response.body ?: throw IOException("The download came back empty. Ask for a new link.")
+                    if (!response.isSuccessful) throw com.raviga.app.data.UserFacingException("The download link has expired. Ask for a new one.")
+                    val body = response.body ?: throw com.raviga.app.data.UserFacingException("The download came back empty. Ask for a new link.")
                     ZipInputStream(body.byteStream()).use { input ->
                         while (true) {
                             val entry = input.nextEntry ?: break

@@ -94,7 +94,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(busy = true, error = null, exportMessage = "Saving") }
             runCatching { container.exports.write(url, target) }
                 .onSuccess { _state.update { it.copy(exportUrl = null, exportMessage = null, notice = "Saved.") } }
-                .onFailure { e -> _state.update { it.copy(exportMessage = null, error = e.message ?: e.userLine()) } }
+                .onFailure { e -> _state.update { it.copy(exportMessage = null, error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
         }
     }

@@ -103,7 +103,7 @@ class DraftStore(
         val target = File(dir, "${draft.id}$EXT")
         if (!tmp.renameTo(target)) {
             target.delete()
-            if (!tmp.renameTo(target)) { tmp.delete(); throw java.io.IOException("Couldn't save the draft") }
+            if (!tmp.renameTo(target)) { tmp.delete(); throw com.raviga.app.data.UserFacingException("Couldn't save the draft on this phone. Free some space and try again.") }
         }
     }
 

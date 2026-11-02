@@ -27,7 +27,7 @@ class TextExtractor(private val context: Context) {
 
     data class Result(val text: String, val pageCount: Int?, val truncated: Boolean, val notice: String?)
 
-    class Unreadable(message: String) : Exception(message)
+    class Unreadable(message: String) : com.raviga.app.data.UserFacingException(message)
 
     @Volatile private var pdfBoxReady = false
 

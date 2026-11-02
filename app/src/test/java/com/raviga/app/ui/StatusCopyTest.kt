@@ -110,8 +110,11 @@ class StatusCopyTest {
         assertEquals("That isn't possible at this stage.", server.userLine())
         val local = com.raviga.app.data.api.ApiException("invalid_state", message = "Write the brief first.")
         assertEquals("Write the brief first.", local.userLine())
-        assertEquals("Couldn't save the draft", java.io.IOException("Couldn't save the draft").userLine())
+        assertEquals("Couldn't save the draft", com.raviga.app.data.UserFacingException("Couldn't save the draft").userLine())
         assertEquals("Something went wrong. Try again.", IllegalStateException().userLine())
+        // R-092 #27: a runtime's own text is never shown.
+        assertEquals("Something went wrong. Try again.", IndexOutOfBoundsException("Index 3 out of bounds for length 2").userLine())
+        assertEquals("Something went wrong. Try again.", java.io.IOException("No content provider: content://x").userLine())
     }
 
     /** QA O4 (as iOS): a screening pause says for how long. */

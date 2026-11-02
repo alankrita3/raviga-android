@@ -20,8 +20,10 @@ fun Throwable.userLine(): String = when (this) {
             else -> StatusCopy.errorLine(code, server)
         }
     }
-    // Not from the server: the app's own words when it wrote some ("Couldn't save the draft"), else the plain line.
-    else -> message?.takeIf { it.isNotBlank() } ?: StatusCopy.errorLine("unknown", null)
+    // Not from the server: the app's own words when it wrote some ("Couldn't save the draft"); never a runtime's own
+    // text (R-092 #27, iOS review).
+    is com.raviga.app.data.UserFacingException -> message?.takeIf { it.isNotBlank() } ?: StatusCopy.errorLine("unknown", null)
+    else -> StatusCopy.errorLine("unknown", null)
 }
 
 fun Throwable.apiCode(): String? = (this as? ApiException)?.code

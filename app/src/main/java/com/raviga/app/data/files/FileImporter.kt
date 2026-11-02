@@ -18,7 +18,7 @@ class FileImporter(private val context: Context) {
 
     data class Picked(val file: File, val name: String, val bytes: Long, val contentType: String)
 
-    sealed class Problem(message: String) : Exception(message) {
+    sealed class Problem(message: String) : com.raviga.app.data.UserFacingException(message) {
         class Unsupported : Problem("Raviga can read PDF, Word (.docx), text, Markdown and RTF files. Save it as one of those and try again.")
         class TooLarge(maxBytes: Long) : Problem("That file is over ${maxBytes / 1_048_576} MB. Upload a shorter version, or paste the important parts.")
         class Unreadable : Problem("Couldn't open that file. Try again, or choose another copy.")

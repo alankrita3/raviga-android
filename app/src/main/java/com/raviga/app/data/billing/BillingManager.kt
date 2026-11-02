@@ -79,7 +79,7 @@ class BillingManager(private val app: Application, private val apiKey: String) {
 
     suspend fun purchase(activity: Activity, productId: String): PurchaseOutcome {
         val product = runCatching { products(listOf(productId)).firstOrNull() }
-            .getOrElse { return PurchaseOutcome.Failed(it.message ?: "Store unavailable") }
+            .getOrElse { return PurchaseOutcome.Failed("Google Play isn't available right now. Try again in a moment.") }
             ?: return PurchaseOutcome.Failed("This pack is not available in your store right now.")
         return suspendCancellableCoroutine { cont ->
             Purchases.sharedInstance.purchaseWith(
@@ -90,7 +90,8 @@ class BillingManager(private val app: Application, private val apiKey: String) {
                         when {
                             userCancelled -> PurchaseOutcome.Cancelled
                             error.code == PurchasesErrorCode.PaymentPendingError -> PurchaseOutcome.Pending
-                            else -> PurchaseOutcome.Failed(error.message)
+                            // R-092 #27: the store's own text is never shown.
+                            else -> PurchaseOutcome.Failed("The purchase didn't go through. Try again.")
                         },
                     )
                 },

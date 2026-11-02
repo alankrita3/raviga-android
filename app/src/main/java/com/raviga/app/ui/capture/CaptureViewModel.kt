@@ -258,7 +258,7 @@ class CaptureViewModel(
             val picked = try {
                 container.files.import(uri, limits.fileMaxBytes, limits.acceptedFileTypes)
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: "Couldn't open that file.") }
+                _state.update { it.copy(error = (e as? com.raviga.app.data.UserFacingException)?.message ?: "Couldn't open that file. Try again, or choose another copy.") }
                 return@launch
             }
             // A new document is a new note, even if an earlier one was already saved.
