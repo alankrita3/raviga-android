@@ -18,7 +18,7 @@ retrofit = "2.11.0"
 retrofitSerialization = "1.0.0"
 okhttp = "4.12.0"
 firebaseBom = "35.1.0"
-purchases = "8.10.4"
+purchases = "10.21.1"
 googleServices = "4.5.0"
 pdfbox = "2.0.27.0"
 # Pinned above what PDFBox and Firebase pull in: OSV advisories on Bouncy Castle 1.72 and Guava 31.1 (build 8 gate).
