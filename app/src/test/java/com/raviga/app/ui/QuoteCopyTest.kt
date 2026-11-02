@@ -71,4 +71,12 @@ class QuoteCopyTest {
         assertEquals(true, refused.needsNewQuote)
         assertEquals("That quote has already been used. Get a fresh quote and try again.", refused.staleLine)
     }
+
+    /** R-092 #18 (iOS review): a retried submit carries the same key, even after a relaunch; a new quote a new one. */
+    @Test fun theSubmitKeyFollowsTheQuoteToken() {
+        val first = com.raviga.app.ui.quote.idempotencyKeyFor("tok-1")
+        assertEquals(first, com.raviga.app.ui.quote.idempotencyKeyFor("tok-1"))
+        org.junit.Assert.assertNotEquals(first, com.raviga.app.ui.quote.idempotencyKeyFor("tok-2"))
+        assertEquals(36, first.length)
+    }
 }

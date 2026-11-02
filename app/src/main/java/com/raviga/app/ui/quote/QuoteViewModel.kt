@@ -28,6 +28,14 @@ import kotlinx.coroutines.launch
  * its token are kept with the local draft; submitting creates the server
  * project, and a "changes requested" round resubmits the edited brief.
  */
+/**
+ * R-092 #18 (iOS review): the submit's Idempotency-Key comes from the quote token (a name-based UUID), so a submit
+ * whose answer was lost and is retried after a relaunch carries the same key and is replayed, not refused. A new
+ * quote means a new token, so a new key.
+ */
+fun idempotencyKeyFor(quoteToken: String): String =
+    java.util.UUID.nameUUIDFromBytes("raviga-submit:$quoteToken".toByteArray(Charsets.UTF_8)).toString()
+
 class QuoteViewModel(private val container: AppContainer, val projectId: String) : ViewModel() {
 
     data class State(
@@ -125,9 +133,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         action?.invoke()
     }
 
-    private fun keyFor(body: String): String =
-        submitKey?.takeIf { it.first == body }?.second
-            ?: java.util.UUID.randomUUID().toString().also { submitKey = body to it }
+    private fun keyFor(token: String): String = idempotencyKeyFor(token).also { submitKey = token to it }
 
     init {
         viewModelScope.launch {
