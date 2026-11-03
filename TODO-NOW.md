@@ -23,6 +23,8 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:39.
     "invite sent" (developer account Raviga Apps, 8466887053850812701). Then use only URLs with
     `?authuser=administrator@miraquill.com` and check the avatar before each click (stop if it shows team@). Accept the
     invite, then steps 1–4.
+    Chrome rule (her plan, 11-03): never quit Chrome, never `open` URLs from the shell, and never script other
+    profiles' tabs. Use only my Claude-extension tabs in Profile 40, and close them when done.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
 - **Next step (mine):** on the PM's "window free, invite sent": open the Console in Profile 40 as administrator@, accept
   the invite, then steps 1–4, and send the PM the opt-in link. After that, fix whatever her pass turns up. The next
