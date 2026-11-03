@@ -76,6 +76,10 @@ object StatusCopy {
             "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
             "review and build it, and delete it when you accept the delivery."
 
+    /** Under "Download my data" (her copy, 2026-11-03; same words as iOS). The zip carries drafts/ from [ExportBuilder]. */
+    const val EXPORT_DRAFTS_CAPTION =
+        "The download adds the drafts kept on this phone, in a drafts folder. Our servers don't keep your drafts."
+
     /** On a written brief: notes saved on the phone that the brief doesn't reflect yet (PM spec, 2026-11-02). */
     fun notesNotInBrief(count: Int): String = if (count == 1) "1 note not in the brief yet" else "$count notes not in the brief yet"
 
