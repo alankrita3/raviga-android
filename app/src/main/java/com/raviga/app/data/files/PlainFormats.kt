@@ -45,10 +45,17 @@ object PlainFormats {
         .replace(Regex("<[^>]+>"), "")
         .let(::unescapeXml)
 
-    private fun unescapeXml(s: String): String = s
-        .replace(Regex("&#x([0-9a-fA-F]+);")) { m -> m.groupValues[1].toInt(16).toChar().toString() }
-        .replace(Regex("&#([0-9]+);")) { m -> m.groupValues[1].toInt().toChar().toString() }
+    /**
+     * Review #22 (Android): a numeric reference is the whole code point (an emoji past U+FFFF was cut to one UTF-16
+     * unit), and one that isn't a valid code point is dropped instead of throwing, which emptied the whole document.
+     */
+    internal fun unescapeXml(s: String): String = s
+        .replace(Regex("&#x([0-9a-fA-F]+);")) { m -> codePoint(m.groupValues[1].toLongOrNull(16)) }
+        .replace(Regex("&#([0-9]+);")) { m -> codePoint(m.groupValues[1].toLongOrNull()) }
         .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&apos;", "'").replace("&amp;", "&")
+
+    private fun codePoint(value: Long?): String =
+        if (value != null && value in 1..0x10FFFF && value !in 0xD800..0xDFFF) String(Character.toChars(value.toInt())) else ""
 
     /** Plain text from RTF: groups like fonts and pictures dropped, escapes decoded. */
     fun rtf(rtf: String): String {
