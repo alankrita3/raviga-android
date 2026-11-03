@@ -24,7 +24,7 @@ class MovePhoneViewModel(
      * Review 2026-11-03 (Android): the restore-by-email step (the address, where the code went) outlives the app being
      * ended while the person reads the code in their mail app.
      */
-    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    private val saved: androidx.lifecycle.SavedStateHandle,
 ) : ViewModel() {
 
     enum class RestoreWay { KEY, EMAIL }
@@ -249,7 +249,7 @@ class MovePhoneViewModel(
 class RecoveryEmailViewModel(
     private val container: AppContainer,
     /** Review 2026-11-03 (Android): the address and where the code went outlive the app being ended (mail app open). */
-    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    private val saved: androidx.lifecycle.SavedStateHandle,
 ) : ViewModel() {
 
     data class State(

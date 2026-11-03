@@ -97,7 +97,7 @@ fun FontsScreen(nav: NavController) {
 @Composable
 fun DeliveryTargetsScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
+    val vm: SettingsViewModel = viewModel { SettingsViewModel(container, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val aws = state.me?.deliveryTargets?.aws
 
@@ -148,7 +148,7 @@ fun DeliveryTargetsScreen(nav: NavController) {
 @Composable
 fun NotificationsScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
+    val vm: SettingsViewModel = viewModel { SettingsViewModel(container, createSavedStateHandle()) }
     val context = LocalContext.current
     var granted by remember { mutableStateOf(Notifications.canPost(context)) }
     // Back from system settings: show what the phone says now.

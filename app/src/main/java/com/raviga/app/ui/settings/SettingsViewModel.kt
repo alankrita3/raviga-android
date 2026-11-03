@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val container: AppContainer,
     /** Review 2026-11-03 (Android): the export link outlives the app being ended while the save picker is open. */
-    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    private val saved: androidx.lifecycle.SavedStateHandle,
 ) : ViewModel() {
 
     data class State(

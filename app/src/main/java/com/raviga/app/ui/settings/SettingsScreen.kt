@@ -26,6 +26,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.raviga.app.data.local.DebugFlags
@@ -46,7 +47,7 @@ import com.raviga.app.ui.theme.Ink
 @Composable
 fun SettingsScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
+    val vm: SettingsViewModel = viewModel { SettingsViewModel(container, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val legal = state.config.legal

@@ -48,7 +48,7 @@ class CaptureViewModel(
     private val mode: String,
     initialTab: String = DescribeWith.SPEAK,
     /** Review 2026-11-03 (Android): where this visit was, kept across the app being ended in the background. */
-    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    private val saved: androidx.lifecycle.SavedStateHandle,
 ) : ViewModel() {
 
     enum class Phase { CAPTURE, TRANSCRIPT, CHOOSE, DRAFTING }

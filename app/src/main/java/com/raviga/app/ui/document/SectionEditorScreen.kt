@@ -55,7 +55,7 @@ class SectionEditorViewModel(
     private val container: AppContainer,
     private val projectId: String,
     private val sectionId: String,
-    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    private val saved: androidx.lifecycle.SavedStateHandle,
 ) : ViewModel() {
 
     data class State(
