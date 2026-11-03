@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import com.raviga.app.ui.nav.openProjectScreen
 import androidx.lifecycle.createSavedStateHandle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -71,7 +72,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
         topBar = {
             RaTopBar(
                 onBack = { nav.popBackStack() },
-                actions = { if (project != null) InlineAction("Brief", onClick = { nav.openBrief(projectId) }) },
+                actions = { if (project != null) InlineAction("Brief", onClick = { nav.openProjectScreen(Routes.document(projectId)) }) },
             )
         },
         bottomBar = {
@@ -80,13 +81,13 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
                 when (project.status) {
                     ProjectStatus.CHANGES_REQUESTED -> {
-                        PrimaryButton("Edit and resubmit", onClick = { nav.openBrief(projectId) })
+                        PrimaryButton("Edit and resubmit", onClick = { nav.openProjectScreen(Routes.document(projectId)) })
                         Spacer(Modifier.height(4.dp))
                         DestructiveButton("Cancel project", enabled = !state.busy, onClick = { confirmCancel = true })
                     }
                     ProjectStatus.SUBMITTED -> DestructiveButton("Cancel project", enabled = !state.busy, onClick = { confirmCancel = true })
                     ProjectStatus.DELIVERED, ProjectStatus.REVISION_REQUESTED, ProjectStatus.ACCEPTED ->
-                        PrimaryButton("View delivery", onClick = { nav.navigate(Routes.delivery(projectId)) })
+                        PrimaryButton("View delivery", onClick = { nav.openProjectScreen(Routes.delivery(projectId)) })
                     else -> Spacer(Modifier.height(0.dp))
                 }
             }
@@ -217,12 +218,3 @@ private fun headerCaption(project: com.raviga.app.data.api.Project): String = li
     project.submission?.creditsCharged?.takeIf { it > 0 }?.let { Money.credits(it) },
 ).joinToString(", ")
 
-/**
- * R-092 #41 (iOS review): opened from the brief (its "The team left comments" link), Edit and resubmit and Brief go back
- * to that brief instead of stacking a second copy of it.
- */
-private fun NavController.openBrief(projectId: String) {
-    val previous = previousBackStackEntry
-    if (Routes.isBriefOf(previous?.destination?.route, previous?.arguments?.getString("projectId"), projectId)) popBackStack()
-    else navigate(Routes.document(projectId))
-}

@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import com.raviga.app.ui.nav.openProjectScreen
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.Role
@@ -184,7 +185,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         Spacer(Modifier.width(12.dp))
                         AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true })
                     }
-                    project != null -> PrimaryButton("View status", onClick = { nav.navigate(Routes.forProject(project.id, project.status)) })
+                    project != null -> PrimaryButton("View status", onClick = { nav.openProjectScreen(Routes.forProject(project.id, project.status)) })
                 }
             }
         },
@@ -579,9 +580,7 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
             style = RaType.secondary, color = Ink.link,
             modifier = Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) {
                 // R-092 #41: opened from the status screen, go back to it rather than stacking a second one.
-                val previous = nav.previousBackStackEntry
-                if (Routes.isStatusOf(previous?.destination?.route, previous?.arguments?.getString("projectId"), project.id)) nav.popBackStack()
-                else nav.navigate(Routes.status(project.id))
+                nav.openProjectScreen(Routes.status(project.id))
             },
         )
         project?.contentDeletedAt != null && draft != null -> Text(

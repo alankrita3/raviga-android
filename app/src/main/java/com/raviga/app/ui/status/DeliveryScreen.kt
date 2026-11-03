@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import com.raviga.app.ui.nav.openProjectScreen
 import androidx.lifecycle.createSavedStateHandle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -96,8 +97,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                 onBack = { nav.popBackStack() },
                 actions = {
                     if (project != null) {
-                        InlineAction("Brief", onClick = { nav.navigate(Routes.document(projectId)) })
-                        InlineAction("Status", onClick = { nav.navigate(Routes.status(projectId)) })
+                        InlineAction("Brief", onClick = { nav.openProjectScreen(Routes.document(projectId)) })
+                        InlineAction("Status", onClick = { nav.openProjectScreen(Routes.status(projectId)) })
                     }
                 },
             )

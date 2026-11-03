@@ -22,11 +22,19 @@ object Routes {
     const val DOCUMENT = "document/{projectId}?reveal={reveal}"
     fun document(projectId: String, reveal: Boolean = false) = "document/$projectId?reveal=$reveal"
 
-    /** Whether a back-stack entry (its route pattern and projectId argument) is this project's brief. */
-    fun isBriefOf(route: String?, entryProjectId: String?, projectId: String) = route == DOCUMENT && entryProjectId == projectId
-
-    /** The same for the project's status screen (R-092 #41: brief and status go back to each other, never stack). */
-    fun isStatusOf(route: String?, entryProjectId: String?, projectId: String) = route == STATUS && entryProjectId == projectId
+    /**
+     * Whether a back-stack entry (its route pattern and projectId argument) is the screen [route] opens: the same
+     * project's brief, status or delivery (R-092 #41, review #16: those go back to each other, never stack).
+     */
+    fun sameProjectScreen(entryPattern: String?, entryProjectId: String?, route: String): Boolean {
+        val target = when {
+            route.startsWith("document/") -> DOCUMENT
+            route.startsWith("status/") -> STATUS
+            route.startsWith("delivery/") -> DELIVERY
+            else -> return false
+        }
+        return entryPattern == target && entryProjectId != null && entryProjectId == route.substringAfter('/').substringBefore('?')
+    }
 
     /**
      * Review 2026-11-03 (Android): whether a notification for [projectId] may reuse the screen on top. Navigation's
