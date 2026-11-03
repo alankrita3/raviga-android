@@ -71,3 +71,10 @@ object PhoneNames {
         else -> device.platform.replaceFirstChar { it.uppercase() }
     }
 }
+
+/** R-092 #16 (iOS review), iOS's words (37bb4f5): what a restore over this phone's own account costs. */
+object RestoreWarning {
+    fun text(hasAccount: Boolean): String =
+        "This phone will show the other phone's projects and credits instead of its own." +
+            if (hasAccount) " This phone's current account stays reachable only with its recovery key or email." else ""
+}

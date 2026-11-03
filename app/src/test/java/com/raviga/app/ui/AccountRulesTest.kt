@@ -13,6 +13,7 @@ import com.raviga.app.ui.account.PhoneNames
 import com.raviga.app.ui.account.RecoveryEmailLogic
 import com.raviga.app.ui.account.RecoveryEmailPrompt
 import com.raviga.app.ui.account.RecoveryKeyFormat
+import com.raviga.app.ui.account.RestoreWarning
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -115,5 +116,15 @@ class AccountRulesTest {
         ).jsonObject.keys
         assertTrue("linkCode" in keys("ABCD-1234"))
         assertFalse("linkCode" in keys(null))
+    }
+
+    /** R-092 #16: iOS's words; the second sentence only when this phone has its own account to lose. */
+    @Test fun restoringOverThisPhonesAccountSaysWhatItTakesToComeBack() {
+        assertEquals(
+            "This phone will show the other phone's projects and credits instead of its own. " +
+                "This phone's current account stays reachable only with its recovery key or email.",
+            RestoreWarning.text(hasAccount = true),
+        )
+        assertEquals("This phone will show the other phone's projects and credits instead of its own.", RestoreWarning.text(hasAccount = false))
     }
 }
