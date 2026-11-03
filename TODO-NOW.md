@@ -50,9 +50,14 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
     sandbox purchase, check with `team.py --stage prod ledger --sandbox`.
   - Done: backend's prod URL is in secrets.properties (API_BASE_URL), and Play's listing has the six build-8
     screenshots, the feature graphic and the icon (f0a91aa).
-- **Play screenshots at 30 credits (raviga-design, the PM's direction): done 20:55.** Six in
-  `~/Downloads/raviga-play-screenshots/build8-30credits/` with captions.txt; one dev account (cl_01m6gzffbd, project
-  RA-AYVR3V awaiting review on dev). No make-it-live shot (deliver on dev runs a real GitHub transfer). Not uploaded.
+- **Play screenshots at 30 credits (raviga-design, the PM's direction): recaptured 21:40 after her review.**
+  `~/Downloads/raviga-play-screenshots/build8-30credits/`: 01-07 plus 06b (team comment) and 06c (approved), with
+  captions.txt. One dev account cl_01m6h22gp4, project RA-TGQ2B0, approved by team.py with a note (no deliver: that
+  runs a real GitHub transfer). **The dev release app (com.raviga.app) stays installed on the OnePlus for more
+  shots;** uninstall it before installing the prod release APK for the sandbox purchase (different stage, same package).
+  The first set (RA-AYVR3V) is in `superseded-RA-AYVR3V/`; its account went with an uninstall.
+  - Her review fixes, pushed: f4b8f94 (the quote's lock line on one line, centred with an inline lock; 13 to 12sp,
+    then balanced wrap) and 0838142 ("This price holds until 17 Nov.", the PM's wording; iOS 605c803 added the same).
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
