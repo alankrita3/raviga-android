@@ -299,8 +299,10 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 // R-092 #19 / R-091: a submit whose answer was lost, retried: the server names the project it already
                 // has. The draft becomes it, as after a submit, instead of being re-quoted and charged twice.
                 val existing = (e as? ApiException)?.takeIf { it.code == ApiException.QUOTE_STALE }?.detailString("projectId")
+                var notAdopted: Throwable? = null
                 if (existing != null) {
-                    val adopted = runCatching { container.drafts.adoptSubmitted(draft.id, existing) }.getOrNull()
+                    val adopted = runCatching { container.drafts.adoptSubmitted(draft.id, existing) }
+                        .onFailure { notAdopted = it }.getOrNull()
                     if (adopted != null) {
                         submitKey = null
                         // R-094 P2-12 (iOS review 2): the same follow-up as a submit whose answer arrived.
@@ -309,13 +311,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                         return@onFailure
                     }
                 }
-                // quote_stale (QA I3, as iOS): the server's message says which case (expired, used, brief changed);
-                // the screen offers "Get a new quote". No quote is asked for on the person's behalf: it's an AI call.
-                if ((e as? ApiException)?.code == ApiException.QUOTE_STALE) {
-                    _state.update { it.copy(submitting = false, error = null, staleMessage = e.userLine(), clock = System.currentTimeMillis()) }
-                } else {
-                    _state.update { it.copy(submitting = false, error = e.userLine()) }
-                }
+                _state.update { afterFailedSubmit(it, e, notAdopted, System.currentTimeMillis()) }
             }
         }
     }
@@ -328,6 +324,25 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     companion object {
+        /**
+         * What the screen shows after a submit failed and wasn't turned into a project.
+         * - quote_stale (QA I3, as iOS): the server's message says which case (expired, used, brief changed); the
+         *   screen offers "Get a new quote". No quote is asked for on the person's behalf: it's an AI call.
+         * - Second review 2026-11-03 (Android): quote_stale naming a project (R-091) whose read failed ([notAdopted],
+         *   usually the network dropping again) is not one of those. The project exists and is paid for, so a new quote
+         *   would be a new token, a second project and a second charge. The line says why it stopped, and Submit sends
+         *   the same request again; the server names the project again.
+         */
+        internal fun afterFailedSubmit(s: State, e: Throwable, notAdopted: Throwable?, now: Long): State {
+            val api = e as? ApiException
+            return when {
+                api?.code == ApiException.QUOTE_STALE && api.detailString("projectId") != null ->
+                    s.copy(submitting = false, staleMessage = null, error = (notAdopted ?: e).userLine())
+                api?.code == ApiException.QUOTE_STALE -> s.copy(submitting = false, error = null, staleMessage = e.userLine(), clock = now)
+                else -> s.copy(submitting = false, error = e.userLine())
+            }
+        }
+
         /** project_submitted's values: POST /projects only (contract v0.9); a resubmit is a different call, not counted. */
         internal fun submittedEvent(project: Project, draft: com.raviga.app.data.drafts.LocalDraft, isResubmit: Boolean): Pair<String?, Int>? =
             if (isResubmit) null
