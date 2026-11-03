@@ -575,7 +575,12 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
         project?.status == ProjectStatus.CHANGES_REQUESTED -> Text(
             "The team left comments. Read them, edit, then get a new quote.",
             style = RaType.secondary, color = Ink.link,
-            modifier = Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) { nav.navigate(Routes.status(project.id)) },
+            modifier = Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) {
+                // R-092 #41: opened from the status screen, go back to it rather than stacking a second one.
+                val previous = nav.previousBackStackEntry
+                if (Routes.isStatusOf(previous?.destination?.route, previous?.arguments?.getString("projectId"), project.id)) nav.popBackStack()
+                else nav.navigate(Routes.status(project.id))
+            },
         )
         project?.contentDeletedAt != null && draft != null -> Text(
             "${StatusCopy.rowLine(project)}. Raviga deleted its copy; this one is kept only on this phone.",

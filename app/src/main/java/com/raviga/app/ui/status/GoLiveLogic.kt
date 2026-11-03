@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import com.raviga.app.data.api.Revisions
 import com.raviga.app.data.api.AwsDelivery
 import com.raviga.app.data.api.Delivery
 import com.raviga.app.data.api.ProjectStatus
@@ -38,7 +39,8 @@ object GoLiveLogic {
         githubUsername: String?,
         platforms: Platforms,
         hasPaidServices: Boolean,
-        includedRounds: Int,
+        /** R-092 #41 (iOS review): the project's own rounds, never the config's (they can differ per project). */
+        revisions: Revisions,
     ): List<Step> = buildList {
         val transfer = delivery.transfer ?: Transfer()
         add(Step("github", "Accept the code on GitHub", transferLine(transfer, githubUsername), done = transfer.status == "accepted"))
@@ -78,7 +80,7 @@ object GoLiveLogic {
             add(Step("domain", "Put it on your domain", "The guide shows how to point your domain at it. Share access and we can do it for you."))
         }
         val accepted = status == ProjectStatus.ACCEPTED
-        val rounds = if (includedRounds == 1) "One round is" else "$includedRounds rounds are"
+        val rounds = if (revisions.included == 1) "One round is" else "${revisions.included} rounds are"
         add(
             Step(
                 "accept",

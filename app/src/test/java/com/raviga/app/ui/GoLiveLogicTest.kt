@@ -36,7 +36,7 @@ class GoLiveLogicTest {
     @Test fun stepsFollowTheDelivery() {
         var steps = GoLiveLogic.steps(
             delivery(), ProjectStatus.DELIVERED, "octocat", GoLiveLogic.Platforms(mobile = true, web = false),
-            hasPaidServices = true, includedRounds = 2,
+            hasPaidServices = true, revisions = com.raviga.app.data.api.Revisions(included = 2),
         )
         assertEquals(listOf("github", "guide", "aws", "keys", "stores", "accept"), steps.map { it.id })
         assertFalse(steps[0].done)
@@ -46,12 +46,21 @@ class GoLiveLogicTest {
 
         steps = GoLiveLogic.steps(
             delivery(transfer = "accepted", aws = "deployed"), ProjectStatus.ACCEPTED, null, GoLiveLogic.Platforms(mobile = false, web = true),
-            hasPaidServices = false, includedRounds = 1,
+            hasPaidServices = false, revisions = com.raviga.app.data.api.Revisions(included = 1),
         )
         assertEquals(listOf("github", "guide", "aws", "domain", "accept"), steps.map { it.id })
         assertTrue(steps[0].done && steps[2].done && steps.last().done)
         assertNull(steps[2].action)
         assertEquals("Transferred to your GitHub account.", steps[0].detail)
+    }
+
+    /** R-092 #41 (iOS review): the rounds are the project's; a project given 3 says 3, whatever the config says. */
+    @Test fun roundsAreTheProjects() {
+        val steps = GoLiveLogic.steps(
+            delivery(), ProjectStatus.DELIVERED, "octocat", GoLiveLogic.Platforms(mobile = false, web = true),
+            hasPaidServices = false, revisions = com.raviga.app.data.api.Revisions(used = 1, included = 3),
+        )
+        assertEquals("Or ask for a revision. 3 rounds are included.", steps.last().detail)
     }
 
     /** R-092 #28/#29 (iOS review, PM): no bare "@", and a failed transfer points to support (no "Try again" yet). */

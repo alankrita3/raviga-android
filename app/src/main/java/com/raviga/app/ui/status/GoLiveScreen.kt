@@ -79,7 +79,7 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                         ?: project.submission?.githubUsername?.ifBlank { null },
                     platforms = GoLiveLogic.platforms(brief?.section(SectionIds.PLATFORMS)?.body.orEmpty()),
                     hasPaidServices = brief?.section(SectionIds.INTEGRATIONS)?.body.orEmpty().isNotBlank(),
-                    includedRounds = state.config.revisions.includedRounds,
+                    revisions = project.revisions,
                 )
                 Spacer(Modifier.height(4.dp))
                 Illustration(Picture.Delivered, height = 180.dp, radius = Ra.tileRadius)

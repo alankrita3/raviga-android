@@ -22,6 +22,12 @@ object Routes {
     const val DOCUMENT = "document/{projectId}?reveal={reveal}"
     fun document(projectId: String, reveal: Boolean = false) = "document/$projectId?reveal=$reveal"
 
+    /** Whether a back-stack entry (its route pattern and projectId argument) is this project's brief. */
+    fun isBriefOf(route: String?, entryProjectId: String?, projectId: String) = route == DOCUMENT && entryProjectId == projectId
+
+    /** The same for the project's status screen (R-092 #41: brief and status go back to each other, never stack). */
+    fun isStatusOf(route: String?, entryProjectId: String?, projectId: String) = route == STATUS && entryProjectId == projectId
+
     const val SECTION = "section/{projectId}/{sectionId}"
     fun section(projectId: String, sectionId: String) = "section/$projectId/$sectionId"
 
