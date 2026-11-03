@@ -66,7 +66,9 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
     PM).
   - **QA v0.10.0 (PM split):** suite I3, O9/O10, Q rewritten (Raviga PM d796cd3, Q6 corrected 15b2ad1); run on
     the OnePlus against dev: 21 pass, 0 fail (`~/Documents/Raviga PM/qa/results/2026-11-04-android-v0100.md`);
-    one bug found and fixed (cf5d296, "you.." on a closed brief). **Waiting:** iOS's rewritten K and L, then run them.
+    one bug found and fixed (cf5d296, "you.." on a closed brief). Section M (push): 4 pass; accepted/building not
+    testable on dev (pushes only on team actions; the review path can't be forced). **Waiting:** iOS's rewritten K and
+    L, then run them; J waits only on the license tester (RevenueCat prod webhook and v2 key done, per the PM).
   - 05-quote: PM decision (c), design masks the "after approval" line; noted in captions.txt.
   - Screenshot account cl_01m6h22gp4: GitHub target cleared (no transfers on deliver). Debug account
     cl_01m6ehvcsp: GitHub target cleared too. A third salon draft (quoted 29) stays on the phone.
@@ -78,9 +80,9 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   30), shot about 30px below the top so the paragraph ends above Submit. Old shot in `superseded-RA-TGQ2B0-quote/`. The
   second draft stays on the phone for free re-shots of the quote. **Status-screen captures on hold** (no client
   messaging; R-103 contract coming); 06b is held.
-- **Sandbox purchase blockers (backend, 22:2x):** prod accepts app01d8cd2f54, but purchases won't book until the
-  RevenueCat prod webhook secret is in RevenueCat and prod has a RevenueCat v2 key (backend will say). Plus the license
-  tester (owner).
+- **Sandbox purchase:** prod accepts app01d8cd2f54; RevenueCat prod webhook and v2 key done (PM, 11-04). Waits only on
+  the license tester (owner). Note: main is now v0.10.0, so the prod release APK for the purchase must wait for prod
+  v0.10.0 or be built from the last v0.9.9 commit (d02c71b + R-100 fixes) on the PM's call.
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
