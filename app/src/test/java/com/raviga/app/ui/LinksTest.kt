@@ -17,4 +17,9 @@ class LinksTest {
         assertNull(webUrl(""))
         assertNull(webUrl("not a url"))
     }
+
+    /** Review 2026-11-03 (Android): the toolbar was black (0xFF000000) on the OnePlus; it is the paper #F6F3EE. */
+    @Test fun theBrowserToolbarIsPaper() {
+        assertEquals(0xFFF6F3EE.toInt(), TAB_TOOLBAR)
+    }
 }

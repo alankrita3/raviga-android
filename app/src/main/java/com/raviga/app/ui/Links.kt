@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.graphics.toArgb
 import com.raviga.app.ui.theme.Ink
 
 /**
@@ -23,12 +24,18 @@ fun webUrl(url: String): String? {
     }
 }
 
+/**
+ * The in-app browser's toolbar: paper. Review 2026-11-03 (Android): it was `Ink.paper.value.toInt()`, the low half of
+ * Compose's packed colour (the colour space, 0 for sRGB), so every link opened under a black toolbar.
+ */
+val TAB_TOOLBAR: Int = Ink.paper.toArgb()
+
 /** Opens a web address in an in-app browser tab (paper toolbar), falling back to the system browser. */
 fun openLink(context: Context, url: String) {
     val uri = webUrl(url)?.toUri() ?: return
     try {
         val params = CustomTabColorSchemeParams.Builder()
-            .setToolbarColor(Ink.paper.value.toInt() and 0xFFFFFF or (0xFF shl 24))
+            .setToolbarColor(TAB_TOOLBAR)
             .build()
         CustomTabsIntent.Builder()
             .setDefaultColorSchemeParams(params)
