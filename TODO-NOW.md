@@ -1,23 +1,24 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 12:26.
+The PM reads this file if the session has closed. Updated 2026-11-03 12:58.
 
 ## In flight
 
 - **Android is code-complete for build 8 (the PM, 2026-11-03).** Gate file
   `~/Documents/Raviga PM/qa/results/2026-11-02-android-gate.md`: 23 signed, 7 open, all hers.
-  - Hers: row 37 (two lines), voice, entering Data safety, the release notes OK with versionCode 8, the upload.
+  - Hers: row 37 (two lines), voice, entering Data safety, the rollout click. The release notes with versionCode 8
+    and the upload: her yes, 11-03 (the gate file is the PM's to update).
   - The TalkBack listen-through is in her pass on the internal build.
-- **Ready, waiting for the PM's go and her yes (nothing merged, built or uploaded):**
-  - Branch **build-8** (48de236, one commit: versionCode 8 and the release notes' final wording). Main has gained
-    her Download my data caption since (5917af4); build-8 still merges cleanly, and the merge carries it.
-  - `docs/store/internal-test.md`: merge, bundle (`bundleRelease -Praviga.internalTest=true`, the dev stage until
-    prod), upload (`tools/play_release.py upload … --notes docs/store/release-notes-build8.md`, a draft release), her
-    rollout click, and the tester and license-tester list (emails for her to confirm).
-  - `docs/store/data-safety.md`: the Play form's answers in order.
-- **Next step (mine):** none until the PM's go. Then merge build-8, build the bundle, and upload with her yes.
-- **Unit tests** debug 231, release 206; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
+- **Build 8 uploaded to Play's internal track as a draft (2026-11-03 12:53, her yes via the PM).** build-8 merged
+  into main (0e5f114). Draft "8 internal test": versionCode 8, status draft, en-US release notes (446 characters),
+  sha256 79de35d565a8…, dev stage. It replaced the never-rolled-out versionCode 1 draft. Nothing is rolled out.
+  - **Blocked on her:** the rollout click and the tester list (administrator@miraquill.com only, for now). Exact
+    clicks are in `docs/store/internal-test.md` sections 3 and 4. Others are added only when she names them.
+  - `docs/store/data-safety.md`: the Play form's answers in order (hers to enter).
+- **Next step (mine):** none until the PM reports her rollout. Then fix whatever her pass on the Play build turns up,
+  on the PM's word. The next upload is versionCode 9 (+1 per upload).
+- **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
 - **The OnePlus:** `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, `give` after. Free now.
 - **Emulator:** started only with load under 20. It was shut down from outside this session twice today (08:0x, 09:1x).

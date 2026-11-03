@@ -1,7 +1,10 @@
-# Build 8 on Play's internal testing track: ready, waiting for the go
+# Build 8 on Play's internal testing track
 
-Nothing here has been run. Merging, building the bundle and uploading wait for the PM's go and her yes (no Play upload
-without her yes). The upload makes a **draft** release. Rolling it out to testers is her click in Play Console.
+**Done 2026-11-03 12:53, on her yes ("yes go ahead with build 8 on both", via the PM):** build-8 merged into main
+(0e5f114), bundle built (versionCode 8, versionName 1.0.0, dev stage, sha256 79de35d565a8…, 13.6 MB; unit tests
+231 debug and 207 release, all passing), uploaded as the draft **"8 internal test"** on the internal track with the
+446-character en-US release notes. Play reads back status `draft`, versionCodes `[8]`. It replaced the old
+versionCode 1 draft, which was never rolled out. Nothing is rolled out. That is her click (section 3).
 
 ## 1. On the PM's go: merge the build-8 commit
 
@@ -40,8 +43,12 @@ unzip -l app/build/outputs/bundle/release/app-release.aab | grep -c "base/dex/" 
 # → "uploaded versionCode 8 (sha256 …) as a draft internal release"
 ```
 
-Then, in Play Console (her): **Testing → Internal testing → Releases → "8 internal test" → Edit → Review release →
-Start rollout to Internal testing.**
+Then, in Play Console (her), app **Raviga**:
+1. Left menu **Test and release → Testing → Internal testing**, tab **Releases**.
+2. On the draft **"8 internal test"**, click **Edit release**. The bundle (8) and release notes are already filled in.
+3. **Next** (bottom right). The preview page lists any errors Play wants fixed first. Warnings don't block.
+4. **Save and publish** (older Console wording: **Start rollout to Internal testing**), then confirm.
+Internal releases aren't reviewed. Testers can install within minutes of the rollout.
 
 ## 4. Testers (her accounts; Play Console, signed in as the account owner)
 
@@ -50,9 +57,13 @@ These people can install the build from the opt-in link on that page. The link i
 
 | Email | Who | Status |
 |---|---|---|
-| administrator@miraquill.com | Founder (the Play account owner; the account that owns the Raviga Bugs sheet) | to confirm it is the Google account on her Android phone |
-| _her Android phone's Google account, if different_ | Founder | to fill |
-| _the OnePlus test phone's Google account_ | Dev test phone (the sessions' device checks) | to fill, only if she wants the sessions to test the Play build there |
+| administrator@miraquill.com | Founder | her choice, 2026-11-03 (via the PM): the only tester for now |
+
+Others are added only when she names them.
+
+Her clicks: **Internal testing → Testers** tab → **Create email list** → name "Raviga internal", add
+administrator@miraquill.com, **Save changes** → tick the list → **Save**. Then, under **How testers join your test**,
+**Copy link**, open it while signed in to that Google account and **Accept invite**, then install Raviga from Play.
 
 **License testers (purchases).** Settings (the account's, not the app's) → License testing → add the same emails, and
 set "License response" to **RESPOND_NORMALLY**. On those accounts, Play Billing purchases in the internal build are test
