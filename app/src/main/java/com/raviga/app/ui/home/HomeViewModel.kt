@@ -68,7 +68,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
                 title = s.title.ifBlank { byServerId[s.id]?.displayTitle.orEmpty() }.ifBlank { "Project ${s.ref}" },
                 line = StatusCopy.rowLine(s),
                 status = s.status,
-                unread = s.unreadComments,
+                unread = 0,
                 updatedAt = s.updatedAt.orEmpty(),
                 route = Routes.forProject(s.id, s.status),
                 credits = s.credits.takeIf { s.status != ProjectStatus.REJECTED && s.status != ProjectStatus.CANCELLED },

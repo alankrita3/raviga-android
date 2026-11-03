@@ -1,7 +1,6 @@
 package com.raviga.app.ui
 
 import com.raviga.app.ui.quote.complexitySentence
-import com.raviga.app.ui.quote.settlementLine
 import com.raviga.app.ui.quote.timelineText
 import com.raviga.app.util.Money
 import org.junit.Assert.assertEquals
@@ -24,10 +23,12 @@ class QuoteCopyTest {
         assertEquals("Sized for Zapier hooks and iPhone widgets.", complexitySentence(listOf("Zapier hooks", "iPhone widgets")))
     }
 
-    @Test fun settlementMatchesIos() {
-        assertEquals("You already paid 40 credits. This adds 8 credits.", settlementLine(48, 40))
-        assertEquals("You already paid 40 credits. This returns 1 credit to your balance.", settlementLine(39, 40))
-        assertEquals("You already paid 1 credit. No change.", settlementLine(1, 1))
+    /** R-103 (the PM's final copy, as iOS): submitting is free; paying comes once it's accepted. */
+    @Test fun submitIsFreeAndSaysSo() {
+        assertEquals("Free to submit. You pay only once we accept it.", com.raviga.app.ui.quote.FREE_TO_SUBMIT)
+        val steps = com.raviga.app.ui.quote.nextSteps()
+        assertEquals(4, steps.size)
+        org.junit.Assert.assertTrue(steps.none { "revision" in it || "comments" in it })
     }
 
     @Test fun timelineReadsNaturally() {

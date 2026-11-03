@@ -209,7 +209,8 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                     }
                     Spacer(Modifier.height(20.dp))
                     Text(
-                        "Credits pay for a project when you submit it, and come back if it is cancelled or not accepted. The quote tells you how many each one needs.",
+                        // R-103 (contract v0.10.0): paid once accepted, refunded if a paid project is declined.
+                        "Credits pay for a project once we accept it, and come back if we decline it after you paid. The quote tells you how many each one needs.",
                         style = RaType.body, color = Ink.graphite,
                     )
                     InlineNotice(state.error)

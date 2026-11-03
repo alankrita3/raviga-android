@@ -36,17 +36,19 @@ class GoLiveLogicTest {
     @Test fun stepsFollowTheDelivery() {
         var steps = GoLiveLogic.steps(
             delivery(), ProjectStatus.DELIVERED, "octocat", GoLiveLogic.Platforms(mobile = true, web = false),
-            hasPaidServices = true, revisions = com.raviga.app.data.api.Revisions(included = 2),
+            hasPaidServices = true,
         )
         assertEquals(listOf("github", "guide", "aws", "keys", "stores", "accept"), steps.map { it.id })
         assertFalse(steps[0].done)
         assertEquals("Transfer sent to @octocat. Accept it from the email GitHub sent you.", steps[0].detail)
         assertEquals(GoLiveLogic.Action.ConnectAws, steps[2].action)
-        assertTrue(steps.last().detail.contains("2 rounds are included"))
+        // R-103: no rounds; approve it or report what's wrong.
+        assertEquals("Approve the delivery", steps.last().title)
+        assertEquals("Or tell us what's wrong and we'll fix it and deliver again.", steps.last().detail)
 
         steps = GoLiveLogic.steps(
             delivery(transfer = "accepted", aws = "deployed"), ProjectStatus.ACCEPTED, null, GoLiveLogic.Platforms(mobile = false, web = true),
-            hasPaidServices = false, revisions = com.raviga.app.data.api.Revisions(included = 1),
+            hasPaidServices = false,
         )
         assertEquals(listOf("github", "guide", "aws", "domain", "accept"), steps.map { it.id })
         assertTrue(steps[0].done && steps[2].done && steps.last().done)
@@ -54,13 +56,13 @@ class GoLiveLogicTest {
         assertEquals("Transferred to your GitHub account.", steps[0].detail)
     }
 
-    /** R-092 #41 (iOS review): the rounds are the project's; a project given 3 says 3, whatever the config says. */
-    @Test fun roundsAreTheProjects() {
-        val steps = GoLiveLogic.steps(
-            delivery(), ProjectStatus.DELIVERED, "octocat", GoLiveLogic.Platforms(mobile = false, web = true),
-            hasPaidServices = false, revisions = com.raviga.app.data.api.Revisions(used = 1, included = 3),
-        )
-        assertEquals("Or ask for a revision. 3 rounds are included.", steps.last().detail)
+    /** R-103: a report's category in config's words; an unknown id reads as "Something else". */
+    @Test fun reportCategoriesUseConfigLabels() {
+        val categories = com.raviga.app.data.api.ReportConfig().categories
+        assertEquals("Something doesn't work (a bug)", GoLiveLogic.reportLabel("bug", categories))
+        assertEquals("It doesn't match the brief", GoLiveLogic.reportLabel("not_as_brief", categories))
+        assertEquals("Something else", GoLiveLogic.reportLabel("new_kind", categories))
+        assertEquals("Something else", GoLiveLogic.reportLabel("bug", emptyList()))
     }
 
     /** R-092 #28/#29 (iOS review, PM): no bare "@", and a failed transfer points to support (no "Try again" yet). */

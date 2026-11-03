@@ -101,21 +101,17 @@ interface RavigaApi {
     @POST("projects/{id}/cancel")
     suspend fun cancelProject(@Path("id") id: String, @Body body: Empty = Empty()): Project
 
-    @POST("projects/{id}/resubmit")
-    suspend fun resubmit(@Path("id") id: String, @Header("Idempotency-Key") idempotencyKey: String, @Body body: ResubmitRequest): Project
-
-    @GET("projects/{id}/comments")
-    suspend fun comments(@Path("id") id: String): CommentsResponse
-
-    @POST("projects/{id}/comments")
-    suspend fun addComment(@Path("id") id: String, @Body body: NewCommentRequest): Comment
+    /** v0.10.0 (R-103): pay an accepted project; body empty, or a new quote's token after the price expired. */
+    @POST("projects/{id}/pay")
+    suspend fun pay(@Path("id") id: String, @Header("Idempotency-Key") idempotencyKey: String, @Body body: PayRequest): Project
 
     // Delivery
     @POST("projects/{id}/accept")
     suspend fun accept(@Path("id") id: String, @Body body: Empty = Empty()): Project
 
-    @POST("projects/{id}/revisions")
-    suspend fun requestRevision(@Path("id") id: String, @Body body: RevisionRequestBody): Project
+    /** v0.10.0 (R-103): "Something's wrong" with a delivery. */
+    @POST("projects/{id}/report")
+    suspend fun report(@Path("id") id: String, @Body body: ReportRequest): Project
 
     // Delivery targets
     @GET("me/delivery-targets")

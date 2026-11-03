@@ -60,9 +60,9 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val refusalReason: String? get() = draft?.refusal?.reason ?: project?.screening?.reason
         /** R-098 P3-4: a submit sent with this brief's quote is out and unanswered; the brief is read-only meanwhile. */
         val held: Boolean get() = draft?.holdsSentSubmit == true
-        /** Drafts, and briefs the team sent back with changes, are edited here (not while a submit is held). */
+        /** Drafts are edited here (not while a submit is held). A submitted brief is v1 for good (contract v0.10.0). */
         val editable: Boolean
-            get() = draft != null && !refused && !held && (draft.serverProjectId == null || project?.status == ProjectStatus.CHANGES_REQUESTED)
+            get() = draft != null && !refused && !held && draft.serverProjectId == null
         /** The server deleted its copy when the project closed, and this phone has none. */
         val contentGone: Boolean get() = draft == null && project?.contentDeletedAt != null
         val title: String
@@ -113,13 +113,7 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
             val sid = serverId.value ?: return@launch
             container.projects.warmProject(sid)
             runCatching { container.projects.refresh(sid) }
-                .onSuccess { p ->
-                    _state.update { it.copy(loading = false, error = null) }
-                    // Sent back with changes to a phone without its own copy (recovered here): take the held copy.
-                    if (p.status == ProjectStatus.CHANGES_REQUESTED && container.drafts.get(p.id) == null && p.document != null) {
-                        runCatching { container.drafts.importSubmitted(p) }
-                    }
-                }
+                .onSuccess { _state.update { it.copy(loading = false, error = null) } }
                 .onFailure { e -> _state.update { it.copy(loading = false, error = if (it.project == null && it.draft == null) e.userLine() else null) } }
         }
     }

@@ -27,13 +27,10 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.raviga.app.data.api.Comment
 import com.raviga.app.data.api.ProjectStatus
 import com.raviga.app.ui.LocalAppContainer
-import com.raviga.app.ui.components.BodyText
 import com.raviga.app.ui.components.BottomBar
 import com.raviga.app.ui.components.DestructiveButton
-import com.raviga.app.ui.components.RaTextField
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.ErrorState
 import com.raviga.app.ui.components.Hairline
@@ -42,8 +39,6 @@ import com.raviga.app.ui.components.InlineNotice
 import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.ProgressRule
 import com.raviga.app.ui.components.ScreenScaffold
-import com.raviga.app.ui.components.SectionHeading
-import com.raviga.app.ui.components.StatusMark
 import com.raviga.app.ui.components.TimelineView
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.theme.Ra
@@ -80,12 +75,18 @@ fun StatusScreen(nav: NavController, projectId: String) {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
                 when (project.status) {
-                    ProjectStatus.CHANGES_REQUESTED -> {
-                        PrimaryButton("Edit and resubmit", onClick = { nav.openProjectScreen(Routes.document(projectId)) })
-                        Spacer(Modifier.height(4.dp))
-                        DestructiveButton("Cancel project", enabled = !state.busy, onClick = { confirmCancel = true })
-                    }
                     ProjectStatus.SUBMITTED -> DestructiveButton("Cancel project", enabled = !state.busy, onClick = { confirmCancel = true })
+                    // R-103 (contract 11, iOS's labels): pay; a new quote first when the price expired; Buy credits when short.
+                    ProjectStatus.APPROVED -> {
+                        when {
+                            !state.awaitingPayment -> Unit
+                            state.priceExpired -> PrimaryButton("Get a new quote", loading = state.quoting, enabled = !state.busy, onClick = { vm.requestNewQuote() })
+                            state.shortBy > 0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
+                            else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { vm.pay() })
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        DestructiveButton("Cancel project", enabled = !state.busy && !state.quoting, onClick = { confirmCancel = true })
+                    }
                     ProjectStatus.DELIVERED, ProjectStatus.REVISION_REQUESTED, ProjectStatus.ACCEPTED ->
                         PrimaryButton("View delivery", onClick = { nav.openProjectScreen(Routes.delivery(projectId)) })
                     else -> Spacer(Modifier.height(0.dp))
@@ -122,44 +123,31 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     }
                 }
 
-                if (project.status == ProjectStatus.REJECTED) {
-                    project.history.lastOrNull { it.status == ProjectStatus.REJECTED }?.note?.takeIf { it.isNotBlank() }?.let {
-                        Spacer(Modifier.height(12.dp))
-                        Text(it, style = RaType.body, color = Ink.ink)
-                    }
+                // Contract v0.10.0: the server's line for the status, as it comes (credits and dates filled in).
+                if (project.statusLine.isNotBlank()) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(project.statusLine, style = RaType.body, color = Ink.ink)
+                }
+                state.newQuote?.let { q ->
+                    Spacer(Modifier.height(12.dp))
+                    Text("New quote: ${Money.credits(q.quote.credits)}, about ${Money.usd(q.quote.usd ?: (q.quote.credits * state.config.credits.creditValueUsd))}.", style = RaType.bodyMedium, color = Ink.ink)
+                }
+                if (state.shortBy > 0) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("You have ${Money.credits(state.balance)}. You need ${state.shortBy} more.", style = RaType.body, color = Ink.ink)
                 }
 
                 project.timeline?.takeIf { it.milestones.isNotEmpty() }?.let { tl ->
                     Spacer(Modifier.height(Ra.sectionGap))
-                    TimelineView(tl.milestones, note = "Projects are usually delivered well ahead of this date.", estimatedDeliveryDate = tl.estimatedDeliveryDate)
+                    val weeks = project.quote?.let { q -> com.raviga.app.ui.quote.timelineText(q.timeline?.minWeeks ?: 0, q.timeline?.maxWeeks ?: 0, q.estimatedWorkingDays) }
+                    TimelineView(
+                        tl.milestones, note = "Projects are usually delivered well ahead of this date.",
+                        estimatedDeliveryDate = tl.estimatedDeliveryDate,
+                        undatedDelivery = weeks?.let { "Ready in $it after payment" },
+                    )
                 }
 
                 val deletedAt = project.contentDeletedAt
-                // Once closed, the server deleted the brief and its comments: no empty section, just say so.
-                if (deletedAt == null) {
-                    Spacer(Modifier.height(Ra.sectionGap))
-                    Hairline()
-                    Spacer(Modifier.height(20.dp))
-                    SectionHeading("From the team")
-                    Spacer(Modifier.height(12.dp))
-                    if (state.comments.isEmpty()) {
-                        Text(
-                            if (project.status == ProjectStatus.SUBMITTED) "Nothing yet. We usually reply within a working day." else "No comments.",
-                            style = RaType.body, color = Ink.graphite,
-                        )
-                    } else {
-                        state.comments.forEach { CommentBlock(it) }
-                    }
-                }
-                if (deletedAt == null && ProjectStatus.canComment(project.status)) {
-                    Spacer(Modifier.height(16.dp))
-                    RaTextField(value = state.reply, onValueChange = { vm.setReply(it) }, placeholder = "Reply to the team", minLines = 2)
-                    Spacer(Modifier.height(4.dp))
-                    Row(Modifier.fillMaxWidth()) {
-                        Spacer(Modifier.weight(1f))
-                        InlineAction("Send", enabled = state.reply.isNotBlank() && !state.busy, onClick = { vm.sendReply() })
-                    }
-                }
                 Spacer(Modifier.height(Ra.sectionGap))
                 Text(
                     if (deletedAt != null) {
@@ -176,15 +164,14 @@ fun StatusScreen(nav: NavController, projectId: String) {
 
     if (confirmCancel) {
         // R-092 #37 (iOS review): no draft is made on cancel; say what really happens to the brief.
-        val localCopy = project?.let { container.drafts.get(it.id) }
-        val hasCopy = localCopy != null
+        val hasCopy = project?.let { container.drafts.get(it.id) } != null
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             containerColor = Ink.surface,
             title = { Text("Cancel this project?", style = RaType.heading, color = Ink.ink) },
             text = {
                 Text(
-                    StatusCopy.cancelConfirmLine(project?.submission?.creditsCharged ?: 0, hasCopy, editsSinceSubmit = localCopy?.hasEditsSinceSubmit == true),
+                    StatusCopy.cancelConfirmLine(hasCopy),
                     style = RaType.body, color = Ink.graphite,
                 )
             },
@@ -194,23 +181,9 @@ fun StatusScreen(nav: NavController, projectId: String) {
     }
 }
 
-@Composable
-fun CommentBlock(comment: Comment) {
-    Column(Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-        BodyText(comment.body)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            (if (comment.author == "client") "You" else "Raviga team") + ", " + Time.dateTime(comment.createdAt),
-            style = RaType.caption, color = Ink.graphite,
-        )
-        Spacer(Modifier.height(12.dp))
-        Hairline()
-    }
-}
-
 /** Building while the team works on it, the parcel once it's delivered; no picture for the rest. */
 private fun headerPicture(status: String): Picture? = when (status) {
-    ProjectStatus.SUBMITTED, ProjectStatus.CHANGES_REQUESTED, ProjectStatus.APPROVED, ProjectStatus.REVISION_REQUESTED -> Picture.Building
+    ProjectStatus.SUBMITTED, ProjectStatus.APPROVED, ProjectStatus.BUILDING, ProjectStatus.REVISION_REQUESTED -> Picture.Building
     ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED -> Picture.Delivered
     else -> null
 }

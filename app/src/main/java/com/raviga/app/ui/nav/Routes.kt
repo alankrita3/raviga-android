@@ -84,7 +84,7 @@ object Routes {
     /** A submitted project's own screen. Drafts (ids starting "ld_") open the brief. */
     fun forProject(projectId: String, status: String, hasDocument: Boolean = true): String = when (status) {
         "draft" -> document(projectId)
-        "submitted", "changes_requested", "approved", "rejected", "cancelled" -> status(projectId)
+        "submitted", "approved", "building", "rejected", "cancelled" -> status(projectId)
         "delivered", "revision_requested", "accepted" -> delivery(projectId)
         else -> status(projectId)
     }

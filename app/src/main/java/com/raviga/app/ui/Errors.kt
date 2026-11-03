@@ -14,6 +14,8 @@ fun Throwable.userLine(): String = when (this) {
                 "Agree to the updated terms to continue."
             // A paused account (QA O4, iOS's words): how long, from details.retryAfterSec.
             code == ApiException.RATE_LIMITED && detailString("reason") == "paused" -> StatusCopy.pausedLine(detailInt("retryAfterSec"))
+            // v0.10.0: the fair-use cap on new briefs; the server's line ("You've reached today's limit...") as it comes.
+            code == ApiException.RATE_LIMITED && detailString("limit")?.startsWith("briefs_per_") == true && server != null -> server
             // The server's invalid_state text is written for the team ("Only a submitted project can be approved"):
             // the plain line instead, as iOS. The app's own (httpStatus 0, "Write the brief first.") keep their words.
             code == ApiException.INVALID_STATE && httpStatus != 0 -> StatusCopy.errorLine(code, null)

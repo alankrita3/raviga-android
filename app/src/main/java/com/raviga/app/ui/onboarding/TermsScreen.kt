@@ -122,7 +122,7 @@ fun TermsScreen(nav: NavController, next: String? = null) {
             }
             Block(
                 "What we collect",
-                "The brief you submit for us to build, and our comments on it. A random id for this phone. Your credit purchases and balance. A GitHub username and, if you add one, an AWS account id, so we can hand your project over.",
+                "The brief you submit for us to build, and any delivery reports you send. A random id for this phone. Your credit purchases and balance. A GitHub username and, if you add one, an AWS account id, so we can hand your project over.",
             )
             Block("Why", "To write your brief, quote it, build it and deliver it. We do not sell data or show ads.")
             Block("What we don't keep", StatusCopy.LOCAL_FIRST_PROMISE)

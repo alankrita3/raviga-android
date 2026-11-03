@@ -1,12 +1,10 @@
 package com.raviga.app.data.repo
 
-import com.raviga.app.data.api.Comment
-import com.raviga.app.data.api.RavigaApi
-import com.raviga.app.data.api.NewCommentRequest
+import com.raviga.app.data.api.PayRequest
 import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectSummary
-import com.raviga.app.data.api.ResubmitRequest
-import com.raviga.app.data.api.RevisionRequestBody
+import com.raviga.app.data.api.RavigaApi
+import com.raviga.app.data.api.ReportRequest
 import com.raviga.app.data.api.SubmitProjectRequest
 import com.raviga.app.data.api.apiCall
 import com.raviga.app.data.local.CacheStore
@@ -100,32 +98,24 @@ class ProjectRepository(
 
     suspend fun refresh(id: String): Project = store(apiCall(json) { api.project(id) })
 
-    /** The first time any content reaches the server. [idempotencyKey] is reused on retry. */
+    /** The first time any content reaches the server. Free since v0.10.0. [idempotencyKey] is reused on retry. */
     suspend fun submit(body: SubmitProjectRequest, idempotencyKey: String): Project =
         store(apiCall(json) { api.submitProject(idempotencyKey, body) })
 
-    suspend fun resubmit(id: String, body: ResubmitRequest, idempotencyKey: String): Project =
-        store(apiCall(json) { api.resubmit(id, idempotencyKey, body) })
+    /**
+     * v0.10.0 (R-103): pays an accepted project and starts the build. [quoteToken] only after the price expired (a new
+     * quote for the same brief). [idempotencyKey] is reused on retry.
+     */
+    suspend fun pay(id: String, idempotencyKey: String, quoteToken: String? = null): Project =
+        store(apiCall(json) { api.pay(id, idempotencyKey, PayRequest(quoteToken)) })
 
     suspend fun cancel(id: String): Project = store(apiCall(json) { api.cancelProject(id) })
 
-    /** Newest first; the backend marks team comments read. */
-    suspend fun comments(id: String): List<Comment> {
-        val list = apiCall(json) { api.comments(id) }.comments
-        _projects.value[id]?.let { p -> store(p.copy(review = p.review.copy(comments = list), unreadComments = 0)) }
-        return list
-    }
-
-    suspend fun addComment(id: String, body: String): Comment {
-        val comment = apiCall(json) { api.addComment(id, NewCommentRequest(body.trim())) }
-        _projects.value[id]?.let { p -> store(p.copy(review = p.review.copy(comments = listOf(comment) + p.review.comments))) }
-        return comment
-    }
-
     suspend fun accept(id: String): Project = store(apiCall(json) { api.accept(id) })
 
-    suspend fun requestRevision(id: String, message: String): Project =
-        store(apiCall(json) { api.requestRevision(id, RevisionRequestBody(message.trim())) })
+    /** v0.10.0 (R-103): "Something's wrong" with a delivery: a fixed category and a short description. */
+    suspend fun report(id: String, category: String, description: String): Project =
+        store(apiCall(json) { api.report(id, ReportRequest(category, description.trim())) })
 
     private suspend fun store(project: Project): Project {
         _projects.update { it + (project.id to project) }
@@ -135,12 +125,12 @@ class ProjectRepository(
             ref = project.ref,
             title = project.title,
             status = project.status,
+            statusLine = project.statusLine,
             createdAt = project.createdAt,
             updatedAt = project.updatedAt,
             statusChangedAt = project.statusChangedAt ?: project.history.lastOrNull()?.at,
             credits = project.quote?.credits,
             estimatedDeliveryDate = project.timeline?.estimatedDeliveryDate,
-            unreadComments = project.unreadComments,
             contentDeletedAt = project.contentDeletedAt,
         )
         _summaries.update { list ->

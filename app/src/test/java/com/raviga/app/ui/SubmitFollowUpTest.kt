@@ -5,7 +5,6 @@ import com.raviga.app.data.api.Quote
 import com.raviga.app.data.drafts.LocalDraft
 import com.raviga.app.ui.quote.QuoteViewModel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -17,14 +16,11 @@ class SubmitFollowUpTest {
 
     @Test fun anAdoptedSubmitCountsWithTheProjectsQuote() {
         val adopted = Project(id = "pr_1", quote = Quote(id = "q1", credits = 27, bracketId = "standard"))
-        assertEquals("standard" to 27, QuoteViewModel.submittedEvent(adopted, draft, isResubmit = false))
+        assertEquals("standard" to 27, QuoteViewModel.submittedEvent(adopted, draft))
     }
 
     @Test fun withoutTheProjectsQuoteTheDraftsIsUsed() {
-        assertEquals("standard" to 27, QuoteViewModel.submittedEvent(Project(id = "pr_1"), draft, isResubmit = false))
+        assertEquals("standard" to 27, QuoteViewModel.submittedEvent(Project(id = "pr_1"), draft))
     }
 
-    @Test fun aResubmitIsNotCounted() {
-        assertNull(QuoteViewModel.submittedEvent(Project(id = "pr_1"), draft, isResubmit = true))
-    }
 }

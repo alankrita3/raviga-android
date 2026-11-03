@@ -25,8 +25,9 @@ import com.raviga.app.ui.theme.Ink
 import com.raviga.app.util.Time
 
 /**
- * Submitted, Reviewed, Approved, Building, Delivered, Accepted as a vertical
- * sequence: done nodes in ink, the current one a blue ring, the rest outlined.
+ * The server's milestones (v0.10.0: Submitted, Approved, Paid, Building and QA, Delivered, Approved by you) as a
+ * vertical sequence: done nodes in ink, the current one a blue ring, the rest outlined. [undatedDelivery] stands in
+ * for the delivery date until there is one (before payment: "Ready in 1 to 2 weeks after payment", as iOS).
  */
 @Composable
 fun TimelineView(
@@ -34,6 +35,7 @@ fun TimelineView(
     note: String,
     modifier: Modifier = Modifier,
     estimatedDeliveryDate: String? = null,
+    undatedDelivery: String? = null,
 ) {
     Column(modifier.fillMaxWidth()) {
         milestones.forEachIndexed { index, m ->
@@ -65,7 +67,7 @@ fun TimelineView(
                         m.state == "done" && m.at != null -> Time.shortDate(m.at)
                         m.state == "current" -> "Now"
                         m.id == "delivered" && estimatedDeliveryDate != null -> "About ${Time.shortDate(estimatedDeliveryDate)}"
-                        m.id == "delivered" -> "Date set after approval"
+                        m.id == "delivered" -> undatedDelivery ?: "Date set after payment"
                         else -> null
                     }
                     if (line != null) {

@@ -7,7 +7,6 @@ import com.raviga.app.data.api.ApiException
 import com.raviga.app.data.api.Document
 import com.raviga.app.data.api.JobState
 import com.raviga.app.data.api.Project
-import com.raviga.app.data.api.ResubmitRequest
 import com.raviga.app.data.api.SectionBody
 import com.raviga.app.data.api.SectionIds
 import com.raviga.app.data.api.SubmitProjectRequest
@@ -388,47 +387,6 @@ class DraftRepository(
             )
         }
         return project
-    }
-
-    suspend fun resubmit(id: String, idempotencyKey: String): Project = guarded(id) {
-        val draft = require(id)
-        val projectId = draft.serverProjectId ?: throw ApiException(ApiException.INVALID_STATE, message = "This brief hasn't been submitted.")
-        // R-094 P2-6: as submit, a resubmit already out with this token goes again exactly as it was.
-        val held = draft.sentSubmit?.takeIf { draft.holdsSentSubmit }?.let { s -> s.resubmit?.let { it to s.version } }
-        val (request, version) = held ?: run {
-            val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-            val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
-            val request = ResubmitRequest(current.document.body(), token)
-            touch(id) { it.copy(sentSubmit = SentSubmit(token, current.version, resubmit = request)) }
-            request to current.version
-        }
-        val project = sending(id) { projects.resubmit(projectId, request, idempotencyKey) }
-        touch(id) { it.copy(submittedVersion = version, submittedAt = Time.nowIso(), quoteToken = null, sentSubmit = null) }
-        project
-    }
-
-    /**
-     * A submitted project this phone has no copy of (moved here with a recovery
-     * key) that the team sent back with changes: copy the brief the server holds
-     * into a local draft so it can be edited and resubmitted.
-     */
-    suspend fun importSubmitted(project: Project): LocalDraft {
-        get(project.id)?.let { return it }
-        val held = project.document ?: throw ApiException(ApiException.NOT_FOUND, message = "The brief is no longer held.")
-        val now = Time.nowIso()
-        val version = LocalVersion(1, held.asDocument().copy(version = 1, source = "submitted"), now, "submitted", "The brief you submitted")
-        return store.create(
-            LocalDraft(
-                id = DraftStore.newId(),
-                title = held.title,
-                createdAt = project.createdAt ?: now,
-                updatedAt = now,
-                versions = listOf(version),
-                serverProjectId = project.id,
-                submittedVersion = 1,
-                submittedAt = project.submission?.submittedAt,
-            ),
-        )
     }
 
     // ----- internal -----

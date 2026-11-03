@@ -27,10 +27,31 @@ class StatusCopyTest {
 
     @Test
     fun `detail titles match the shared vocabulary`() {
-        assertEquals("Awaiting review", StatusCopy.detailTitle(ProjectStatus.SUBMITTED))
-        assertEquals("Comments from the team", StatusCopy.detailTitle(ProjectStatus.CHANGES_REQUESTED))
-        assertEquals("In build", StatusCopy.detailTitle(ProjectStatus.APPROVED))
+        assertEquals("In review", StatusCopy.detailTitle(ProjectStatus.SUBMITTED))
+        assertEquals("Accepted", StatusCopy.detailTitle(ProjectStatus.APPROVED))
+        assertEquals("In build", StatusCopy.detailTitle(ProjectStatus.BUILDING))
+        assertEquals("Approved by you", StatusCopy.detailTitle(ProjectStatus.ACCEPTED))
         assertEquals("Not accepted", StatusCopy.detailTitle(ProjectStatus.REJECTED))
+    }
+
+    /** v0.10.0: past the fair-use cap, /ai/draft's 429 carries the line to show, as it comes (iOS: no retry). */
+    @Test
+    fun `the brief cap shows the servers line`() {
+        val day = com.raviga.app.data.api.ApiException(
+            com.raviga.app.data.api.ApiException.RATE_LIMITED, 429, "You've reached today's limit for new briefs. Try again tomorrow.",
+            details = kotlinx.serialization.json.buildJsonObject { put("limit", kotlinx.serialization.json.JsonPrimitive("briefs_per_day")); put("max", kotlinx.serialization.json.JsonPrimitive(5)) },
+        )
+        assertEquals("You've reached today's limit for new briefs. Try again tomorrow.", day.userLine())
+        val plain = com.raviga.app.data.api.ApiException(com.raviga.app.data.api.ApiException.RATE_LIMITED, 429, "slow down")
+        assertEquals("Too many requests. Wait a moment and try again.", plain.userLine())
+    }
+
+    /** Contract v0.10.0: the server's statusLine as it comes; the chip's words only for a cache from before it. */
+    @Test
+    fun `row lines are the servers status line`() {
+        val summary = com.raviga.app.data.api.ProjectSummary(id = "pr_1", status = ProjectStatus.APPROVED, statusLine = "Accepted. Pay 30 credits to start building.")
+        assertEquals("Accepted. Pay 30 credits to start building.", StatusCopy.rowLine(summary))
+        assertEquals("In build", StatusCopy.rowLine(summary.copy(status = ProjectStatus.BUILDING, statusLine = "")))
     }
 
     @Test
@@ -40,36 +61,6 @@ class StatusCopyTest {
         assertEquals(Ink.blue, StatusCopy.markColor(ProjectStatus.APPROVED))
         assertEquals(Ink.moss, StatusCopy.markColor(ProjectStatus.DELIVERED))
         assertEquals(Ink.brick, StatusCopy.markColor(ProjectStatus.REJECTED))
-    }
-
-    @Test
-    fun `row lines use the shared wording`() {
-        val approved = ProjectSummary(id = "p", status = ProjectStatus.APPROVED, estimatedDeliveryDate = "2026-11-21")
-        assertTrue(StatusCopy.rowLine(approved).startsWith("Approved, in build. Ready by "))
-        assertEquals("Submitted, awaiting review", StatusCopy.rowLine(ProjectSummary(id = "p", status = ProjectStatus.SUBMITTED)))
-        assertEquals("Cancelled, credits returned", StatusCopy.rowLine(ProjectSummary(id = "p", status = ProjectStatus.CANCELLED)))
-    }
-
-    /** Contract v0.8.1: the hourly job once moved updatedAt on RA-Q88NBG, so "Accepted on" read 17 Oct instead of 9 Oct. */
-    @Test
-    fun `accepted date comes from statusChangedAt, then history, then updatedAt`() {
-        val accepted = "2026-10-09T11:45:06Z"
-        val bumped = "2026-10-17T08:15:28Z"
-        val expected = "Accepted on ${com.raviga.app.util.Time.shortDate(accepted)}"
-        val summary = ProjectSummary(id = "p", status = ProjectStatus.ACCEPTED, updatedAt = bumped, statusChangedAt = accepted)
-        assertEquals(expected, StatusCopy.rowLine(summary))
-        // An older summary without the field falls back to updatedAt.
-        assertEquals(expected, StatusCopy.rowLine(summary.copy(statusChangedAt = null, updatedAt = accepted)))
-        // A full project without the field uses its last history entry.
-        val project = com.raviga.app.data.api.Project(
-            id = "p", status = ProjectStatus.ACCEPTED, updatedAt = bumped,
-            history = listOf(
-                com.raviga.app.data.api.HistoryEntry(ProjectStatus.DELIVERED, at = "2026-10-09T11:44:25Z"),
-                com.raviga.app.data.api.HistoryEntry(ProjectStatus.ACCEPTED, at = accepted, by = "client"),
-            ),
-        )
-        assertEquals(expected, StatusCopy.rowLine(project))
-        assertEquals(expected, StatusCopy.rowLine(project.copy(statusChangedAt = accepted, history = emptyList())))
     }
 
     @Test
@@ -92,7 +83,7 @@ class StatusCopyTest {
     @Test fun everyContractErrorHasItsOwnLine() {
         val codes = listOf(
             "unauthenticated", "permission_denied", "consent_required", "not_found", "invalid_argument",
-            "github_user_not_found", "invalid_state", "quote_stale", "insufficient_credits", "revision_limit_reached",
+            "github_user_not_found", "invalid_state", "quote_stale", "insufficient_credits",
             "active_projects", "aws_role_not_ready", "link_code_invalid", "otp_invalid", "upgrade_required",
             "rate_limited", "content_rejected", "account_restricted", "ai_unavailable", "conflict", "internal",
         )
@@ -150,18 +141,14 @@ class StatusCopyTest {
         assertEquals("This is taking longer than usual. Try again.", expired.userLine())
     }
 
-    /** R-092 #37: iOS's words (26900b8); no draft is promised, and the copy only when there is one. */
+    /** R-092 #37, v0.10.0: cancel is only before payment, so nothing comes back; the copy only when there is one. */
     @Test
     fun `cancel and closed lines say what really happens`() {
-        assertEquals(
-            "Your 48 credits come back to your balance and the brief is deleted from our servers. Your copy stays on this phone.",
-            StatusCopy.cancelConfirmLine(48, hasCopy = true),
-        )
-        assertEquals("Your 1 credit comes back to your balance and the brief is deleted from our servers.", StatusCopy.cancelConfirmLine(1, hasCopy = false))
-        assertEquals("The brief is deleted from our servers.", StatusCopy.cancelConfirmLine(0, hasCopy = false))
-        assertEquals("We deleted this brief and its comments from our servers on 3 Nov.", StatusCopy.deletedLine("3 Nov", hasCopy = false))
+        assertEquals("Nothing was charged. The brief is deleted from our servers. Your copy stays on this phone.", StatusCopy.cancelConfirmLine(hasCopy = true))
+        assertEquals("Nothing was charged. The brief is deleted from our servers.", StatusCopy.cancelConfirmLine(hasCopy = false))
+        assertEquals("We deleted this brief from our servers on 3 Nov.", StatusCopy.deletedLine("3 Nov", hasCopy = false))
         assertTrue(StatusCopy.deletedLine("3 Nov", hasCopy = true).endsWith(" Your copy stays on this phone."))
-        assertTrue(listOf(StatusCopy.cancelConfirmLine(48, true), StatusCopy.deletedLine("3 Nov", true)).none { "draft" in it || "same brief" in it })
+        assertTrue(listOf(StatusCopy.cancelConfirmLine(true), StatusCopy.deletedLine("3 Nov", true)).none { "draft" in it || "comments" in it })
     }
 
     /** As iOS a04dc61: a single credit is never "1 credits". */
