@@ -608,16 +608,25 @@ class CaptureViewModel(
         // Leaving keeps what was said, typed or read (half an utterance included). A draft left with no note at
         // all (everything cleared) is just noise on Home.
         val s = _state.value
+        val madeHere = createdThisVisit
         container.appScope.launch {
             persist(s)
             val id = draftId ?: return@launch
-            if (mode != "append") {
-                container.drafts.get(id)?.takeIf { it.inputs.isEmpty() && it.versions.isEmpty() }?.let { container.drafts.delete(it.id) }
-            }
+            if (shouldDropEmpty(madeHere, mode, container.drafts.get(id))) container.drafts.delete(id)
         }
     }
 
+    /**
+     * Review #4 (Android): only a draft this visit made (the route said "new") is dropped when it's left empty. "+" on
+     * an existing draft with no notes (all deleted, or only named) used to delete it, name and all, on Back.
+     */
+    private val createdThisVisit: Boolean = initialDraftId == "new"
+
     companion object {
+        /** Whether a draft left with no notes and no brief should go: only one this Capture visit made. */
+        internal fun shouldDropEmpty(createdThisVisit: Boolean, mode: String, draft: com.raviga.app.data.drafts.LocalDraft?): Boolean =
+            createdThisVisit && mode != "append" && draft != null && draft.inputs.isEmpty() && draft.versions.isEmpty()
+
         private const val SAVED_STATE = "capture_visit"
         private const val SAVED_DRAFT = "draft"
         private const val SAVED_SLOTS = "slots"
