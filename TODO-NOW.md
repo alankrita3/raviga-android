@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 16:40.
+The PM reads this file if the session has closed. Updated 2026-11-03 16:39.
 
 ## In flight
 
@@ -18,9 +18,11 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:40.
     RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
   - **Her yes, typed in this window at 16:3x:** "yes: accept the Play invite, build 8 internal rollout, tester
     list, Data safety, license testing".
-  - **Holding (16:40) on the PM's word:** Chrome Profile 40 is signed in as team@, not administrator@, and another
-    Claude session may be driving it. Rule: act only as administrator@, never team@, and click nothing in that window
-    until the PM says it's free and the invite to administrator@ has gone out. Then: accept the invite, then steps 1–4.
+  - **Holding (16:38) on the PM's word:** the Mirakee ops session's Chrome open landed in Profile 40 by mistake, and
+    nothing was submitted there. I closed my stray Console tab there; team@ stays signed in. Wait for the PM's
+    "invite sent" (developer account Raviga Apps, 8466887053850812701). Then use only URLs with
+    `?authuser=administrator@miraquill.com` and check the avatar before each click (stop if it shows team@). Accept the
+    invite, then steps 1–4.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
 - **Next step (mine):** on the PM's "window free, invite sent": open the Console in Profile 40 as administrator@, accept
   the invite, then steps 1–4, and send the PM the opt-in link. After that, fix whatever her pass turns up. The next
