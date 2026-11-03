@@ -4,7 +4,13 @@
 (0e5f114), bundle built (versionCode 8, versionName 1.0.0, dev stage, sha256 79de35d565a8…, 13.6 MB; unit tests
 231 debug and 207 release, all passing), uploaded as the draft **"8 internal test"** on the internal track with the
 446-character en-US release notes. Play reads back status `draft`, versionCodes `[8]`. It replaced the old
-versionCode 1 draft, which was never rolled out. Nothing is rolled out. That is her click (section 3).
+versionCode 1 draft, which was never rolled out.
+
+**Rolled out to internal testing 2026-11-03 16:44 by the Play service account** (her typed yes: "build 8 internal
+rollout"): an API edit set the release from `draft` to `completed`, and the commit returned 200. Alpha, beta and
+production are empty. Section 3's Console clicks are no longer needed. What the robot can't do: email tester lists
+and their opt-in link (the API holds Google Groups only) and license testers. Those are Console-only (section 4).
+Data safety can go through the API (`applications.dataSafety`, Play's CSV format).
 
 ## 1. On the PM's go: merge the build-8 commit
 

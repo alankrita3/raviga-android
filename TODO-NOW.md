@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 16:39.
+The PM reads this file if the session has closed. Updated 2026-11-03 16:47.
 
 ## In flight
 
@@ -12,7 +12,10 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:39.
   - The TalkBack listen-through is in her pass on the internal build.
 - **Build 8 uploaded to Play's internal track as a draft (2026-11-03 12:53, her yes via the PM).** build-8 merged
   into main (0e5f114). Draft "8 internal test": versionCode 8, status draft, en-US release notes (446 characters),
-  sha256 79de35d565a8…, dev stage. It replaced the never-rolled-out versionCode 1 draft. Nothing is rolled out.
+  sha256 79de35d565a8…, dev stage. It replaced the never-rolled-out versionCode 1 draft.
+  **Rolled out to internal 16:44** by the Play service account (API edit draft→completed, commit 200; her typed yes).
+  The robot can't do the email tester list, its opt-in link or license testers (Console only). It can do Data
+  safety through the API (CSV), on the PM's go.
   - **The PM (13:00): we do the Console clicks in Chrome ourselves.** These are: (1) the rollout, (2) the tester list
     with administrator@miraquill.com, (3) Data safety from `docs/store/data-safety.md`, (4) license testing,
     RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
@@ -22,7 +25,7 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:39.
     nothing was submitted there. I closed my stray Console tab there; team@ stays signed in. Wait for the PM's
     "invite sent" (developer account Raviga Apps, 8466887053850812701). Then use only URLs with
     `?authuser=administrator@miraquill.com` and check the avatar before each click (stop if it shows team@). Accept the
-    invite, then steps 1–4.
+    invite, then the steps still left: the tester list and opt-in link, and license testing.
     Chrome rule (her plan, 11-03): never quit Chrome, never `open` URLs from the shell, and never script other
     profiles' tabs. Use only my Claude-extension tabs in Profile 40, and close them when done.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
