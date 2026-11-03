@@ -96,7 +96,10 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
             val status = projects.cachedProject(id)?.status
                 ?: projects.summaries.value.firstOrNull { it.id == id }?.status
                 ?: try { projects.refresh(id).status } catch (e: ApiException) { null }
-            if (status != null) nav.navigate(Routes.forProject(id, status)) { launchSingleTop = true }
+            if (status != null) {
+                val onTop = nav.currentBackStackEntry?.arguments?.getString("projectId")
+                nav.navigate(Routes.forProject(id, status)) { launchSingleTop = Routes.reuseTopFor(onTop, id) }
+            }
         }
         // Consumed last: clearing it earlier would restart this effect mid-lookup.
         onDeepLinkConsumed()

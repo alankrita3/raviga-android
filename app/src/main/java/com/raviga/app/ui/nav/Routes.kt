@@ -28,6 +28,14 @@ object Routes {
     /** The same for the project's status screen (R-092 #41: brief and status go back to each other, never stack). */
     fun isStatusOf(route: String?, entryProjectId: String?, projectId: String) = route == STATUS && entryProjectId == projectId
 
+    /**
+     * Review 2026-11-03 (Android): whether a notification for [projectId] may reuse the screen on top. Navigation's
+     * launchSingleTop reuses the top entry for the same route pattern whatever the project, keeping its state: with
+     * project A's status on top, a push for B turned A's screen into B's (Back then skipped A), and an open "Cancel
+     * project?" or a typed revision request came along to B. Only the same project's screen is reused.
+     */
+    fun reuseTopFor(topProjectId: String?, projectId: String): Boolean = topProjectId == projectId
+
     const val SECTION = "section/{projectId}/{sectionId}"
     fun section(projectId: String, sectionId: String) = "section/$projectId/$sectionId"
 

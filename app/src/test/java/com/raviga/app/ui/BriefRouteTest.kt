@@ -17,6 +17,13 @@ class BriefRouteTest {
         assertFalse("nothing underneath (opened from a notification)", Routes.isBriefOf(null, null, "p_1"))
     }
 
+    /** Review 2026-11-03 (Android): a push for another project never takes over the screen on top (and its state). */
+    @Test fun aPushReusesTheScreenOnTopOnlyForTheSameProject() {
+        assertTrue("the same project's screen", Routes.reuseTopFor("pr_a", "pr_a"))
+        assertFalse("another project's status on top", Routes.reuseTopFor("pr_a", "pr_b"))
+        assertFalse("Home on top", Routes.reuseTopFor(null, "pr_b"))
+    }
+
     @Test fun theBriefsCommentsLinkGoesBackToTheStatusItCameFrom() {
         assertTrue(Routes.isStatusOf(Routes.STATUS, "p_1", "p_1"))
         assertFalse(Routes.isStatusOf(Routes.STATUS, "p_2", "p_1"))
