@@ -26,7 +26,7 @@ class NanoTitles(private val client: () -> GenerativeModel = { Generation.getCli
         val text = note.take(DraftTitle.INPUT_LIMIT)
         val reply = withTimeoutOrNull(TIMEOUT_MS) {
             runCatching {
-                val systemPrompt = model.isSystemPromptAvailable()
+                val systemPrompt = com.google.mlkit.genai.prompt.Feature.SYSTEM_PROMPT in model.getAvailableFeatures()
                 val request = if (systemPrompt) {
                     generateContentRequest(SystemInstruction(DraftTitle.INSTRUCTIONS), TextPart(text)) { settings() }
                 } else {
