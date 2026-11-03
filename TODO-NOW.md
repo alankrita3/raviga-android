@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 16:50.
+The PM reads this file if the session has closed. Updated 2026-11-03 18:31.
 
 ## In flight
 
@@ -24,13 +24,13 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:50.
     RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
   - **Her yes, typed in this window at 16:3x:** "yes: accept the Play invite, build 8 internal rollout, tester
     list, Data safety, license testing".
-  - **Holding (16:38) on the PM's word:** the Mirakee ops session's Chrome open landed in Profile 40 by mistake, and
-    nothing was submitted there. I closed my stray Console tab there; team@ stays signed in. Wait for the PM's
-    "invite sent" (developer account Raviga Apps, 8466887053850812701). Then use only URLs with
-    `?authuser=administrator@miraquill.com` and check the avatar before each click (stop if it shows team@). Accept the
-    invite, then the step still left: the tester list and its opt-in link (the PM is asking her how).
-    Chrome rule (her plan, 11-03): never quit Chrome, never `open` URLs from the shell, and never script other
-    profiles' tabs. Use only my Claude-extension tabs in Profile 40, and close them when done.
+  - **Blocked on her (18:30): 2-step verification on administrator@.** Raviga sessions now use Chrome Profile 27
+    ("Work", administrator@; she chose Browser 1, fe6ad69a; leave its keep=27 tab alone). The invite has been sent
+    (Raviga Apps 8466887053850812701, com.raviga.app only, 8 permissions). But
+    play.google.com/console/?authuser=administrator@miraquill.com goes to the sign-up page: "Turn on 2-step
+    verification". That's hers on her phone. Then, on the PM's go: accept the invite, create the tester list
+    "Raviga internal" with administrator@, report the opt-in link, and close my tabs. License testers are held until
+    row 37.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
 - **Next step (mine):** on the PM's "window free, invite sent": open the Console in Profile 40 as administrator@, accept
   the invite, then steps 1–4, and send the PM the opt-in link. After that, fix whatever her pass turns up. The next
