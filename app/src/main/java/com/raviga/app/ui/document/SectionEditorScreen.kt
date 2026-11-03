@@ -136,7 +136,8 @@ class SectionEditorViewModel(
                 else -> "- " + line.trim()
             }
         }
-        _state.update { it.copy(body = next) }
+        // Review 2026-11-03 (Android): through setBody, so the bullets are kept with the unsaved text (R-092 #2).
+        setBody(next)
     }
 
     fun save() {
