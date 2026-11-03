@@ -123,6 +123,56 @@ class SubmitRetryTest {
         assertTrue("nothing held: the expiry asks for a new quote", QuoteViewModel.State(draft = held?.copy(sentSubmit = null), clock = afterExpiry).needsNewQuote)
     }
 
+    /**
+     * Second review 2026-11-03 (Android): consent (check 1) comes before the used-token check, so a 403 says nothing
+     * about the first send. The hold stays, the expired quote still isn't re-quoted, and the retry is byte for byte.
+     */
+    @Test fun aRefusalBeforeTheUsedTokenCheckKeepsTheHold() = runBlocking {
+        val (drafts, _) = setUpDraft()
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        server.takeRequest(1, TimeUnit.SECONDS)
+        val first = json.encodeToString(com.raviga.app.data.api.SubmitProjectRequest.serializer(), drafts.get("ld_1")?.sentSubmit?.submit!!)
+
+        server.enqueue(
+            MockResponse().setResponseCode(403)
+                .setBody("""{"error":{"code":"consent_required","message":"Please accept the current terms","details":{"missing":["terms"]}}}"""),
+        )
+        try {
+            drafts.submit("ld_1", "new-name", null, "key-1")
+            fail("expected consent_required")
+        } catch (e: ApiException) {
+            assertEquals(ApiException.CONSENT_REQUIRED, e.code)
+        }
+        server.takeRequest(1, TimeUnit.SECONDS)
+        val held = drafts.get("ld_1")
+        assertNotNull("answered before check 1a: still held", held?.sentSubmit)
+        assertFalse("no new quote offered", QuoteViewModel.State(draft = held, clock = System.currentTimeMillis()).needsNewQuote)
+
+        server.enqueue(MockResponse().setResponseCode(201).setBody(fixture("project-submitted.json")))
+        drafts.submit("ld_1", "new-name", null, "key-1")
+        assertEquals("after agreeing: the same bytes", first, server.takeRequest(1, TimeUnit.SECONDS)?.body?.readUtf8())
+    }
+
+    @Test fun onlyAnswersAfterTheUsedTokenCheckLetTheHoldGo() {
+        fun e(code: String, status: Int, projectId: String? = null) = ApiException(
+            code, status,
+            details = projectId?.let { kotlinx.serialization.json.buildJsonObject { put("projectId", kotlinx.serialization.json.JsonPrimitive(it)) } },
+        )
+        val before = listOf(
+            e(ApiException.CONSENT_REQUIRED, 403), e(ApiException.ACCOUNT_RESTRICTED, 403), e(ApiException.PERMISSION_DENIED, 403),
+            e(ApiException.UNAUTHENTICATED, 401), e(ApiException.UPGRADE_REQUIRED, 426), e(ApiException.RATE_LIMITED, 429),
+            e(ApiException.CONFLICT, 409), e(ApiException.NOT_FOUND, 404), e(ApiException.QUOTE_STALE, 409, projectId = "pr_1"),
+            e(ApiException.NETWORK, 0), e(ApiException.INTERNAL, 500), e(ApiException.AI_UNAVAILABLE, 503),
+        )
+        before.forEach { assertFalse("${it.code} ${it.httpStatus} keeps the hold", com.raviga.app.data.drafts.SentSubmit.refusedForGood(it)) }
+        val after = listOf(
+            e(ApiException.INSUFFICIENT_CREDITS, 402), e(ApiException.INVALID_ARGUMENT, 400), e(ApiException.GITHUB_USER_NOT_FOUND, 400),
+            e(ApiException.CONTENT_REJECTED, 422), e(ApiException.QUOTE_STALE, 409), e(ApiException.INVALID_STATE, 409),
+        )
+        after.forEach { assertTrue("${it.code} ${it.httpStatus} lets it go", com.raviga.app.data.drafts.SentSubmit.refusedForGood(it)) }
+    }
+
     @Test fun aRefusalTheServerAnsweredLetsTheBodyChange() = runBlocking {
         val (drafts, _) = setUpDraft()
         server.enqueue(MockResponse().setResponseCode(402).setBody("""{"error":{"code":"insufficient_credits","message":"Not enough credits."}}"""))

@@ -142,12 +142,26 @@ data class SentSubmit(
 ) {
     companion object {
         /**
-         * The server answered and didn't take it: a 4xx other than a conflict, and not quote_stale naming the project
-         * it already has (R-091). Then the body may change (another name, a new quote). Anything else (offline, a 5xx,
-         * a lost answer) keeps it for the retry.
+         * The server answered and didn't take it. Then the body may change (another name, a new quote). Anything else
+         * (offline, a 5xx, a lost answer) keeps it for the retry.
+         *
+         * Second review 2026-11-03 (Android): only an answer the server gives after its used-token check (contract 11,
+         * check 1a) proves this token made no project. Consent, a paused or restricted account, 401, 426 and 429 are
+         * answered before that check, so they used to let the hold go even when the first send had charged; an
+         * expired quote or an edit then offered "Get a new quote", a new token, and a second project and charge.
          */
         fun refusedForGood(e: com.raviga.app.data.api.ApiException): Boolean =
-            e.httpStatus in 400..499 && e.code != com.raviga.app.data.api.ApiException.CONFLICT &&
+            e.httpStatus in 400..499 && e.code in AFTER_USED_TOKEN_CHECK &&
                 !(e.code == com.raviga.app.data.api.ApiException.QUOTE_STALE && e.detailString("projectId") != null)
+
+        /** Submit and resubmit refusals that come after check 1a (quote_stale naming a project is check 1a itself). */
+        private val AFTER_USED_TOKEN_CHECK = setOf(
+            com.raviga.app.data.api.ApiException.INVALID_ARGUMENT,
+            com.raviga.app.data.api.ApiException.GITHUB_USER_NOT_FOUND,
+            com.raviga.app.data.api.ApiException.QUOTE_STALE,
+            com.raviga.app.data.api.ApiException.CONTENT_REJECTED,
+            com.raviga.app.data.api.ApiException.INSUFFICIENT_CREDITS,
+            com.raviga.app.data.api.ApiException.INVALID_STATE,
+        )
     }
 }
