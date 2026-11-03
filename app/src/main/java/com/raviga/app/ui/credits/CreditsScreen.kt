@@ -79,6 +79,8 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         val billingAvailable: Boolean = false,
         /** R-079: offer a recovery email (once per install, after credits were added). */
         val offerRecoveryEmail: Boolean = false,
+        val loadingOlder: Boolean = false,
+        val olderError: String? = null,
     )
 
     private val _state = MutableStateFlow(State(demoBilling = container.credits.isDemoBilling, billingAvailable = container.billing.isAvailable))
@@ -143,6 +145,16 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun recoveryEmailOffered() = _state.update { it.copy(offerRecoveryEmail = false) }
+
+    /** QA J5 (as iOS): the next older page of the history. A failure is said, and the button stays to try again. */
+    fun showMore() {
+        if (_state.value.loadingOlder) return
+        viewModelScope.launch {
+            _state.update { it.copy(loadingOlder = true, olderError = null) }
+            runCatching { container.credits.loadOlder() }.onFailure { e -> _state.update { it.copy(olderError = e.userLine()) } }
+            _state.update { it.copy(loadingOlder = false) }
+        }
+    }
 
     fun restore() {
         viewModelScope.launch {
@@ -264,6 +276,15 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                 }
             }
             items(state.credits?.ledger.orEmpty(), key = { it.id }) { entry -> LedgerRow(entry) }
+            if (state.credits?.nextCursor != null && state.credits?.ledger.isNullOrEmpty().not()) item {
+                Column(Modifier.padding(horizontal = Ra.gutter).padding(top = 12.dp)) {
+                    InlineAction(
+                        if (state.loadingOlder) "Loading" else "Show more", enabled = !state.loadingOlder,
+                        onClick = { vm.showMore() }, modifier = Modifier.offset(x = (-8).dp),
+                    )
+                    InlineNotice(state.olderError)
+                }
+            }
             item { Spacer(Modifier.height(32.dp)) }
         }
     }

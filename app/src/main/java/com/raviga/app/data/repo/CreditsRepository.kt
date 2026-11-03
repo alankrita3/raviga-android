@@ -52,6 +52,17 @@ class CreditsRepository(
         response
     }
 
+    /**
+     * QA J5 (as iOS's Show more): the next older page of the ledger, after [CreditsResponse.nextCursor], added below
+     * the rows already shown. A refresh goes back to the newest page, as on iOS.
+     */
+    suspend fun loadOlder() {
+        val current = _credits.value ?: return
+        val cursor = current.nextCursor ?: return
+        val page = apiCall(json) { api.credits(before = cursor) }
+        _credits.value = withOlder(current, page)
+    }
+
     /** Asks the backend to reconcile with RevenueCat, then reloads the ledger. */
     suspend fun sync(): Int {
         apiCall(json) { api.syncCredits(UUID.randomUUID().toString()) }
@@ -86,6 +97,12 @@ class CreditsRepository(
     }
 
     companion object {
+        /** [older] added below [current] without repeating a row; the cursor moves on, the balance is the newer read. */
+        internal fun withOlder(current: CreditsResponse, older: CreditsResponse): CreditsResponse {
+            val known = current.ledger.mapTo(HashSet()) { it.id }
+            return current.copy(balance = older.balance, ledger = current.ledger + older.ledger.filter { it.id !in known }, nextCursor = older.nextCursor)
+        }
+
         /**
          * The booking half of [purchase], apart from the store so it can be tested (build 8 gate: purchase booking).
          * Anything but a store Success is returned as is. Then the balance is read up to 5 times, 2 s apart; if it
