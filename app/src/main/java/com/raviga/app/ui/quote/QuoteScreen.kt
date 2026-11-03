@@ -189,7 +189,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Ink.link, modifier = Modifier.padding(top = 3.dp).size(17.dp))
                 Spacer(Modifier.width(10.dp))
                 Column {
-                    Text("Ready in $weeks after approval", style = RaType.bodyMedium, color = Ink.ink)
+                    Text("Ready in $weeks after payment", style = RaType.bodyMedium, color = Ink.ink)
                     Spacer(Modifier.height(4.dp))
                     Text(config.quote.timelineNote, style = RaType.secondary, color = Ink.graphite)
                 }
