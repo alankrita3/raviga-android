@@ -1,5 +1,6 @@
 package com.raviga.app.ui.capture
 
+import com.raviga.app.ui.components.SaveFailingNotice
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.Role
 import android.Manifest
@@ -307,6 +308,7 @@ private fun CapturePhase(
                     Spacer(Modifier.height(16.dp))
                     PrivacyNote(FILE_NOTE)
                     InlineNotice(state.error)
+                    SaveFailingNotice(state.saveFailing, state.error)
                 }
             } else if (state.tab == CaptureViewModel.TAB_SPEAK) {
                 val speech = state.speech
@@ -339,6 +341,7 @@ private fun CapturePhase(
                     Text(formatTime(state.elapsedSec), style = RaType.caption, color = if (state.listening) Ink.link else Ink.graphite)
                 }
                 InlineNotice(state.error)
+                SaveFailingNotice(state.saveFailing, state.error)
                 Spacer(Modifier.height(16.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     MicButton(
@@ -366,6 +369,7 @@ private fun CapturePhase(
                     )
                 }
                 InlineNotice(state.error)
+                SaveFailingNotice(state.saveFailing, state.error)
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -398,6 +402,7 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
         bottomBar = {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
+                SaveFailingNotice(state.saveFailing, state.error, Modifier.padding(bottom = 8.dp))
                 PrimaryButton(
                     if (vm.isAppend) "Looks right, add it to the brief" else "Looks right, write the brief",
                     enabled = !state.saving && state.transcript.isNotBlank(),
@@ -494,6 +499,7 @@ private fun ChoosePhase(nav: NavController, vm: CaptureViewModel, state: Capture
         bottomBar = {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
+                SaveFailingNotice(state.saveFailing, state.error, Modifier.padding(bottom = 8.dp))
                 Text(savedLine(state), style = RaType.caption, color = Ink.graphite)
                 Spacer(Modifier.height(8.dp))
                 SecondaryButton(if (vm.isAppend) "Add it to the brief now" else "Write the brief now", onClick = { vm.writeSavedNotes() })

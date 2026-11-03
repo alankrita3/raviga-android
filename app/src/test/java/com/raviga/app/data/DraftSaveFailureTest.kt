@@ -12,7 +12,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.nio.file.Files
 
-/** R-092 #4 (iOS review): a save that fails (a full disk) says so in iOS's words, and the saved copy stays as it was. */
+/**
+ * R-092 #4 (iOS review): a save that fails (a full disk) says so in iOS's words, and the saved copy stays as it was.
+ * R-094 P2-4: the store says it is failing until a save succeeds.
+ */
 class DraftSaveFailureTest {
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }
 
@@ -32,5 +35,9 @@ class DraftSaveFailureTest {
             dir.setWritable(true)
         }
         assertEquals("Saved", store.get("ld_a")?.title)
+        // R-094 P2-4: said until a save succeeds, then gone.
+        assertEquals("still failing until a save works", true, store.saveFailing.value)
+        store.update("ld_a") { it.copy(title = "Saved again") }
+        assertEquals(false, store.saveFailing.value)
     }
 }

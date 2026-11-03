@@ -85,6 +85,8 @@ class CaptureViewModel(
         val reading: Boolean = false,
         /** R-094 P2-16: the picked file is still being copied to the phone (a cloud copy downloading). */
         val fetching: Boolean = false,
+        /** R-094 P2-4: a save failed and none has succeeded since (the drafts store's saveFailing). */
+        val saveFailing: Boolean = false,
         val progress: Float? = null,
         val progressMessage: String? = null,
         val error: String? = null,
@@ -175,6 +177,10 @@ class CaptureViewModel(
     private var acknowledgedText: String? = null
     /** The sensitive-data sheet is open for "Add more" on a document: carry on saving, not writing. */
     private var addingMore = false
+
+    init {
+        viewModelScope.launch { container.draftStore.saveFailing.collect { f -> _state.update { it.copy(saveFailing = f) } } }
+    }
 
     init {
         checkSpeech()
@@ -565,22 +571,16 @@ class CaptureViewModel(
         // A failed save must not stop the person typing; the next change or leaving tries again. A refusal (the
         // draft's note limit, QA F5) is shown, so nothing is dropped without a word.
         runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }
-            .onSuccess { saveFailureShown = false }
             .onFailure { e ->
                 when {
                     (e as? ApiException)?.code == ApiException.INVALID_ARGUMENT -> _state.update { it.copy(error = e.userLine()) }
-                    // R-092 #4 (iOS review): a failed save (disk full) is said once, not swallowed; the text stays on screen
-                    // and the next change tries again.
-                    !saveFailureShown -> {
-                        saveFailureShown = true
-                        _state.update { it.copy(error = DraftStore.SAVE_FAILED) }
-                    }
+                    // R-092 #4 / R-094 P2-4: a failed save (disk full) isn't swallowed: the screen says so from the
+                    // store's saveFailing until a save succeeds; the text stays on screen and the next change tries again.
                 }
             }
     }
 
     /** One message per run of failed saves; a save that works resets it. */
-    @Volatile private var saveFailureShown = false
 
     private fun kindOf(tab: Int): String = when (tab) {
         TAB_SPEAK -> "voice"

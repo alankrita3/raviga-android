@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import com.raviga.app.ui.components.SaveFailingNotice
 import com.raviga.app.ui.nav.Routes
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -237,6 +238,8 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
         bottomBar = {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
+                val saveFailing by com.raviga.app.ui.LocalAppContainer.current.draftStore.saveFailing.collectAsStateWithLifecycle()
+                SaveFailingNotice(saveFailing, state.error, Modifier.padding(bottom = 8.dp))   // R-094 P2-4
                 PrimaryButton("Save", loading = state.saving, enabled = state.document != null && state.busyMessage == null, onClick = { vm.save() })
                 Spacer(Modifier.height(8.dp))
                 SecondaryButton("Regenerate with AI", enabled = state.document != null && state.busyMessage == null, onClick = { vm.openSheet() })

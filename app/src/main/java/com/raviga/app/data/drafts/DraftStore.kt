@@ -28,6 +28,13 @@ class DraftStore(
     private val lock = Mutex()
     @Volatile private var loaded = false
 
+    /**
+     * R-094 P2-4 (iOS review 2): true from a failed save until the next one succeeds. Home, the brief, its sections
+     * and Capture say so the whole time, so the line can't vanish while saves still fail.
+     */
+    private val _saveFailing = MutableStateFlow(false)
+    val saveFailing: StateFlow<Boolean> = _saveFailing.asStateFlow()
+
     /** Files that could not be opened (Keystore key lost, e.g. after a factory reset of credentials). */
     @Volatile var unreadable: Int = 0
         private set
@@ -110,7 +117,19 @@ class DraftStore(
             }
     }
 
-    private suspend fun write(draft: LocalDraft) = withContext(Dispatchers.IO) {
+    private suspend fun write(draft: LocalDraft) {
+        try {
+            writeFile(draft)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _saveFailing.value = true
+            throw e
+        }
+        _saveFailing.value = false
+    }
+
+    private suspend fun writeFile(draft: LocalDraft) = withContext(Dispatchers.IO) {
         dir.mkdirs()
         val bytes = sealer.seal(json.encodeToString(LocalDraft.serializer(), draft).toByteArray(Charsets.UTF_8))
         val tmp = File(dir, "${draft.id}.${UUID.randomUUID()}.tmp")

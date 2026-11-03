@@ -90,6 +90,7 @@ fun HomeScreen(nav: NavController) {
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val signedOut by vm.signedOut.collectAsStateWithLifecycle()
     val unreadable by vm.unreadableDrafts.collectAsStateWithLifecycle()
+    val saveFailing by container.draftStore.saveFailing.collectAsStateWithLifecycle()
     var chooser by remember { mutableStateOf(false) }
     if (chooser) {
         DescribeChooserSheet(
@@ -175,6 +176,10 @@ fun HomeScreen(nav: NavController) {
                             color = Ink.ink,
                             modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
                         )
+                    }
+                    // R-094 P2-4 (iOS review 2): said here until a save succeeds, not as a banner a refresh clears.
+                    if (saveFailing) item(key = "save_failing") {
+                        Text(com.raviga.app.data.drafts.DraftStore.SAVE_FAILED, style = RaType.secondary, color = Ink.brick)
                     }
                     if (unreadable > 0) item(key = "unreadable") {
                         Text(

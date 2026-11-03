@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import com.raviga.app.ui.components.SaveFailingNotice
 import com.raviga.app.ui.nav.openProjectScreen
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -162,6 +163,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             if (draft == null && project == null) return@ScreenScaffold
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
+                val saveFailing by com.raviga.app.ui.LocalAppContainer.current.draftStore.saveFailing.collectAsStateWithLifecycle()
+                SaveFailingNotice(saveFailing, state.error, Modifier.padding(bottom = 8.dp))   // R-094 P2-4
                 when {
                     rejected -> PrimaryButton("Delete draft", onClick = { confirmDelete = true })
                     editable && document != null -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
