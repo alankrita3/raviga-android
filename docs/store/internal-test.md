@@ -7,8 +7,8 @@ without her yes). The upload makes a **draft** release. Rolling it out to tester
 
 ```bash
 cd ~/Documents/"Raviga Android"
-git switch main && git pull --ff-only
-git merge --ff-only origin/build-8        # a0b5dd9: versionCode 8, release notes final wording, nothing else
+git fetch origin && git switch main && git pull --ff-only
+git merge --no-ff origin/build-8 -m "Build 8: versionCode 8"   # the branch's one commit: versionCode 8, release notes wording
 git push
 ```
 
