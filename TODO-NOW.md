@@ -1,21 +1,19 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 06:05.
+The PM reads this file if the session has closed. Updated 2026-11-03 08:40.
 
 ## In flight
 
-- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): the Android lines are done except
-  the independent review**, which the PM opens once the suite is green. Gate file:
-  `qa/results/2026-11-02-android-gate.md`. Latest: tests and coverage ticked (2f6332b: debug 156, release 132, 4
-  instrumented on the OnePlus via `am instrument`, never `connectedAndroidTest`, which uninstalls the app and its dev
-  client; JaCoCo `createDebugUnitTestCoverageReport`; purchase booking now tested).
-- **QA suite v1 (`qa/results/2026-11-02-android.md`): run.** Open items: J2-J4 and J6 blocked on her (row 37,
-  RevenueCat); voice blocked (no recogniser); E13 N/A (her Drive). J5 PASS (Show more 5a1fafe; backend's
-  cursor fix 10234a5, re-run 11-03 06:01).
-- **R-092 (the iOS review's 41 findings on Android): done**, results in `qa/results/2026-11-03-android-parity.md`:
-  23 fixed (one commit per finding, with tests), 17 already fine, the link-code QR open (contract gap, as iOS).
-  Copy aligned to iOS's (cancel/closed, save failure, title cap); new Android lines sent to iOS and the PM.
+- **R-093 (the Android review's open findings) and R-094 (iOS's second pass on Android): done**, head b764f6f, results
+  in `qa/results/2026-11-03-android-parity-2.md`. Unit tests debug 211, release 187, instrumented 5 (via
+  `am instrument`, never `connectedAndroidTest`: it uninstalls the app and its dev client). #19 versionCode 8 goes in
+  the build-8 commit only (the PM's decision), then +1 per upload.
+- **Build 8 gate:** Android lines done (`qa/results/2026-11-02-android-gate.md`); the review ran
+  (`qa/results/2026-11-03-android-review.md`). No build until the PM says (her yes).
+- **QA suite v1:** run; open only what's blocked on her or the hardware (J2-J4/J6 RevenueCat row 37, voice, E13).
+- Emulator throwaways for backend's list: cl_01m6fj8etv00c574pfwx1bzx4k (current); cl_01m6fhxz8b... was deleted
+  through the app in the review #15 check.
   - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
     the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
     the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw; plus the O8 re-registrations cl_01m6ek2f8s00q5et6rse3jbjdh and
