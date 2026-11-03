@@ -1,19 +1,25 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 08:19.
+The PM reads this file if the session has closed. Updated 2026-11-03 09:55.
 
 ## In flight
 
-- **R-093 (the Android review's open findings) and R-094 (iOS's second pass on Android): done**, head b764f6f, results
-  in `qa/results/2026-11-03-android-parity-2.md`. Unit tests debug 211, release 187, instrumented 5 (via
-  `am instrument`, never `connectedAndroidTest`: it uninstalls the app and its dev client). #19 versionCode 8 goes in
-  the build-8 commit only (the PM's decision), then +1 per upload.
-- **Build 8 gate:** Android lines done (`qa/results/2026-11-02-android-gate.md`); the review ran
-  (`qa/results/2026-11-03-android-review.md`). No build until the PM says (her yes).
-- **QA suite v1:** run; open only what's blocked on her or the hardware (J2-J4/J6 RevenueCat row 37, voice, E13).
-- Emulator throwaways for backend's list: cl_01m6fj8etv00c574pfwx1bzx4k (current); cl_01m6fhxz8b... was deleted
-  through the app in the review #15 check.
+- **Build 8 gate (`~/Documents/Raviga PM/qa/results/2026-11-02-android-gate.md`): every line Android can sign is
+  signed** at 569679c. Open: row 37 (RevenueCat), voice (an Android 13+ phone), the PM's review sign-off, a hands-on
+  TalkBack pass (the label audit of 21 screens found nothing; injected gestures can't drive TalkBack), and her calls:
+  release notes OK, Data safety entry, versionCode 8 at the build-8 commit, the upload. No build without her yes.
+- **Done today:** R-092, R-093, R-094, R-097, R-098; the release-build smoke, recovery and performance runs; the six Play
+  screenshots re-captured in `~/Downloads/raviga-play-screenshots/build8/` (the 10-29 set kept).
+- **Unit tests** debug 230, release 206; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
+  uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
+- **The OnePlus:** take `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, give it back after.
+- **Emulator:** started only with load under 20. Twice today it was shut down from outside this session (08:0x, 09:1x).
+- **Test accounts for backend's end-of-suite list (add to the ones below):**
+  - cl_01m6fpnbc800h195ht3jra9py4: the release-build account, with RA-WJEKYD submitted and 66 dev credits.
+  - Two short-lived accounts made by Agree on the way to Restore (release reinstalls; ids not read).
+  - cl_01m6fj8etv00c574pfwx1bzx4k: the emulator's old throwaway.
+  - cl_01m6frvq6p...: deleted through the app (review #7 check).
   - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
     the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
     the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw; plus the O8 re-registrations cl_01m6ek2f8s00q5et6rse3jbjdh and
