@@ -104,8 +104,9 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(busy = true, error = null) }
             runCatching {
                 container.session.deleteMe()
-                // Drafts were only ever here; they go too.
+                // Drafts were only ever here; they go too, and so does any copy of a document left mid-read.
                 container.draftStore.wipe()
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { container.files.clearStale() }
                 // Contract v0.9 section 22: collection off and the SDK's data dropped.
                 container.analytics.clearAfterDeletion()
             }

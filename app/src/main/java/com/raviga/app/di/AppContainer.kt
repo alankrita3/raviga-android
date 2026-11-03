@@ -162,7 +162,12 @@ class AppContainer(private val app: Application) {
         emit(AppEvent.SignedOut)
     }
 
+    /** When this process started; uploads copied before it belong to a read that was cut off. */
+    private val startedAt = System.currentTimeMillis()
+
     init {
+        // A document copy whose read was cut off (the app ended mid-read) is deleted, never kept on the phone.
+        appScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { files.clearStale(before = startedAt) } }
         appScope.launch { session.config.collect { com.raviga.app.ui.status.StatusCopy.supportEmail = it.legal.supportEmail } }
         // The only switch for analytics collection: on while this client has granted it, off otherwise
         // (no client, withdrawn, signed out, deleted).

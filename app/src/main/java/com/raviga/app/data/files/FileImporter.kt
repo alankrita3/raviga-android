@@ -11,8 +11,8 @@ import java.util.UUID
 
 /**
  * Copies a document the client picked (a content:// Uri from the system picker)
- * into app cache, so the upload knows its exact size and can be retried. The
- * copy is deleted as soon as the backend has read it.
+ * into app cache, so its exact size is known before it is read on the phone. The
+ * copy is deleted as soon as it has been read, or at the next start ([clearStale]).
  */
 class FileImporter(private val context: Context) {
 
@@ -39,7 +39,7 @@ class FileImporter(private val context: Context) {
         val type = FileTypes.resolve(name, resolver.getType(uri), accepted) ?: throw Problem.Unsupported()
         if (size > maxBytes) throw Problem.TooLarge(maxBytes)
 
-        val dir = File(context.cacheDir, "uploads").apply { mkdirs() }
+        val dir = File(context.cacheDir, UPLOADS).apply { mkdirs() }
         val out = File(dir, UUID.randomUUID().toString())
         try {
             (resolver.openInputStream(uri) ?: throw Problem.Unreadable()).use { src ->
@@ -65,8 +65,18 @@ class FileImporter(private val context: Context) {
         Picked(out, name, out.length(), type)
     }
 
-    /** Leftovers from a crash or an abandoned capture. */
-    fun clearStale() {
-        File(context.cacheDir, "uploads").listFiles()?.forEach { it.delete() }
+    /**
+     * Copies left behind when the app was ended while a document was being read (the read's own `finally` never ran),
+     * so the file doesn't stay on the phone. [before]: only copies made before then; at start-up that is the process
+     * start, so a copy a picker result is making right now is never touched. "Delete my data" clears them all.
+     */
+    fun clearStale(before: Long = Long.MAX_VALUE) = clearCopies(File(context.cacheDir, UPLOADS), before)
+
+    companion object {
+        private const val UPLOADS = "uploads"
+
+        /** Deletes every file in [dir] last written before [before]; the number deleted. */
+        fun clearCopies(dir: File, before: Long): Int =
+            dir.listFiles()?.count { it.isFile && it.lastModified() < before && it.delete() } ?: 0
     }
 }
