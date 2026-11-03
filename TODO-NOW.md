@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 18:31.
+The PM reads this file if the session has closed. Updated 2026-11-03 19:05.
 
 ## In flight
 
@@ -24,17 +24,17 @@ The PM reads this file if the session has closed. Updated 2026-11-03 18:31.
     RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
   - **Her yes, typed in this window at 16:3x:** "yes: accept the Play invite, build 8 internal rollout, tester
     list, Data safety, license testing".
-  - **Blocked on her (18:30): 2-step verification on administrator@.** Raviga sessions now use Chrome Profile 27
-    ("Work", administrator@; she chose Browser 1, fe6ad69a; leave its keep=27 tab alone). The invite has been sent
-    (Raviga Apps 8466887053850812701, com.raviga.app only, 8 permissions). But
-    play.google.com/console/?authuser=administrator@miraquill.com goes to the sign-up page: "Turn on 2-step
-    verification". That's hers on her phone. Then, on the PM's go: accept the invite, create the tester list
-    "Raviga internal" with administrator@, report the opt-in link, and close my tabs. License testers are held until
-    row 37.
+  - **Testers done (about 18:50, as the admin account in Chrome Profile 27):** invite accepted (Raviga Apps; the
+    admin account sees only Raviga, app 4972798470571758057). The new email list "Raviga internal" (the admin account,
+    see the Play Console tester list) is the only list ticked on internal testing. The track reads "Active · Latest
+    release: 8 internal test". **Opt-in link: https://play.google.com/apps/internaltest/4700044944112014609**. On her
+    phone, signed in as the admin account: open it, tap "Become a tester", install from Play. Play shows the temporary
+    name "com.raviga.app (unreviewed)" until the app is reviewed.
+  - Play store listing (en-US short and full description) set by API from `docs/store/play-listing.md` (a785f72). The
+    four credit packs exist and are active.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
-- **Next step (mine):** on the PM's "window free, invite sent": open the Console in Profile 40 as administrator@, accept
-  the invite, then steps 1–4, and send the PM the opt-in link. After that, fix whatever her pass turns up. The next
-  upload is versionCode 9 (+1 per upload).
+- **Next step (mine):** row 37 (RevenueCat Play app), on the PM's word. Then fix whatever her pass on the Play build
+  turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
 - **The OnePlus:** `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, `give` after. Free now.

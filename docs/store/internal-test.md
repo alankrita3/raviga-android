@@ -12,6 +12,10 @@ production are empty. Section 3's Console clicks are no longer needed. What the 
 and their opt-in link (the API holds Google Groups only) and license testers. Those are Console-only (section 4).
 Data safety can go through the API (`applications.dataSafety`, Play's CSV format).
 
+**Testers set 2026-11-03, about 18:50** (as the admin account in Chrome, after accepting the developer-account
+invite): the email list "Raviga internal" (the admin account, see the Play Console tester list) is ticked on
+internal testing, and the track is Active. **Opt-in link: https://play.google.com/apps/internaltest/4700044944112014609**.
+
 ## 1. On the PM's go: merge the build-8 commit
 
 ```bash
