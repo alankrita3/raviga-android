@@ -40,6 +40,17 @@ data class LocalDraft(
 ) {
     val current: LocalVersion? get() = versions.lastOrNull()
     val document: Document? get() = current?.document
+
+    /**
+     * R-094 P2-5 (iOS review 2, as iOS 9ad65bc): the brief was changed after it was submitted (a changes round). A
+     * cancel keeps those edits as the newer versions; nothing is deleted.
+     */
+    val hasEditsSinceSubmit: Boolean get() {
+        val submitted = submittedVersion?.let { v -> versions.firstOrNull { it.version == v } } ?: return false
+        val latest = current ?: return false
+        return latest.version != submitted.version &&
+            (latest.document.title != submitted.document.title || latest.document.sections != submitted.document.sections)
+    }
     val isSubmitted: Boolean get() = serverProjectId != null
     val isRefused: Boolean get() = refusal != null
     val quoteIsCurrent: Boolean get() = quote != null && quoteToken != null && quotedVersion == current?.version

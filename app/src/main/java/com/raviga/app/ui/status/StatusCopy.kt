@@ -93,9 +93,11 @@ object StatusCopy {
      * R-092 #37 (iOS review, iOS 26900b8): cancel makes no draft, and "Your copy stays on this phone" only when there is
      * one (after a restore there may be none). The confirm says beforehand what the closed screen says after.
      */
-    fun cancelConfirmLine(credits: Int, hasCopy: Boolean): String =
+    fun cancelConfirmLine(credits: Int, hasCopy: Boolean, editsSinceSubmit: Boolean = false): String =
         (if (credits > 0) "Your ${com.raviga.app.util.Money.credits(credits)} ${if (credits == 1) "comes" else "come"} back to your balance and the brief is deleted from our servers."
-        else "The brief is deleted from our servers.") + copyLine(hasCopy)
+        else "The brief is deleted from our servers.") + copyLine(hasCopy) +
+            // R-094 P2-5 (the PM's words): a changes round's edits stay on the phone as a version.
+            (if (editsSinceSubmit) " Your edits since you submitted are kept as a version." else "")
 
     /** The line under a closed project whose brief the server deleted. */
     fun deletedLine(day: String, hasCopy: Boolean): String =

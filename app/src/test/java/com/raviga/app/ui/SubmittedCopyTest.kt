@@ -28,4 +28,21 @@ class SubmittedCopyTest {
         val changes = DocumentViewModel.State(draft = draft, project = Project(id = "pr_1", status = ProjectStatus.CHANGES_REQUESTED))
         assertEquals("Edited after", changes.document?.sections?.first()?.body)
     }
+
+    /** R-094 P2-5 (iOS review 2, the PM's words): a cancel in a changes round keeps that round's edits, and says so. */
+    @Test fun editsSinceSubmitAreKeptAndSaid() {
+        assertEquals(true, draft.hasEditsSinceSubmit)
+        assertEquals("both versions stay on the phone", listOf(1, 2), draft.versions.map { it.version })
+        assertEquals(
+            "Your 27 credits come back to your balance and the brief is deleted from our servers. Your copy stays on this phone. " +
+                "Your edits since you submitted are kept as a version.",
+            com.raviga.app.ui.status.StatusCopy.cancelConfirmLine(27, hasCopy = true, editsSinceSubmit = draft.hasEditsSinceSubmit),
+        )
+    }
+
+    @Test fun aNewVersionWithTheSameWordsIsNoEdit() {
+        val same = draft.copy(versions = listOf(LocalVersion(1, doc(1, "As submitted"), "a", "draft"), LocalVersion(2, doc(2, "As submitted"), "a", "edit")))
+        assertEquals(false, same.hasEditsSinceSubmit)
+        assertEquals("not submitted", false, draft.copy(submittedVersion = null).hasEditsSinceSubmit)
+    }
 }

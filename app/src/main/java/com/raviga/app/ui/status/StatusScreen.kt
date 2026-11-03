@@ -176,13 +176,17 @@ fun StatusScreen(nav: NavController, projectId: String) {
 
     if (confirmCancel) {
         // R-092 #37 (iOS review): no draft is made on cancel; say what really happens to the brief.
-        val hasCopy = project?.let { container.drafts.get(it.id) } != null
+        val localCopy = project?.let { container.drafts.get(it.id) }
+        val hasCopy = localCopy != null
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             containerColor = Ink.surface,
             title = { Text("Cancel this project?", style = RaType.heading, color = Ink.ink) },
             text = {
-                Text(StatusCopy.cancelConfirmLine(project?.submission?.creditsCharged ?: 0, hasCopy), style = RaType.body, color = Ink.graphite)
+                Text(
+                    StatusCopy.cancelConfirmLine(project?.submission?.creditsCharged ?: 0, hasCopy, editsSinceSubmit = localCopy?.hasEditsSinceSubmit == true),
+                    style = RaType.body, color = Ink.graphite,
+                )
             },
             confirmButton = { TextButton(onClick = { confirmCancel = false; vm.cancel() }) { Text("Cancel project", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Keep it", style = RaType.button, color = Ink.ink) } },
