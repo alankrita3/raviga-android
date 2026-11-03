@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 19:05.
+The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
 
 ## In flight
 
@@ -33,7 +33,17 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:05.
   - Play store listing (en-US short and full description) set by API from `docs/store/play-listing.md` (a785f72). The
     four credit packs exist and are active.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
-- **Next step (mine):** row 37 (RevenueCat Play app), on the PM's word. Then fix whatever her pass on the Play build
+- **Row 37 (RevenueCat Play app), in progress since 19:30, the PM's go.** The split:
+  - Backend creates the RevenueCat service account and its JSON key with gcloud.
+  - The PM uploads the JSON into RevenueCat and grants the service account in Play Console (her yes, in the PM's window).
+  - Mine: create the RevenueCat Play app up to the credentials field, put the goog_ key in secrets.properties (never
+    printed), send backend the app id, run one sandbox purchase on the OnePlus.
+  - **Blocked (19:3x):** RevenueCat wants a sign-in in Chrome Profile 27; the login page is open in my tab. License
+    testers: the admin account has no permission for that account-wide page, so the owner adds it or grants the
+    permission.
+  - Done: backend's prod URL is in secrets.properties (API_BASE_URL), and Play's listing has the six build-8
+    screenshots, the feature graphic and the icon (f0a91aa).
+- **Next step (mine):** the rest of row 37 once RevenueCat is signed in. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
