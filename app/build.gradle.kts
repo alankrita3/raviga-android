@@ -72,6 +72,9 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("String", "API_BASE_URL", "\"${secret("API_BASE_URL_DEBUG", secret("API_BASE_URL", ""))}\"")
+            // Build 8 gate (coverage reported): JaCoCo over the JVM unit tests only; the APK is not instrumented.
+            // ./gradlew createDebugUnitTestCoverageReport -> app/build/reports/coverage/test/debug/
+            enableUnitTestCoverage = true
         }
         release {
             isMinifyEnabled = true

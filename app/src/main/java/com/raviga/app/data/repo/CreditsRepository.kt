@@ -77,15 +77,38 @@ class CreditsRepository(
             return PurchaseOutcome.Success
         }
         val before = runCatching { refresh().balance }.getOrNull() ?: _credits.value?.balance
-        val outcome = billing.purchase(activity, pack.productId)
-        if (outcome !is PurchaseOutcome.Success) return outcome
-        for (attempt in 1..5) {
-            delay(2_000)
-            val now = runCatching { refresh().balance }.getOrNull()
-            if (now != null && before != null && now > before) return PurchaseOutcome.Success
+        return book(
+            before = before,
+            store = { billing.purchase(activity, pack.productId) },
+            balance = { runCatching { refresh().balance }.getOrNull() },
+            sync = { runCatching { sync() }.getOrNull() },
+        )
+    }
+
+    companion object {
+        /**
+         * The booking half of [purchase], apart from the store so it can be tested (build 8 gate: purchase booking).
+         * Anything but a store Success is returned as is. Then the balance is read up to 5 times, 2 s apart; if it
+         * hasn't risen above [before], one sync is asked for. Only a balance seen above [before] is Success; an
+         * unknown [before] can't show that, so it is NotBookedYet (the next Credits open syncs, R-092 #20).
+         */
+        internal suspend fun book(
+            before: Int?,
+            store: suspend () -> PurchaseOutcome,
+            balance: suspend () -> Int?,
+            sync: suspend () -> Int?,
+            wait: suspend () -> Unit = { delay(2_000) },
+        ): PurchaseOutcome {
+            val outcome = store()
+            if (outcome !is PurchaseOutcome.Success) return outcome
+            repeat(5) {
+                wait()
+                val now = balance()
+                if (now != null && before != null && now > before) return PurchaseOutcome.Success
+            }
+            val synced = sync()
+            return if (synced != null && before != null && synced > before) PurchaseOutcome.Success else PurchaseOutcome.NotBookedYet
         }
-        val synced = runCatching { sync() }.getOrNull()
-        return if (synced != null && before != null && synced > before) PurchaseOutcome.Success else PurchaseOutcome.NotBookedYet
     }
 
     suspend fun restore(): Int {
