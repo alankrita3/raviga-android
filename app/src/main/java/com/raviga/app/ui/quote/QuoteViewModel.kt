@@ -66,7 +66,13 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val alreadyCharged get() = project?.submission?.creditsCharged ?: 0
         /** Credits that will actually leave the balance now. */
         val due: Int get() = ((quote?.credits ?: 0) - if (isResubmit) alreadyCharged else 0)
-        val shortBy: Int get() = (due - balance).coerceAtLeast(0)
+        /**
+         * Second review 2026-11-03 (Android): never while a send is held (R-094 P2-6). The first send may have charged
+         * already, so the balance is down by this very quote, and "You need N more" with Buy credits blocked the retry
+         * that turns the draft into the paid project. If it really is short, the server answers 402, the hold goes, and
+         * Buy credits shows.
+         */
+        val shortBy: Int get() = if (draft?.holdsSentSubmit == true) 0 else (due - balance).coerceAtLeast(0)
         val rejected get() = draft?.isRefused == true || project?.isRejected == true
         val refusalReason get() = draft?.refusal?.reason ?: project?.screening?.reason
         /** The brief changed since this quote. */
