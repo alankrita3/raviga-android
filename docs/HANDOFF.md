@@ -5,6 +5,24 @@ backend URL it uses the in-app demo backend, and the debug build already points 
 stage. Each item says where the value goes. Backend and iOS keep their own lists; items marked (shared)
 are the same credential used by more than one repo.
 
+## Build 8 status (2026-11-03)
+
+- Contract **v0.9.7** (backend dd9ca21), implemented: local-first drafts, the Claude API only (v0.9.4), the recovery
+  email, link codes and phones with access (R-079), a submit retry answered with its project (R-091/R-096), and the
+  transfer's own GitHub name.
+- QA suite v1, the iOS review's 41 findings (R-092), the independent Android review and its open findings (R-093), and
+  iOS's second pass (R-094) are done. Results are in the PM repo, `qa/results/2026-11-0*-android*.md`. The gate file
+  is `qa/results/2026-11-02-android-gate.md`.
+- **versionCode 8** for build 8 (the PM's decision, matching iOS), set in the build-8 commit, then +1 per upload.
+  Release notes are drafted in `docs/store/release-notes-build8.md`, for your OK.
+- **Waiting on you:**
+  - Row 37: the RevenueCat Play app, its `goog_` key and license testers. Until then no store purchase runs on Android.
+  - The prod URL (with backend).
+  - Entering the Data safety answers (section 1 of `docs/play-launch-readiness.md`, now with the optional recovery
+    email).
+  - An Android 13+ phone with on-device speech, for voice.
+  - Your yes for the internal-track upload.
+
 ## Accounts and keys
 
 | # | Item | Where it goes | Status |
@@ -114,7 +132,7 @@ PDF (ML Kit's model comes from Play services on first use), store purchases (no 
 - The microphone is only used while the Capture screen is listening, and speech is recognised on the phone.
   The Data safety form can say no audio or files are collected; the text of notes and briefs is sent to
   Anthropic's Claude API to write, price and check briefs (deleted within 30 days, longer only if flagged for
-  abuse, per the backend's provider line, contract v0.9.4), and submitted briefs are stored until the project
+  abuse, per the backend's provider line, since contract v0.9.4), and submitted briefs are stored until the project
   closes.
 
 ## How to run it tomorrow
