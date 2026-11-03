@@ -58,6 +58,14 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   The first set (RA-AYVR3V) is in `superseded-RA-AYVR3V/`; its account went with an uninstall.
   - Her review fixes, pushed: f4b8f94 (the quote's lock line on one line, centred with an inline lock; 13 to 12sp,
     then balanced wrap) and 0838142 ("This price holds until 17 Nov.", the PM's wording; iOS 605c803 added the same).
+- **R-103 (contract v0.10.0, dev only) on branch `r-103` (56841a0, pushed), ready to merge on the PM's word.**
+  No messaging, free submit, Pay after acceptance (402 → Buy credits, expired → re-quote then pay), statusLine
+  verbatim, new milestones, "It works, approved" / "Something's wrong" report sheet, "What you reported", 429 brief
+  cap, delivery_accepted.reports, DemoApi mirrored. iOS's copy (PM-approved). Live on dev end to end (RA-38R3GT:
+  submit → approved → pay → deliver → report → redeliver → approve; GitHub target cleared first, no transfer) and
+  on the demo backend. Unit tests debug 233, release 208. Merge only for versionCode 9 (prod stays v0.9.9 until the
+  new builds go to review). Waiting: iOS's parity answers on 9 self-chosen lines; the legal re-consent (her yes).
+  Store screenshots 05/06/07 show the old flow (Submit and pay, From the team); recapture after merge.
 - **R-100 on main (1477bdd):** "Price valid until <date>." small grey at the end of the quote; expired → "Get a new
   quote" + "Prices are updated every three months." (as iOS a5f8fc9). Supersedes 0838142's line. For the next build.
 - **03b-speak done (her pick for screen 1):** real Speak screen via the debug-only scripted dictation (8fa0c34):
