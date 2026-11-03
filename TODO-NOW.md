@@ -60,8 +60,11 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
     then balanced wrap) and 0838142 ("This price holds until 17 Nov.", the PM's wording; iOS 605c803 added the same).
 - **R-100 on main (1477bdd):** "Price valid until <date>." small grey at the end of the quote; expired → "Get a new
   quote" + "Prices are updated every three months." (as iOS a5f8fc9). Supersedes 0838142's line. For the next build.
-- **Waiting on the PM:** her 05-quote retake (the paragraph cut at the bar edge). The quote can't be reopened after
-  submit, so it's (a) design crops, free, or (b) a new draft on the same account with the R-100 build, about $0.25.
+- **05-quote retake, option (b) approved (Claude credit), waits on backend's R-101 on dev** (the plain-words quote
+  explanation). Then: R-100 release build (dev) installed over the screenshot app (keeps the account), a new draft with
+  the salon text, title edited to "Salon Booking and Payments App for Austin Salons" before quoting, quotes until 30,
+  shot so the visible area ends at a gap; to raviga-design, copy the PM. **Status-screen captures on hold** (her ruling:
+  no client messaging; the "From the team" block will change); 06b is held.
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
