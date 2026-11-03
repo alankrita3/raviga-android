@@ -148,10 +148,13 @@ object StatusCopy {
         "version_conflict" -> "The brief changed elsewhere. Reload and try again."
         // The server's message says which case (expired, used, brief changed; contract 11 step 3), as on iOS.
         "quote_stale" -> fallback ?: "The brief changed since this quote. Get a new quote."
-        "document_locked" -> "This brief is locked because it has been submitted."
-        "github_user_not_found" -> "No GitHub user with that name. Check the spelling."
+        // R-097 (the PM's copy, as iOS): each with its next step.
+        "document_locked" -> "This brief is submitted and locked. Open the project to follow it."
+        "github_user_not_found" -> "That GitHub username doesn't exist. Check the spelling and try again."
         "invalid_argument" -> fallback ?: "Something in the form isn't right."
-        "invalid_state" -> fallback ?: "That isn't possible at this stage."
+        // R-097: the server's invalid_state (the screens that can meet it reload the project on it); the app's own
+        // invalid_state lines (httpStatus 0, "Write the brief first.") keep their words.
+        "invalid_state" -> fallback ?: "That step isn't available any more. The project has been refreshed."
         "revision_limit_reached" -> "Your included revision rounds are used up. Email us and we can add more."
         "active_projects" -> "Finish or cancel your active projects before deleting your data."
         "aws_role_not_ready" -> "AWS hasn't finished creating the role yet. Give it a minute and check again."
@@ -164,7 +167,7 @@ object StatusCopy {
         "not_found" -> "That isn't on this account any more. Go back and refresh."
         "internal" -> "Something went wrong on our side. Try again in a moment."
         "conflict" -> "That was already sent. Refresh to see the latest."
-        "permission_denied" -> "That isn't allowed for this account."
+        "permission_denied" -> "That isn't allowed for this account. Write to support if you think this is a mistake."
         "job_timeout" -> "This is taking longer than usual. Check back in a few minutes."
         // QA O6: a job whose result ran out (after the one automatic rerun): iOS's line, with the next step.
         "job_expired" -> "This is taking longer than usual. Try again."

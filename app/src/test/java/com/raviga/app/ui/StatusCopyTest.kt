@@ -101,13 +101,24 @@ class StatusCopyTest {
         assertEquals("Something went wrong on our side. Try again in a moment.", StatusCopy.errorLine("internal", "Internal Server Error"))
         assertEquals("That isn't on this account any more. Go back and refresh.", StatusCopy.errorLine("not_found", null))
         assertEquals("That was already sent. Refresh to see the latest.", StatusCopy.errorLine("conflict", null))
-        assertEquals("That isn't allowed for this account.", StatusCopy.errorLine("permission_denied", null))
+        assertEquals("That isn't allowed for this account. Write to support if you think this is a mistake.", StatusCopy.errorLine("permission_denied", null))
+    }
+
+    /** R-097 (the PM's copy, as iOS): next steps for four errors. */
+    @Test fun fourErrorsSayWhatToDoNext() {
+        assertEquals("This brief is submitted and locked. Open the project to follow it.", StatusCopy.errorLine("document_locked", null))
+        assertEquals("That GitHub username doesn't exist. Check the spelling and try again.", StatusCopy.errorLine("github_user_not_found", null))
+        assertEquals(
+            "That step isn't available any more. The project has been refreshed.",
+            com.raviga.app.data.api.ApiException("invalid_state", 409, "Only a submitted project can be cancelled").userLine(),
+        )
+        assertEquals("That isn't allowed for this account. Write to support if you think this is a mistake.", StatusCopy.errorLine("permission_denied", null))
     }
 
     /** invalid_state, as iOS: the server's team-facing text is not shown; the app's own words are. */
     @Test fun invalidStateFromTheServerReadsPlainly() {
         val server = com.raviga.app.data.api.ApiException("invalid_state", 409, "Only a submitted project can be approved")
-        assertEquals("That isn't possible at this stage.", server.userLine())
+        assertEquals("That step isn't available any more. The project has been refreshed.", server.userLine())
         val local = com.raviga.app.data.api.ApiException("invalid_state", message = "Write the brief first.")
         assertEquals("Write the brief first.", local.userLine())
         assertEquals("Couldn't save the draft", com.raviga.app.data.UserFacingException("Couldn't save the draft").userLine())
