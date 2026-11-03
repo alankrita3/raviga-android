@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import androidx.lifecycle.createSavedStateHandle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,7 +54,7 @@ import com.raviga.app.ui.theme.Ink
 @Composable
 fun GoLiveScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
-    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId) }
+    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val me by container.session.me.collectAsStateWithLifecycle()
     LifecycleResumeEffect(vm) {

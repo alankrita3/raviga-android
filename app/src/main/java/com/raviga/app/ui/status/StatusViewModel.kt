@@ -16,7 +16,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /** Shared by the status and delivery screens: one project, its comments, the client's actions on it. */
-class StatusViewModel(private val container: AppContainer, val projectId: String) : ViewModel() {
+class StatusViewModel(
+    private val container: AppContainer,
+    val projectId: String,
+    /** Review #3 (Android): the unsent reply survives the app being ended or the screen being rebuilt. */
+    private val saved: androidx.lifecycle.SavedStateHandle,
+) : ViewModel() {
 
     data class State(
         val project: Project? = null,
@@ -28,7 +33,7 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
         val config: com.raviga.app.data.api.AppConfig = com.raviga.app.data.api.AppConfig(),
     )
 
-    private val _state = MutableStateFlow(State())
+    private val _state = MutableStateFlow(State(reply = saved.get<String>(KEY_REPLY).orEmpty()))
     val state: StateFlow<State> = _state.asStateFlow()
 
     init {
@@ -77,7 +82,10 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
         }
     }
 
-    fun setReply(text: String) = _state.update { it.copy(reply = text) }
+    fun setReply(text: String) {
+        saved[KEY_REPLY] = text
+        _state.update { it.copy(reply = text) }
+    }
 
     fun sendReply() {
         val text = _state.value.reply.trim()
@@ -85,7 +93,7 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
             runCatching { container.projects.addComment(projectId, text) }
-                .onSuccess { _state.update { it.copy(reply = "") } }
+                .onSuccess { saved.remove<String>(KEY_REPLY); _state.update { it.copy(reply = "") } }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
         }
@@ -113,5 +121,9 @@ class StatusViewModel(private val container: AppContainer, val projectId: String
                 }
             _state.update { it.copy(busy = false) }
         }
+    }
+
+    private companion object {
+        const val KEY_REPLY = "reply"
     }
 }

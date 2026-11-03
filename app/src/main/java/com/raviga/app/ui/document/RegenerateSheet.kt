@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +36,7 @@ fun RegenerateSheet(
     onRegenerate: (String) -> Unit,
 ) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var instruction by remember { mutableStateOf("") }
+    var instruction by rememberSaveable { mutableStateOf("") }   // review #3: kept through a rebuild
     ModalBottomSheet(
         onDismissRequest = { if (busyMessage == null) onDismiss() },
         sheetState = sheet,

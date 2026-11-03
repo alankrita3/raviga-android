@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import androidx.lifecycle.createSavedStateHandle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,7 +76,7 @@ import com.raviga.app.ui.components.tile
 @Composable
 fun DeliveryScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
-    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId) }
+    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val me by container.session.me.collectAsStateWithLifecycle()
     LifecycleResumeEffect(vm) {

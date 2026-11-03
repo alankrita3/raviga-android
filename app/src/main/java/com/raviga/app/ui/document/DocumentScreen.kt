@@ -1,5 +1,6 @@
 package com.raviga.app.ui.document
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -542,8 +543,9 @@ private fun inputSource(input: com.raviga.app.data.drafts.LocalInput): String = 
 
 @Composable
 private fun EditableTitle(title: String, editable: Boolean, onSave: (String) -> Unit) {
-    var editing by remember { mutableStateOf(false) }
-    var text by remember(title) { mutableStateOf(title) }
+    // Review #3 (Android): a title being typed survives a font-size change, split screen or the app being ended.
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var text by rememberSaveable(title) { mutableStateOf(title) }
     val focus = remember { FocusRequester() }
     if (editing) {
         BasicTextField(

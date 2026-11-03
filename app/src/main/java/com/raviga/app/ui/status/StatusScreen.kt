@@ -1,5 +1,6 @@
 package com.raviga.app.ui.status
 
+import androidx.lifecycle.createSavedStateHandle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -57,7 +58,7 @@ import com.raviga.app.util.Money
 @Composable
 fun StatusScreen(nav: NavController, projectId: String) {
     val container = LocalAppContainer.current
-    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId) }
+    val vm: StatusViewModel = viewModel(key = "status_$projectId") { StatusViewModel(container, projectId, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     LifecycleResumeEffect(vm) {
         vm.onVisible()
