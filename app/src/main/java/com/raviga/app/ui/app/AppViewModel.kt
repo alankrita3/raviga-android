@@ -1,5 +1,6 @@
 package com.raviga.app.ui.app
 
+import com.raviga.app.data.repo.StartupCalls
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raviga.app.data.api.ApiException
@@ -86,7 +87,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             if (!session.agreed) {
                 // R-056: no identity yet, and none until Agree. Welcome and Home work from the phone; /config is public.
                 try {
-                    if (tooOld(session.refreshConfig())) return@launch
+                    if (tooOld(StartupCalls.capped { session.refreshConfig() })) return@launch
                 } catch (e: ApiException) {
                     if (e.code == ApiException.UPGRADE_REQUIRED) {
                         _state.update { it.copy(ready = true, upgradeRequired = true) }
@@ -97,8 +98,34 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _state.update { it.copy(ready = true, startRoute = start, restartAt = if (restart) start else null) }
                 return@launch
             }
+            // Review #13 (the PM's decision, as iOS R2): an account cached here opens at once and refreshes behind it.
+            if (StartupCalls.opensFromCache(session.agreed, session.isRegistered, session.me.value != null)) {
+                val cachedMe = session.me.value
+                val start = when {
+                    !prefs.welcomeDone -> Routes.WELCOME
+                    cachedMe != null && session.needsLegal(cachedMe, session.config.value) -> Routes.TERMS
+                    else -> Routes.HOME
+                }
+                _state.update { it.copy(ready = true, startRoute = start, restartAt = if (restart) start else null) }
+                try {
+                    val me = session.completeConsent(session.ensureRegistered())
+                    if (tooOld(session.config.value)) return@launch
+                    // New terms found behind the open screen: shown over it, as on a return to the front.
+                    if (start == Routes.HOME && session.needsLegal(me, session.config.value)) _state.update { it.copy(legalDue = true) }
+                    launch { runCatching { container.push.syncIfNeeded() } }
+                    launch { runCatching { container.projects.refreshAll(force = false) } }
+                    launch { runCatching { container.credits.refresh(force = false) } }
+                } catch (e: ApiException) {
+                    if (e.code == ApiException.UPGRADE_REQUIRED) _state.update { it.copy(ready = true, upgradeRequired = true) }
+                    // Anything else (offline, slow): the phone's copy stands; screens refresh when they can.
+                } catch (_: Exception) {
+                }
+                return@launch
+            }
             try {
-                val me = session.completeConsent(session.ensureRegistered())
+                // Nothing cached: each call gets 5 s, and a slow one shows the offline line with Try again (review #13).
+                val registered = session.ensureRegistered(perCallMs = StartupCalls.CAP_MS)
+                val me = StartupCalls.capped { session.completeConsent(registered) }
                 if (tooOld(session.config.value)) return@launch
                 launch { runCatching { container.push.syncIfNeeded() } }
                 launch { runCatching { container.projects.refreshAll(force = false) } }

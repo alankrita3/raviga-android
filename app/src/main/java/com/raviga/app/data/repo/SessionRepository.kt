@@ -92,14 +92,18 @@ class SessionRepository(
         guard.agreed = p.agreedTermsVersion != null || p.termsVersionAccepted != null || _me.value?.consent?.terms != null
     }
 
-    /** Registers the device on first run; afterwards just refreshes [config] and [me]. */
-    suspend fun ensureRegistered(): Me = registerLock.withLock {
+    /**
+     * Registers the device on first run; afterwards just refreshes [config] and [me]. [perCallMs]: each call capped
+     * (review #13: a cold start with nothing cached), a slow one failing as offline.
+     */
+    suspend fun ensureRegistered(perCallMs: Long? = null): Me = registerLock.withLock {
+        suspend fun <T> call(block: suspend () -> T): T = if (perCallMs == null) block() else StartupCalls.capped(perCallMs, block)
         if (!sessionStore.isRegistered) {
-            val response = apiCall(json) { api.registerDevice(DeviceInfo.registerRequest(sessionStore.installId)) }
+            val response = call { apiCall(json) { api.registerDevice(DeviceInfo.registerRequest(sessionStore.installId)) } }
             sessionStore.set(response.clientId, response.accessToken, response.recoveryKey)
         }
-        refreshConfig()
-        refreshMe()
+        call { refreshConfig() }
+        call { refreshMe() }
     }
 
     /**
