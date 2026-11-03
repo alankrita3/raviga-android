@@ -1,5 +1,6 @@
 package com.raviga.app.ui.account
 
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
@@ -142,13 +143,18 @@ fun MoveToAnotherPhoneScreen(nav: NavController) {
 @Composable
 private fun RecoveryKeySection(state: MovePhoneViewModel.State, vm: MovePhoneViewModel) {
     val copy = rememberCopier()
-    // R-092 #14 (iOS review): while the key is shown in full, it stays out of Recents' snapshot and screen recordings.
+    // R-092 #14 (iOS review): once the key has been shown in full, the screen stays out of Recents' snapshot and screen
+    // recordings until it closes (R-094 P2-14: kept after Hide too, so the last frame with the key is never captured).
     val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
-    androidx.compose.runtime.DisposableEffect(state.keyVisible, activity) {
+    var revealed by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (state.keyVisible) revealed = true
+    androidx.compose.runtime.DisposableEffect(revealed, activity) {
         val window = activity?.window
-        if (state.keyVisible) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        if (revealed) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
     }
+    // R-094 P2-14 (iOS review 2): leaving the app (Home, Recents, another app) masks the key again.
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_PAUSE) { vm.hideKey() }
     SectionHeading("Your recovery key")
     Spacer(Modifier.height(10.dp))
     val key = state.recoveryKey

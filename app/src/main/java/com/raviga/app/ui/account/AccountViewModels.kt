@@ -116,6 +116,11 @@ class MovePhoneViewModel(
         viewModelScope.launch { container.prefs.setRecoveryKeyShown() }
     }
 
+    /** R-094 P2-14: masked again when the app leaves the front. */
+    fun hideKey() {
+        if (_state.value.keyVisible) _state.update { it.copy(keyVisible = false) }
+    }
+
     fun copied() {
         _state.update { it.copy(copied = true) }
         viewModelScope.launch {
