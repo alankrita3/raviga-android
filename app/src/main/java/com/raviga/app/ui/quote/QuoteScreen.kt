@@ -211,7 +211,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     Text(config.quote.timelineNote, style = RaType.secondary, color = Ink.graphite)
                     quote.expiresAt?.let {
                         Spacer(Modifier.height(4.dp))
-                        Text("Quote valid until ${Time.shortDate(it)}.", style = RaType.caption, color = Ink.graphite)
+                        Text("This price holds until ${Time.shortDate(it)}.", style = RaType.caption, color = Ink.graphite) // the PM, 2026-11-03; iOS adds the same line
                     }
                 }
             }
