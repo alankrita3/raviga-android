@@ -58,6 +58,10 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   The first set (RA-AYVR3V) is in `superseded-RA-AYVR3V/`; its account went with an uninstall.
   - Her review fixes, pushed: f4b8f94 (the quote's lock line on one line, centred with an inline lock; 13 to 12sp,
     then balanced wrap) and 0838142 ("This price holds until 17 Nov.", the PM's wording; iOS 605c803 added the same).
+- **R-100 on main (1477bdd):** "Price valid until <date>." small grey at the end of the quote; expired → "Get a new
+  quote" + "Prices are updated every three months." (as iOS a5f8fc9). Supersedes 0838142's line. For the next build.
+- **Waiting on the PM:** her 05-quote retake (the paragraph cut at the bar edge). The quote can't be reopened after
+  submit, so it's (a) design crops, free, or (b) a new draft on the same account with the R-100 build, about $0.25.
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
