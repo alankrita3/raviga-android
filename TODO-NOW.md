@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 12:58.
+The PM reads this file if the session has closed. Updated 2026-11-03 13:01.
 
 ## In flight
 
@@ -13,8 +13,14 @@ The PM reads this file if the session has closed. Updated 2026-11-03 12:58.
 - **Build 8 uploaded to Play's internal track as a draft (2026-11-03 12:53, her yes via the PM).** build-8 merged
   into main (0e5f114). Draft "8 internal test": versionCode 8, status draft, en-US release notes (446 characters),
   sha256 79de35d565a8…, dev stage. It replaced the never-rolled-out versionCode 1 draft. Nothing is rolled out.
-  - **Blocked on her:** the rollout click and the tester list (administrator@miraquill.com only, for now). Exact
-    clicks are in `docs/store/internal-test.md` sections 3 and 4. Others are added only when she names them.
+  - **The PM (13:00): we do the Console clicks in Chrome ourselves.** These are: (1) the rollout, (2) the tester list
+    with administrator@miraquill.com, (3) Data safety from `docs/store/data-safety.md`, (4) license testing,
+    RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
+  - **Blocked on her (13:00):**
+    - Chrome's Raviga profile (Profile 40) opened on the Console sign-up page behind a "This profile will be managed"
+      (miraquill.com) consent. Hers: accept it, or sign the profile in to the owner account. Nothing was clicked.
+    - Steps 1–4 need her yes typed in this session's terminal, not relayed. They publish, submit or change settings.
+  - The Claude extension isn't connected yet. Clicking its toolbar icon is ours, once the dialog is gone.
   - `docs/store/data-safety.md`: the Play form's answers in order (hers to enter).
 - **Next step (mine):** none until the PM reports her rollout. Then fix whatever her pass on the Play build turns up,
   on the PM's word. The next upload is versionCode 9 (+1 per upload).
