@@ -1,5 +1,6 @@
 package com.raviga.app.ui.onboarding
 
+import com.raviga.app.ui.nav.rememberIsOnTop
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,6 +50,7 @@ fun AiConsentScreen(nav: NavController) {
     var allow by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val onTop = nav.rememberIsOnTop()
     val providers = config.ai.providers.ifEmpty { listOf("our AI providers") }
 
     ScreenScaffold(
@@ -61,8 +63,11 @@ fun AiConsentScreen(nav: NavController) {
                     scope.launch {
                         runCatching { container.session.setAiProcessing(true) }
                             .onSuccess {
-                                nav.previousBackStackEntry?.savedStateHandle?.set("ai_consent_granted", true)
-                                nav.popBackStack()
+                                // Review #18: if Back already left this screen, the answer mustn't pop the one under it.
+                                if (onTop()) {
+                                    nav.previousBackStackEntry?.savedStateHandle?.set("ai_consent_granted", true)
+                                    nav.popBackStack()
+                                }
                             }
                             .onFailure { error = it.userLine() }
                         busy = false
