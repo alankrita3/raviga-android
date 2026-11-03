@@ -156,8 +156,8 @@ class StatusCopyTest {
     /** As iOS a04dc61: a single credit is never "1 credits". */
     @Test
     fun `one credit reads as one`() {
-        assertEquals("1 credit", StatusCopy.credits(1))
-        assertEquals("15 credits", StatusCopy.credits(15))
-        assertEquals("0 credits", StatusCopy.credits(0))
+        assertEquals("1 credit", com.raviga.app.util.Money.credits(1))
+        assertEquals("15 credits", com.raviga.app.util.Money.credits(15))
+        assertEquals("0 credits", com.raviga.app.util.Money.credits(0))
     }
 }
