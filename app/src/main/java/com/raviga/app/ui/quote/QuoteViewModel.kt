@@ -94,6 +94,10 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 else -> staleMessage
             }
         val submitted get() = submittedProjectId != null
+        /** R-094 P2-6: a send with this quote is out and unanswered; a retry sends it as it was. */
+        val held get() = draft?.holdsSentSubmit == true
+        /** The GitHub name the held send carries (shown in the field, as iOS shows it). */
+        val heldName: String? get() = draft?.sentSubmit?.takeIf { held }?.submit?.githubUsername
     }
 
     private val _state = MutableStateFlow(State())
@@ -111,10 +115,18 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     private var submitKey: Pair<String, String>? = null
 
     /** QA H9: a brief over the section or total limit is refused before the call, in plain words. */
+    /** A brief past the limits isn't quoted (the server would refuse it). */
     private fun briefTooLong(): Boolean {
         val doc = _state.value.draft?.document ?: return false
         val limits = container.session.config.value.limits
         val line = BriefLimits.problem(doc, limits.textInputMaxChars, limits.documentMaxChars) ?: return false
+        _state.update { it.copy(error = line) }
+        return true
+    }
+
+    /** What stops a submit before it starts; shown above the button. */
+    private fun cantSubmit(): Boolean {
+        val line = submitProblem(_state.value, container.session.config.value.limits) ?: return false
         _state.update { it.copy(error = line) }
         return true
     }
@@ -268,7 +280,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     fun submit() {
         // R-092 #21 (iOS review): two taps in one frame start one submit.
         if (_state.value.submitting || _state.value.submittedProjectId != null) return
-        if (briefTooLong()) return
+        if (cantSubmit()) return
         submitNow()
     }
 
@@ -276,16 +288,14 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val s = _state.value
         val draft = s.draft ?: return@withAiConsent
         val github = s.github.trim()
-        if (github.isBlank()) {
-            _state.update { it.copy(error = "Enter your GitHub username so we can hand over the code.") }
-            return@withAiConsent
-        }
+        if (cantSubmit()) return@withAiConsent
         // Set before the coroutine starts, so a second tap already sees it.
         _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
             runCatching {
                 if (s.isResubmit) {
-                    if (github != s.me?.deliveryTargets?.githubUsername) container.session.setDeliveryTargets(github, null)
+                    // A held retry sends nothing new, so the account's target isn't touched either (R-097 #4).
+                    if (!s.held && github != s.me?.deliveryTargets?.githubUsername) container.session.setDeliveryTargets(github, null)
                     container.drafts.resubmit(draft.id, keyFor(draft.quoteToken.orEmpty()))
                 } else {
                     container.drafts.submit(draft.id, github, null, keyFor(draft.quoteToken.orEmpty()))
@@ -330,6 +340,18 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     companion object {
+        const val NO_GITHUB = "Enter your GitHub username so we can hand over the code."
+
+        /**
+         * R-097 #4 (review 2): a brief past the limits, or a blank GitHub name, stops a submit. A held retry is never
+         * stopped by either: it sends the body it first sent, not the current brief or field.
+         */
+        internal fun submitProblem(s: State, limits: com.raviga.app.data.api.LimitsConfig): String? {
+            if (s.held) return null
+            s.draft?.document?.let { doc -> BriefLimits.problem(doc, limits.textInputMaxChars, limits.documentMaxChars)?.let { return it } }
+            return if (s.github.isBlank()) NO_GITHUB else null
+        }
+
         /**
          * What the screen shows after a submit failed and wasn't turned into a project.
          * - quote_stale (QA I3, as iOS): the server's message says which case (expired, used, brief changed); the
