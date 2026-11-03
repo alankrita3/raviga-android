@@ -96,7 +96,12 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
     val context = LocalContext.current
     val config by container.session.config.collectAsStateWithLifecycle()
     // Going to the background (another app, the lock screen, being killed later): save what's on screen now.
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.flush() }
+    // Review #14 (Android): dictation stops first. In the background Android cuts the microphone (while-in-use), so
+    // the recogniser would restart on silence and the note's elapsed time keep counting; what was heard is kept.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (vm.state.value.listening) vm.stopListening()
+        vm.flush()
+    }
 
     // Upload: the system picker, filtered to what the backend reads. "text/*" catches
     // Markdown files that providers label loosely; anything unreadable is refused politely.
