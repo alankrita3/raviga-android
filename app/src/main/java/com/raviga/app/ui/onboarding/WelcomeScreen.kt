@@ -70,7 +70,8 @@ private val steps = listOf(
         "Say it, type it, or upload a document you already have. We turn it into a clear brief you can edit.",
         Picture.Describe,
     ),
-    Step("See the price first", "You get a quote and a timeline before anything starts. Nothing is charged until you submit.", Picture.Quote),
+    // R-103: submitting is free; the price is paid once the project is accepted (wording follows the quote's line).
+    Step("See the price first", "You get a quote and a timeline before anything starts. You pay only once we accept it.", Picture.Quote),
     // The founder's exact wording (iOS 489412c); don't edit it without her approval.
     Step(
         "Built by AI, checked by experts",
