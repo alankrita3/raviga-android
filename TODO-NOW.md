@@ -62,11 +62,13 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   quote" + "Prices are updated every three months." (as iOS a5f8fc9). Supersedes 0838142's line. For the next build.
 - **03b-speak done (her pick for screen 1):** real Speak screen via the debug-only scripted dictation (8fa0c34):
   `files/dictation-script.txt` in com.raviga.app.debug (run-as), deleted after. Mic permission back to not granted.
-- **05-quote retake, option (b) approved (Claude credit), waits on backend's R-101 on dev** (the plain-words quote
-  explanation). Then: R-100 release build (dev) installed over the screenshot app (keeps the account), a new draft with
-  the salon text, title edited to "Salon Booking and Payments App for Austin Salons" before quoting, quotes until 30,
-  shot so the visible area ends at a gap; to raviga-design, copy the PM. **Status-screen captures on hold** (her ruling:
-  no client messaging; the "From the team" block will change); 06b is held.
+- **05-quote retaken after R-101 (done ~22:30):** same account, a second local draft (same title) quoted at 30 (25, 29,
+  30), shot about 30px below the top so the paragraph ends above Submit. Old shot in `superseded-RA-TGQ2B0-quote/`. The
+  second draft stays on the phone for free re-shots of the quote. **Status-screen captures on hold** (no client
+  messaging; R-103 contract coming); 06b is held.
+- **Sandbox purchase blockers (backend, 22:2x):** prod accepts app01d8cd2f54, but purchases won't book until the
+  RevenueCat prod webhook secret is in RevenueCat and prod has a RevenueCat v2 key (backend will say). Plus the license
+  tester (owner).
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
