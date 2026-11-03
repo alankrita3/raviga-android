@@ -116,7 +116,10 @@ private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, on
     Row(
         Modifier
             .tile(padding = 16.dp)
-            .semantics(mergeDescendants = true) { contentDescription = if (step.done) "Done: ${step.title}" else "Step $number: ${step.title}" },
+            // Review #20: the description replaces the tile's text for TalkBack, so it carries the detail too (the transfer's state).
+            .semantics(mergeDescendants = true) {
+                contentDescription = (if (step.done) "Done: ${step.title}" else "Step $number: ${step.title}") + ". ${step.detail}"
+            },
         verticalAlignment = Alignment.Top,
     ) {
         Box(Modifier.size(28.dp).clip(CircleShape).background(if (step.done) Ink.link else Ink.ink), contentAlignment = Alignment.Center) {

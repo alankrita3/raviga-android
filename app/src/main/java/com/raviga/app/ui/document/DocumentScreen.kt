@@ -565,7 +565,7 @@ private fun EditableTitle(title: String, editable: Boolean, onSave: (String) -> 
             title,
             style = RaType.title,
             color = Ink.ink,
-            modifier = Modifier.fillMaxWidth().then(if (editable) Modifier.clickable { editing = true } else Modifier),
+            modifier = Modifier.fillMaxWidth().then(if (editable) Modifier.clickable(onClickLabel = "Rename", role = Role.Button) { editing = true } else Modifier),   // review #20
         )
     }
 }

@@ -74,6 +74,13 @@ class AccessibilityTest {
         rule.onNodeWithText("Send").assertTouchHeightIsEqualTo(48.dp)
     }
 
+    /** Review #20: a row that opens something says it is a button. */
+    @Test fun aRowThatOpensSomethingIsAButton() {
+        rule.setContent { RaRow(title = "Delivery targets", onClick = {}) }
+        val role = rule.onNode(androidx.compose.ui.test.hasClickAction()).fetchSemanticsNode().config.let { if (SemanticsProperties.Role in it) it[SemanticsProperties.Role] else null }
+        assertEquals(androidx.compose.ui.semantics.Role.Button, role)
+    }
+
     /** Content descriptions on the text field's node and the plain nodes inside it: what TalkBack reads with the field. */
     private fun names(): List<String> {
         fun collect(node: androidx.compose.ui.semantics.SemanticsNode): List<String> =

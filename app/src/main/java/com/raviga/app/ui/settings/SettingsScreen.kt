@@ -1,5 +1,7 @@
 package com.raviga.app.ui.settings
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onLongClick
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -120,15 +122,16 @@ fun SettingsScreen(nav: NavController) {
                 chevron = false,
                 onClick = { com.raviga.app.ui.emailLink(context, legal.supportEmail, "Raviga support" + (clientId?.let { " ($it)" } ?: "")) },
             )
-            // Support asks for this; long-press copies it.
+            // Support asks for this; long-press copies it. Review #20: TalkBack offers the same as "double-tap and hold to
+            // copy" (a raw pointer gesture alone was out of its reach).
             clientId?.let { id ->
                 val copy = com.raviga.app.ui.components.rememberCopier()
                 RaRow(
                     title = "Support ID",
                     subtitle = id,
-                    modifier = Modifier.pointerInput(id) {
-                        detectTapGestures(onLongPress = { copy(id, false) })
-                    },
+                    modifier = Modifier
+                        .pointerInput(id) { detectTapGestures(onLongPress = { copy(id, false) }) }
+                        .semantics { onLongClick(label = "Copy") { copy(id, false); true } },
                 )
             }
             Spacer(Modifier.height(32.dp))

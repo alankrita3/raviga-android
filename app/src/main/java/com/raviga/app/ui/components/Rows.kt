@@ -1,5 +1,6 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,7 @@ fun RaRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)   // review #20
                 .padding(horizontal = horizontalPadding, vertical = Ra.rowPadding + 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
