@@ -99,16 +99,19 @@ class DraftStore(
         dir.mkdirs()
         val bytes = sealer.seal(json.encodeToString(LocalDraft.serializer(), draft).toByteArray(Charsets.UTF_8))
         val tmp = File(dir, "${draft.id}.${UUID.randomUUID()}.tmp")
-        tmp.writeBytes(bytes)
+        // R-092 #4: a full disk fails here; say so in words, not as "Something went wrong". The saved copy is untouched.
+        try { tmp.writeBytes(bytes) } catch (e: java.io.IOException) { tmp.delete(); throw com.raviga.app.data.UserFacingException(SAVE_FAILED) }
         val target = File(dir, "${draft.id}$EXT")
         if (!tmp.renameTo(target)) {
             target.delete()
-            if (!tmp.renameTo(target)) { tmp.delete(); throw com.raviga.app.data.UserFacingException("Couldn't save the draft on this phone. Free some space and try again.") }
+            if (!tmp.renameTo(target)) { tmp.delete(); throw com.raviga.app.data.UserFacingException(SAVE_FAILED) }
         }
     }
 
     companion object {
         private const val EXT = ".draft"
+        /** A save that failed (a full disk), in iOS's words (bb1f7d3), said by Capture and the brief alike. */
+        const val SAVE_FAILED = "Couldn't save your drafts on this phone. Free up some storage, then try again."
         fun newId(): String = "ld_" + UUID.randomUUID().toString().replace("-", "").take(20)
     }
 }

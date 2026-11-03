@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
+import com.raviga.app.data.drafts.DraftStore
 import com.raviga.app.data.drafts.WorkingNotes
 import kotlinx.coroutines.launch
 
@@ -515,7 +516,7 @@ class CaptureViewModel(
                     // and the next change tries again.
                     !saveFailureShown -> {
                         saveFailureShown = true
-                        _state.update { it.copy(error = "Couldn't save your notes on this phone. Free some space; they stay here meanwhile.") }
+                        _state.update { it.copy(error = DraftStore.SAVE_FAILED) }
                     }
                 }
             }
