@@ -35,6 +35,12 @@ class DraftStore(
     private val _saveFailing = MutableStateFlow(false)
     val saveFailing: StateFlow<Boolean> = _saveFailing.asStateFlow()
 
+    /** Moves on at each [wipe] (R-098 P3-5). */
+    @Volatile private var wipes = 0
+
+    /** A write asked for before Delete everything; refused (R-098 P3-5). */
+    class Wiped : IllegalStateException("The drafts on this phone were deleted.")
+
     /** Files that could not be opened (Keystore key lost, e.g. after a factory reset of credentials). */
     @Volatile var unreadable: Int = 0
         private set
@@ -71,18 +77,30 @@ class DraftStore(
         _drafts.value.values.firstOrNull { it.serverProjectId == serverProjectId }
 
     /** Applies [change] to the draft and writes it; returns the result. */
-    suspend fun update(id: String, change: (LocalDraft) -> LocalDraft): LocalDraft = lock.withLock {
+    suspend fun update(id: String, change: (LocalDraft) -> LocalDraft): LocalDraft {
+        val asked = wipes
+        return lock.withLock { updateLocked(asked, id, change) }
+    }
+
+    private suspend fun updateLocked(asked: Int, id: String, change: (LocalDraft) -> LocalDraft): LocalDraft {
+        if (asked != wipes) throw Wiped()
         val before = _drafts.value[id] ?: throw NoSuchElementException("No draft $id")
         val after = change(before)
         write(after)
         _drafts.update { it + (after.id to after) }
-        after
+        return after
     }
 
-    suspend fun create(draft: LocalDraft): LocalDraft = lock.withLock {
+    suspend fun create(draft: LocalDraft): LocalDraft {
+        val asked = wipes
+        return lock.withLock { createLocked(asked, draft) }
+    }
+
+    private suspend fun createLocked(asked: Int, draft: LocalDraft): LocalDraft {
+        if (asked != wipes) throw Wiped()
         write(draft)
         _drafts.update { it + (draft.id to draft) }
-        draft
+        return draft
     }
 
     suspend fun delete(id: String) = lock.withLock {
@@ -92,6 +110,10 @@ class DraftStore(
 
     /** Delete my data: every draft on this phone goes. */
     suspend fun wipe() = lock.withLock {
+        // R-098 P3-5 (iOS review 3): writes asked for before this wipe are refused when their turn comes, so a save in
+        // flight (a note's autosave, Capture leaving) can't bring a draft back after Delete everything. Every write
+        // and the wipe go through this one lock, in order.
+        wipes++
         withContext(Dispatchers.IO) { dir.listFiles()?.forEach { it.delete() } }
         _drafts.value = emptyMap()
         unreadable = 0
