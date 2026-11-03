@@ -585,7 +585,8 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
     val draft = state.draft
     when {
         project?.contentDeletedAt != null && draft != null -> Text(
-            "${StatusCopy.rowLine(project)}. Raviga deleted its copy; this one is kept only on this phone.",
+            // v0.10.0: the statusLine ends with its own full stop ("Approved by you."); never two.
+            "${StatusCopy.rowLine(project).trimEnd().trimEnd('.')}. Raviga deleted its copy; this one is kept only on this phone.",
             style = RaType.secondary, color = Ink.graphite,
         )
         project != null && project.submission?.submittedAt != null -> Text(
