@@ -44,4 +44,14 @@ class HeldRetryTest {
         assertEquals(QuoteViewModel.NO_GITHUB, QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short, github = " "), limits))
         assertNull(QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short, github = "octocat"), limits))
     }
+
+    /** R-097 #5 (the PM's words): while held, the quote screen says what goes. */
+    @Test fun whileHeldTheScreenSaysTheFirstSubmittedBriefGoes() {
+        assertEquals(
+            "This sends the brief as you first submitted it. Your later edits stay on this phone as a newer version.",
+            QuoteViewModel.State(draft = draft).heldLine,
+        )
+        assertNull("nothing held: no line", QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldLine)
+        assertNull(QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldName)
+    }
 }

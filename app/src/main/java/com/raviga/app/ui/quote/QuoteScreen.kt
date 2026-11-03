@@ -199,6 +199,11 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 Text(line, style = RaType.secondary, color = Ink.amber)
                 Spacer(Modifier.height(20.dp))
             }
+            // R-097 #5: a submit already sent with this quote goes again exactly as it was.
+            state.heldLine?.let { line ->
+                Text(line, style = RaType.secondary, color = Ink.graphite)
+                Spacer(Modifier.height(20.dp))
+            }
 
             val weeks = timelineText(quote.timeline?.minWeeks ?: 0, quote.timeline?.maxWeeks ?: 0, quote.estimatedWorkingDays)
             Row {
@@ -251,8 +256,10 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             Text("GitHub username", style = RaType.secondary, color = Ink.graphite)
             Spacer(Modifier.height(6.dp))
             RaTextField(
-                value = state.github,
+                // While a send is held, the name it carries, not editable (as iOS): that is what goes.
+                value = state.heldName ?: state.github,
                 onValueChange = { vm.setGithub(it) },
+                enabled = state.heldName == null,
                 placeholder = "octocat",
                 label = "GitHub username",
                 singleLine = true,

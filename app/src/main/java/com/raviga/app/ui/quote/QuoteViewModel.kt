@@ -98,6 +98,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val held get() = draft?.holdsSentSubmit == true
         /** The GitHub name the held send carries (shown in the field, as iOS shows it). */
         val heldName: String? get() = draft?.sentSubmit?.takeIf { held }?.submit?.githubUsername
+        /** R-097 #5 (the PM's words): what a held retry sends, said while it's held. */
+        val heldLine: String? get() = if (held) HELD_LINE else null
     }
 
     private val _state = MutableStateFlow(State())
@@ -341,6 +343,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
 
     companion object {
         const val NO_GITHUB = "Enter your GitHub username so we can hand over the code."
+        const val HELD_LINE = "This sends the brief as you first submitted it. Your later edits stay on this phone as a newer version."
 
         /**
          * R-097 #4 (review 2): a brief past the limits, or a blank GitHub name, stops a submit. A held retry is never
