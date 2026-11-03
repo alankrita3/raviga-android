@@ -1,33 +1,31 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 09:55.
+The PM reads this file if the session has closed. Updated 2026-11-03 10:20.
 
 ## In flight
 
-- **Build 8 gate (`~/Documents/Raviga PM/qa/results/2026-11-02-android-gate.md`): every line Android can sign is
-  signed** at 569679c. Open: row 37 (RevenueCat), voice (an Android 13+ phone), the PM's review sign-off, a hands-on
-  TalkBack pass (the label audit of 21 screens found nothing; injected gestures can't drive TalkBack), and her calls:
-  release notes OK, Data safety entry, versionCode 8 at the build-8 commit, the upload. No build without her yes.
-- **Done today:** R-092, R-093, R-094, R-097, R-098; the release-build smoke, recovery and performance runs; the six Play
-  screenshots re-captured in `~/Downloads/raviga-play-screenshots/build8/` (the 10-29 set kept).
+- **Android is code-complete for build 8 (the PM, 2026-11-03).** Gate file
+  `~/Documents/Raviga PM/qa/results/2026-11-02-android-gate.md`: 23 signed, 7 open, all hers.
+  - Hers: row 37 (two lines), voice, entering Data safety, the release notes OK with versionCode 8, the upload.
+  - The TalkBack listen-through is in her pass on the internal build.
+- **Ready, waiting for the PM's go and her yes (nothing merged, built or uploaded):**
+  - Branch **build-8** (48de236, main plus one commit): versionCode 8 and the release notes' final wording.
+  - `docs/store/internal-test.md`: merge, bundle (`bundleRelease -Praviga.internalTest=true`, the dev stage until
+    prod), upload (`tools/play_release.py upload … --notes docs/store/release-notes-build8.md`, a draft release), her
+    rollout click, and the tester and license-tester list (emails for her to confirm).
+  - `docs/store/data-safety.md`: the Play form's answers in order.
+- **Next step (mine):** none until the PM's go. Then merge build-8, build the bundle, and upload with her yes.
 - **Unit tests** debug 230, release 206; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
-- **The OnePlus:** take `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, give it back after.
-- **Emulator:** started only with load under 20. Twice today it was shut down from outside this session (08:0x, 09:1x).
-- **Test accounts for backend's end-of-suite list (add to the ones below):**
-  - cl_01m6fpnbc800h195ht3jra9py4: the release-build account, with RA-WJEKYD submitted and 66 dev credits.
-  - Two short-lived accounts made by Agree on the way to Restore (release reinstalls; ids not read).
-  - cl_01m6fj8etv00c574pfwx1bzx4k: the emulator's old throwaway.
-  - cl_01m6frvq6p...: deleted through the app (review #7 check).
-  - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
-    the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
-    the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw; plus the O8 re-registrations cl_01m6ek2f8s00q5et6rse3jbjdh and
-    cl_01m6ekpkmp00ksmjy1tqf9ccab (backend has them), and the emulator's P1/P2 client cl_01m6enrsky004dc42e71h7ppv2. The recovery email on cl_01m6ehvcsp... is the SES test address. The OnePlus's demo client cl_01m63jpnye... is kept; restore it
-    on the phone with its key file in ~/Downloads after the suite. Backend deleted the emulator's R-076 client.
-  - Backend 52fe82c on dev: the H10 notice names the file (no app change); an I3 quote-expiry switch
-    (`team.py --stage dev fault quote_expiry --client <id> [--minutes N]`) for the expiry check in the suite.
-  - Row 37 (RevenueCat Play app) waits for her at the Mac (sign-ins, two yes lines here).
+- **The OnePlus:** `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, `give` after. Free now.
+- **Emulator:** started only with load under 20. It was shut down from outside this session twice today (08:0x, 09:1x).
+  The PM told the iOS sessions not to stop processes they didn't start. If it happens again, tell the PM with the time.
+- **Test accounts:** backend deleted the dev clients on 11-03 (purge 11-10): cl_01m6efysre, cl_01m6ehqybe,
+  cl_01m6ek2f8s, cl_01m6ekpkmp, cl_01m6fj8etv, cl_01m6fpnbc8 (RA-WJEKYD rejected first). cl_01m6ehvcsp… stays (the
+  OnePlus debug app's QA account). The two short-lived accounts from Agree-before-Restore were not named.
+- **After the suite (when the PM says the QA account can go):** restore the OnePlus's demo account
+  cl_01m63jpnye… with its key file in ~/Downloads (key never printed), then ask backend to delete cl_01m6ehvcsp….
 - R-074 done (61b1f5f, emulator check passed); R-075 done (bb7c264); R-076 smoke done (voice blocked).
 - **Drafts saved as you go (her bug report via the PM, 2026-11-02): done, reported to the PM.** Typed, spoken and
   uploaded notes are saved in the local draft while they're made; drafts with no brief take more notes ("+"), and
