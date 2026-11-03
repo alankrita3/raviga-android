@@ -199,6 +199,7 @@ class MovePhoneViewModel(
                             when (outcome) {
                                 is OtpAttempts.Outcome.TryAgain -> it.copy(codeCheck = next, restoreError = outcome.message, restoreOtp = "")
                                 is OtpAttempts.Outcome.NewCode -> it.copy(codeCheck = next, restoreError = outcome.message, restoreOtp = "", codeSentTo = null)
+                                is OtpAttempts.Outcome.Wait -> it.copy(restoreError = outcome.message)
                                 OtpAttempts.Outcome.Other -> it.copy(restoreError = e.userLine())
                             }
                         }
@@ -326,6 +327,7 @@ class RecoveryEmailViewModel(
                         when (outcome) {
                             is OtpAttempts.Outcome.TryAgain -> it.copy(codeCheck = next, error = outcome.message, otp = "")
                             is OtpAttempts.Outcome.NewCode -> it.copy(codeCheck = next, error = outcome.message, otp = "", sentTo = null)
+                            is OtpAttempts.Outcome.Wait -> it.copy(error = outcome.message)
                             OtpAttempts.Outcome.Other -> it.copy(error = e.userLine())
                         }
                     }

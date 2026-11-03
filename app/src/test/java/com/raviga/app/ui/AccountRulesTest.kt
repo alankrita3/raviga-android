@@ -39,10 +39,11 @@ class AccountRulesTest {
         assertEquals(5, fifth.wrong)
     }
 
-    @Test fun rateLimitedAsksForANewCodeAtOnce() {
-        val (next, outcome) = OtpAttempts().failed(ApiException(ApiException.RATE_LIMITED, 429, "slow"))
-        assertEquals(Outcome.NewCode(OtpAttempts.NEW_CODE), outcome)
-        assertEquals(OtpAttempts.LIMIT, next.wrong)
+    /** R-097 (the PM's rule, as iOS): a 429 keeps the code step and isn't counted; only the fifth wrong code ends it. */
+    @Test fun rateLimitedKeepsTheCodeStep() {
+        val (next, outcome) = OtpAttempts(2).failed(ApiException(ApiException.RATE_LIMITED, 429, "slow"))
+        assertEquals(Outcome.Wait("Too many requests. Wait a moment and try again."), outcome)
+        assertEquals("not counted as a wrong code", 2, next.wrong)
     }
 
     @Test fun otherErrorsAreNotCountedAgainstTheCode() {

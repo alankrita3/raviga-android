@@ -27,6 +27,8 @@ data class OtpAttempts(val wrong: Int = 0) {
     sealed interface Outcome {
         data class TryAgain(val message: String) : Outcome
         data class NewCode(val message: String) : Outcome
+        /** R-097: the server is busy (429): the code step and the typed code stay; try the same code shortly. */
+        data class Wait(val message: String) : Outcome
         data object Other : Outcome
     }
 
@@ -36,7 +38,9 @@ data class OtpAttempts(val wrong: Int = 0) {
             val next = OtpAttempts(wrong + 1)
             next to if (next.wrong >= LIMIT) Outcome.NewCode(NEW_CODE) else Outcome.TryAgain(TRY_AGAIN)
         }
-        ApiException.RATE_LIMITED -> OtpAttempts(LIMIT) to Outcome.NewCode(NEW_CODE)
+        // R-097 (the PM's rule, as iOS): a 429 isn't a wrong code and doesn't end the code; only the fifth wrong
+        // code (400 otp_invalid) asks for a new one. Dev allows 5 recover calls per IP a minute (send and confirm).
+        ApiException.RATE_LIMITED -> this to Outcome.Wait(WAIT)
         else -> this to Outcome.Other
     }
 
@@ -44,6 +48,7 @@ data class OtpAttempts(val wrong: Int = 0) {
         const val LIMIT = 5
         const val TRY_AGAIN = "That code didn't match. Try again."
         const val NEW_CODE = "Too many tries. Ask for a new code."
+        const val WAIT = "Too many requests. Wait a moment and try again."
     }
 }
 
