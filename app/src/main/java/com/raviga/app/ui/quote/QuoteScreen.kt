@@ -105,12 +105,12 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     state.isResubmit -> PrimaryButton(
                         when {
                             state.due > 0 -> "Resubmit and pay ${state.due} more ${if (state.due == 1) "credit" else "credits"}"
-                            state.due < 0 -> "Resubmit and get ${-state.due} credits back"
+                            state.due < 0 -> "Resubmit and get ${com.raviga.app.ui.status.StatusCopy.credits(-state.due)} back"
                             else -> "Resubmit"
                         },
                         loading = state.submitting, onClick = { vm.submit() },
                     )
-                    else -> PrimaryButton("Submit and pay ${quote.credits} credits", loading = state.submitting, onClick = { vm.submit() })
+                    else -> PrimaryButton("Submit and pay ${com.raviga.app.ui.status.StatusCopy.credits(quote.credits)}", loading = state.submitting, onClick = { vm.submit() })
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {

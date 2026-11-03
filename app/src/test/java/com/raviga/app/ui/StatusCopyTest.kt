@@ -152,4 +152,12 @@ class StatusCopyTest {
         assertTrue(StatusCopy.deletedLine("3 Nov", hasCopy = true).endsWith(" Your copy stays on this phone."))
         assertTrue(listOf(StatusCopy.cancelConfirmLine(48, true), StatusCopy.deletedLine("3 Nov", true)).none { "draft" in it || "same brief" in it })
     }
+
+    /** As iOS a04dc61: a single credit is never "1 credits". */
+    @Test
+    fun `one credit reads as one`() {
+        assertEquals("1 credit", StatusCopy.credits(1))
+        assertEquals("15 credits", StatusCopy.credits(15))
+        assertEquals("0 credits", StatusCopy.credits(0))
+    }
 }

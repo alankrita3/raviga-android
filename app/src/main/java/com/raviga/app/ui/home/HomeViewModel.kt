@@ -49,7 +49,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
                 title = d.displayTitle.ifBlank { "Untitled draft" },
                 line = when {
                     d.isRefused -> "We can't take this on"
-                    d.quoteIsCurrent -> "Draft, quoted ${d.quote?.credits} credits"
+                    d.quoteIsCurrent -> "Draft, quoted ${com.raviga.app.ui.status.StatusCopy.credits(d.quote?.credits ?: 0)}"
                     d.document == null -> "Notes, no brief yet. Edited ${Time.relative(d.updatedAt)}"
                     else -> "Draft, edited ${Time.relative(d.updatedAt)}"
                 },
