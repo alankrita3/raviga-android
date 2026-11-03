@@ -2,6 +2,8 @@ package com.raviga.app.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -11,7 +13,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "prefs")
+/**
+ * Review #9 (Android): a prefs file that can't be read (a torn write, a bad flash block) starts empty instead of
+ * crashing every launch. It costs the welcome flag and the agreed versions; a registered phone keeps working (its
+ * identity is in the session store, and /me is re-read).
+ */
+internal val prefsCorruptionHandler = ReplaceFileCorruptionHandler<Preferences> { emptyPreferences() }
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "prefs", corruptionHandler = prefsCorruptionHandler)
 
 /** Small, non-secret flags and caches that shape the first-run and settings flows. */
 data class Prefs(
