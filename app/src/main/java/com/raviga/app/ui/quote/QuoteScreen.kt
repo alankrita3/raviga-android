@@ -16,6 +16,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -117,15 +119,9 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     else -> PrimaryButton("Submit and pay ${Money.credits(quote.credits)}", loading = state.submitting, onClick = { vm.submit() })
                 }
                 Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Ink.ash, modifier = Modifier.size(12.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        if (state.isResubmit) "Your brief locks again until the team replies." else "Private. We delete your brief from our servers after delivery.",
-                        style = RaType.caption, color = Ink.ash,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                LockedCaption(
+                    if (state.isResubmit) "Your brief locks again until the team replies." else "Private. We delete your brief from our servers after delivery.",
+                )
             }
         },
     ) { padding ->
@@ -380,3 +376,47 @@ internal fun nextSteps(includedRounds: Int): List<String> = listOf(
     "You get the code with a handover guide and steps to make it live. Accept it, or ask for a revision. " +
         (if (includedRounds == 1) "One round is" else "$includedRounds rounds are") + " included.",
 )
+
+/**
+ * The lock line under the submit button (her review of the Play captures, 2026-11-03). One line, as on iOS: the lock
+ * sits inline before the first word and the line is centred with it. A phone narrower than iOS's widest takes the
+ * caption down half a point at a time to 12sp; if it still doesn't fit (a small phone or a large font setting) it wraps
+ * into two balanced, centred lines rather than shrinking further. The old Row pushed the icon to the left edge while
+ * the wrapped text centred in the rest.
+ */
+@Composable
+private fun LockedCaption(text: String) {
+    val lock = "lock"
+    val annotated = androidx.compose.runtime.remember(text) {
+        androidx.compose.ui.text.buildAnnotatedString { appendInlineContent(lock, "[lock]"); append(" "); append(text) }
+    }
+    val placeholder = androidx.compose.ui.text.Placeholder(12.sp, 12.sp, androidx.compose.ui.text.PlaceholderVerticalAlign.TextCenter)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val maxPx = constraints.maxWidth
+        val oneLine = androidx.compose.runtime.remember(annotated, maxPx, density) {
+            listOf(13f, 12.5f, 12f).firstOrNull { size ->
+                measurer.measure(
+                    annotated, RaType.caption.copy(fontSize = size.sp), softWrap = false, maxLines = 1,
+                    placeholders = listOf(androidx.compose.ui.text.AnnotatedString.Range(placeholder, 0, "[lock]".length)),
+                    density = density,
+                ).size.width <= maxPx
+            }
+        }
+        Text(
+            text = annotated,
+            inlineContent = mapOf(
+                lock to androidx.compose.foundation.text.InlineTextContent(placeholder) {
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Ink.ash, modifier = Modifier.fillMaxSize())
+                },
+            ),
+            style = if (oneLine != null) RaType.caption.copy(fontSize = oneLine.sp)
+            else RaType.caption.copy(lineBreak = androidx.compose.ui.text.style.LineBreak.Heading),
+            maxLines = if (oneLine != null) 1 else Int.MAX_VALUE,
+            color = Ink.ash,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
