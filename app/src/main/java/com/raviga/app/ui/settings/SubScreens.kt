@@ -244,9 +244,11 @@ fun PrivacyScreen(nav: NavController) {
             }
             RaRow(
                 title = "Download my data",
-                subtitle = state.exportMessage ?: "A zip of your submitted projects, the drafts on this phone, and your credit history",
+                // The drafts are named in the caption below (her copy), so the row names what comes from our servers.
+                subtitle = state.exportMessage ?: "A zip of your submitted projects and your credit history",
                 onClick = if (!state.busy) ({ vm.export() }) else null,
                 chevron = false,
+                hairline = false,
             )
             if (state.exportMessage != null) ProgressRule(Modifier.padding(horizontal = Ra.gutter))
             state.exportUrl?.let {
@@ -260,6 +262,12 @@ fun PrivacyScreen(nav: NavController) {
             if (state.exportUrl == null && state.notice == "Saved.") {
                 InlineNotice(state.notice, Modifier.padding(horizontal = Ra.gutter), color = Ink.moss)
             }
+            Text(
+                StatusCopy.EXPORT_DRAFTS_CAPTION,
+                style = RaType.secondary, color = Ink.graphite,
+                modifier = Modifier.padding(start = Ra.gutter, end = Ra.gutter, top = 4.dp, bottom = Ra.rowPadding + 2.dp),
+            )
+            Hairline(Modifier.padding(horizontal = Ra.gutter))
             RaRow(
                 title = "Delete my data",
                 subtitle = "Drafts on this phone, submitted projects and this phone's link. Credits history is kept anonymised, as the law requires.",

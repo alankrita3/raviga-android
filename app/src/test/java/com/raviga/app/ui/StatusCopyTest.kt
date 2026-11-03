@@ -171,4 +171,12 @@ class StatusCopyTest {
         assertEquals("15 credits", com.raviga.app.util.Money.credits(15))
         assertEquals("0 credits", com.raviga.app.util.Money.credits(0))
     }
+
+    @Test
+    fun exportCaptionIsHerWordsAsOnIos() {
+        assertEquals(
+            "The download adds the drafts kept on this phone, in a drafts folder. Our servers don't keep your drafts.",
+            StatusCopy.EXPORT_DRAFTS_CAPTION,
+        )
+    }
 }
