@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.raviga.app.ui.LocalAppContainer
@@ -68,7 +69,7 @@ import com.raviga.app.util.Time
 @Composable
 fun MoveToAnotherPhoneScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: MovePhoneViewModel = viewModel { MovePhoneViewModel(container) }
+    val vm: MovePhoneViewModel = viewModel { MovePhoneViewModel(container, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.done) {
@@ -350,7 +351,7 @@ private fun ConfirmDialog(
 @Composable
 fun RecoveryEmailScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: RecoveryEmailViewModel = viewModel { RecoveryEmailViewModel(container) }
+    val vm: RecoveryEmailViewModel = viewModel { RecoveryEmailViewModel(container, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val saved = state.saved
     val sentTo = state.sentTo

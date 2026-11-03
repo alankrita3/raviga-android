@@ -18,7 +18,14 @@ import kotlinx.coroutines.launch
  * Move to another phone (R-079, as iOS): there is no account, so this is the account. The recovery key, a one-time
  * link code and the phones with access; and the way back in on a new phone, by key, recovery email or link code.
  */
-class MovePhoneViewModel(private val container: AppContainer) : ViewModel() {
+class MovePhoneViewModel(
+    private val container: AppContainer,
+    /**
+     * Review 2026-11-03 (Android): the restore-by-email step (the address, where the code went) outlives the app being
+     * ended while the person reads the code in their mail app.
+     */
+    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+) : ViewModel() {
 
     enum class RestoreWay { KEY, EMAIL }
 
@@ -70,11 +77,32 @@ class MovePhoneViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     private val session = container.session
-    private val _state = MutableStateFlow(State(hasAccount = session.hasAccount, recoveryKey = session.recoveryKey))
+    private val _state = MutableStateFlow(
+        State(
+            hasAccount = session.hasAccount,
+            recoveryKey = session.recoveryKey,
+            restoreWay = saved.get<String>(KEY_WAY)?.let { w -> RestoreWay.entries.firstOrNull { it.name == w } } ?: RestoreWay.KEY,
+            restoreEmail = saved.get<String>(KEY_EMAIL).orEmpty(),
+            codeSentTo = saved.get<String>(KEY_SENT_TO),
+        ),
+    )
     val state: StateFlow<State> = _state.asStateFlow()
 
     init {
         if (session.hasAccount) loadDevices()
+        viewModelScope.launch {
+            _state.collect { s ->
+                saved[KEY_WAY] = s.restoreWay.name
+                saved[KEY_EMAIL] = s.restoreEmail
+                saved[KEY_SENT_TO] = s.codeSentTo
+            }
+        }
+    }
+
+    private companion object {
+        const val KEY_WAY = "restore_way"
+        const val KEY_EMAIL = "restore_email"
+        const val KEY_SENT_TO = "restore_code_sent_to"
     }
 
     private fun loadDevices() {
@@ -218,7 +246,11 @@ class MovePhoneViewModel(private val container: AppContainer) : ViewModel() {
 }
 
 /** Settings > Recovery email (R-079, iOS's words): add one with a 6-digit code, or remove it. */
-class RecoveryEmailViewModel(private val container: AppContainer) : ViewModel() {
+class RecoveryEmailViewModel(
+    private val container: AppContainer,
+    /** Review 2026-11-03 (Android): the address and where the code went outlive the app being ended (mail app open). */
+    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+) : ViewModel() {
 
     data class State(
         /** The confirmed email on the account, if any. */
@@ -238,10 +270,21 @@ class RecoveryEmailViewModel(private val container: AppContainer) : ViewModel() 
     }
 
     private val session = container.session
-    private val _state = MutableStateFlow(State())
+    private val _state = MutableStateFlow(State(email = saved.get<String>(KEY_EMAIL).orEmpty(), sentTo = saved.get<String>(KEY_SENT_TO)))
     val state: StateFlow<State> = _state.asStateFlow()
 
+    private companion object {
+        const val KEY_EMAIL = "email"
+        const val KEY_SENT_TO = "code_sent_to"
+    }
+
     init {
+        viewModelScope.launch {
+            _state.collect { s ->
+                saved[KEY_EMAIL] = s.email
+                saved[KEY_SENT_TO] = s.sentTo
+            }
+        }
         viewModelScope.launch { session.me.collect { me -> _state.update { it.copy(saved = savedEmail(me)) } } }
         if (session.hasAccount) viewModelScope.launch { runCatching { session.refreshMe() } }
     }
