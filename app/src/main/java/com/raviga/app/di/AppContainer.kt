@@ -145,7 +145,7 @@ class AppContainer(private val app: Application) {
     val extractor = com.raviga.app.data.files.TextExtractor(app)
     val exports = com.raviga.app.data.files.ExportBuilder(app, plainHttp, draftStore)
 
-    val dictation = DictationEngine(app)
+    val dictation = DictationEngine(app, DictationScripts.create(app))
 
     private val _events = MutableSharedFlow<AppEvent>(extraBufferCapacity = 16)
     val events: SharedFlow<AppEvent> = _events.asSharedFlow()

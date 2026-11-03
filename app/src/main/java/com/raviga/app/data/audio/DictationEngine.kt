@@ -29,7 +29,18 @@ import kotlin.coroutines.resume
  * Speech is English only (founder, contract v0.7); the [Accent] steers the
  * on-device model, and the brief is always written in English.
  */
-class DictationEngine(private val context: Context) {
+class DictationEngine(private val context: Context, private val script: DictationScript? = null) {
+
+    /**
+     * Debug builds only (Play screenshots, 2026-11-03): words to "hear" on a phone without an on-device recogniser,
+     * so the real Speak screen can be shown. Release builds pass null ([com.raviga.app.di.DictationScripts]).
+     */
+    interface DictationScript {
+        /** The words to say, or null when no script is set. */
+        fun text(): String?
+        /** [text] said as the recogniser would. */
+        fun listen(text: String): Flow<Event>
+    }
 
     /** English accents offered for speaking, the same four as iOS. */
     enum class Accent(val tag: String, val label: String) {
@@ -94,6 +105,7 @@ class DictationEngine(private val context: Context) {
 
     /** Which on-device English model to use for [accent], downloading one first if the phone offers that. Main thread. */
     suspend fun availability(accent: Accent = Accent.preferred()): Availability {
+        if (script?.text() != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return Availability.Ready(accent.tag)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return Availability.Unavailable(NEEDS_ANDROID_12)
         if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) return Availability.Unavailable(NO_OFFLINE_SPEECH)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return Availability.Ready(accent.tag)
@@ -163,7 +175,7 @@ class DictationEngine(private val context: Context) {
 
     /** Collect on the main thread. Requires [Availability.Ready]. */
     @RequiresApi(Build.VERSION_CODES.S)
-    fun listen(ready: Availability.Ready): Flow<Event> = callbackFlow {
+    fun listen(ready: Availability.Ready): Flow<Event> = script?.let { s -> s.text()?.let { s.listen(it) } } ?: callbackFlow {
         val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
         var active = true
         // Busy/client errors in a row: past a few, the recognizer is stuck rather than idle.
