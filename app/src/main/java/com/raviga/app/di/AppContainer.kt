@@ -137,7 +137,7 @@ class AppContainer(private val app: Application) {
         scope = appScope,
     )
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
-    val credits = CreditsRepository(api, json, cache, billing, demo)
+    val credits = CreditsRepository(api, json, cache, billing, demo, syncDue = { prefs.setCreditsSyncDue(it) })
     val push = PushRegistrar(app, prefs, session, appScope)
 
 

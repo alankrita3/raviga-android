@@ -11,15 +11,43 @@ import org.junit.Test
  */
 class PurchaseBookingTest {
 
-    private class Run(val balances: List<Int?>, val synced: Int?) {
+    private class Run(val balances: List<Int?>, val synced: Int?, val onWait: () -> Unit = {}) {
         var reads = 0; var syncs = 0; var waits = 0
+        /** The phone's creditsSyncDue flag as the booking leaves it. */
+        var due = false
         suspend fun book(before: Int?, store: PurchaseOutcome = PurchaseOutcome.Success) = CreditsRepository.book(
             before = before,
             store = { store },
             balance = { balances.getOrNull(reads++) },
             sync = { syncs++; synced },
-            wait = { waits++ },
+            wait = { waits++; onWait() },
+            syncDue = { due = it },
         )
+    }
+
+    /**
+     * Review 2026-11-03 (Android): the flag was set only once the 10 s were over. Leaving Credits (the ViewModel's
+     * scope ends) or the app being ended during them left a paid purchase with no sync on the next open.
+     */
+    @Test fun aSyncIsDueFromTheMomentTheStoreTookTheMoney() = runBlocking {
+        val run = Run(balances = List(5) { 10 }, synced = 10, onWait = { throw kotlinx.coroutines.CancellationException("left Credits") })
+        runCatching { run.book(before = 10) }
+        assertEquals("still due after the wait was cut short", true, run.due)
+    }
+
+    @Test fun aBookedPurchaseIsNoLongerDue() = runBlocking {
+        val seen = Run(balances = listOf(10, 25), synced = null)
+        seen.book(before = 10)
+        assertEquals(false, seen.due)
+        val synced = Run(balances = List(5) { 10 }, synced = 25)
+        synced.book(before = 10)
+        assertEquals(false, synced.due)
+        val notYet = Run(balances = List(5) { 10 }, synced = 10)
+        notYet.book(before = 10)
+        assertEquals("NotBookedYet stays due", true, notYet.due)
+        val cancelled = Run(balances = emptyList(), synced = null)
+        cancelled.book(before = 10, store = PurchaseOutcome.Cancelled)
+        assertEquals("nothing paid, nothing due", false, cancelled.due)
     }
 
     @Test fun theWebhookBookedItWhileWeWaited() = runBlocking {

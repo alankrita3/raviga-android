@@ -23,6 +23,8 @@ class CreditsRepository(
     private val billing: BillingManager,
     /** The in-process demo backend in debug builds ([api] is wrapped by the consent guard, so not the demo itself). */
     private val demo: com.raviga.app.data.api.DemoBackend? = null,
+    /** Remembers on the phone that a paid purchase still needs a sync (prefs' creditsSyncDue). */
+    private val syncDue: suspend (Boolean) -> Unit = {},
 ) {
     private val _credits = MutableStateFlow<CreditsResponse?>(null)
     val credits: StateFlow<CreditsResponse?> = _credits.asStateFlow()
@@ -93,6 +95,7 @@ class CreditsRepository(
             store = { billing.purchase(activity, pack.productId) },
             balance = { runCatching { refresh().balance }.getOrNull() },
             sync = { runCatching { sync() }.getOrNull() },
+            syncDue = { due -> runCatching { syncDue(due) } },
         )
     }
 
@@ -115,16 +118,23 @@ class CreditsRepository(
             balance: suspend () -> Int?,
             sync: suspend () -> Int?,
             wait: suspend () -> Unit = { delay(2_000) },
+            /**
+             * Review 2026-11-03 (Android): the store took the money, so a sync is due (true) from that moment until
+             * the credits are seen (false). Marked before the wait, so leaving Credits or the app being ended during
+             * the 10 s still has the next Credits open sync it (R-092 #20); it used to be marked only at the end.
+             */
+            syncDue: suspend (Boolean) -> Unit = {},
         ): PurchaseOutcome {
             val outcome = store()
             if (outcome !is PurchaseOutcome.Success) return outcome
+            syncDue(true)
             repeat(5) {
                 wait()
                 val now = balance()
-                if (now != null && before != null && now > before) return PurchaseOutcome.Success
+                if (now != null && before != null && now > before) return PurchaseOutcome.Success.also { syncDue(false) }
             }
             val synced = sync()
-            return if (synced != null && before != null && synced > before) PurchaseOutcome.Success else PurchaseOutcome.NotBookedYet
+            return if (synced != null && before != null && synced > before) PurchaseOutcome.Success.also { syncDue(false) } else PurchaseOutcome.NotBookedYet
         }
     }
 

@@ -121,7 +121,7 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             // Confirmed means the balance synced (contract v0.9); bonus credits included.
             if (outcome == PurchaseOutcome.Success) container.analytics.creditsPurchased(pack.productId, pack.total)
             if (outcome == PurchaseOutcome.Success && pack.total > 0) offerRecoveryEmailOnce()
-            if (outcome == PurchaseOutcome.NotBookedYet) container.prefs.setCreditsSyncDue(true)
+            // NotBookedYet: the repository marked a sync due as soon as the store took the money (next open syncs).
             _state.update {
                 it.copy(
                     buying = null,
