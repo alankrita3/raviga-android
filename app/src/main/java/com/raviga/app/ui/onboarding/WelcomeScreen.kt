@@ -1,5 +1,6 @@
 package com.raviga.app.ui.onboarding
 
+import com.raviga.app.ui.nav.rememberIsOnTop
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -101,8 +102,11 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
     val scope = rememberCoroutineScope()
     val pager = rememberPagerState(pageCount = { steps.size + 1 })
     val last = steps.size
+    val onTop = nav.rememberIsOnTop()
     val finish: () -> Unit = {
         scope.launch {
+            // Review #17: a second tap's coroutine finds this screen gone and does nothing.
+            if (!onTop()) return@launch
             if (replay) {
                 nav.popBackStack()
             } else {

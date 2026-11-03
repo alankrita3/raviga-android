@@ -1,5 +1,6 @@
 package com.raviga.app.ui.onboarding
 
+import com.raviga.app.ui.nav.rememberIsOnTop
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -44,7 +45,9 @@ object NotificationAsk {
 @Composable
 fun NotificationPromptScreen(nav: NavController, next: String) {
     val container = LocalAppContainer.current
-    val goOn: () -> Unit = { nav.navigate(next) { popUpTo(Routes.NOTIFY_PROMPT) { inclusive = true } } }
+    val onTop = nav.rememberIsOnTop()
+    // Review #17: once only (a double tap, or Back and the permission answer together, used to push [next] twice).
+    val goOn: () -> Unit = { if (onTop()) nav.navigate(next) { popUpTo(Routes.NOTIFY_PROMPT) { inclusive = true } } }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { goOn() }
     LaunchedEffect(Unit) { container.prefs.setNotificationsAsked() }
     BackHandler { goOn() }

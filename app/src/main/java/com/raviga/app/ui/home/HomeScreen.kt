@@ -1,5 +1,6 @@
 package com.raviga.app.ui.home
 
+import com.raviga.app.ui.nav.rememberIsOnTop
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.launch
@@ -81,6 +82,7 @@ import com.raviga.app.ui.theme.Ink
 fun HomeScreen(nav: NavController) {
     val container = LocalAppContainer.current
     val vm: HomeViewModel = viewModel { HomeViewModel(container) }
+    val onTop = nav.rememberIsOnTop()   // review #17: a double tap opens one screen
     val summaries by vm.rows.collectAsStateWithLifecycle()
     val loadedOnce by vm.loadedOnce.collectAsStateWithLifecycle()
     val balance by vm.balance.collectAsStateWithLifecycle()
@@ -117,8 +119,8 @@ fun HomeScreen(nav: NavController) {
         topBar = {
             RaTopBar(
                 actions = {
-                    CreditsPill(balance, onClick = { nav.navigate(Routes.CREDITS) })
-                    IconButton(onClick = { nav.navigate(Routes.SETTINGS) }) {
+                    CreditsPill(balance, onClick = { if (onTop()) nav.navigate(Routes.CREDITS) })
+                    IconButton(onClick = { if (onTop()) nav.navigate(Routes.SETTINGS) }) {
                         Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Ink.ink)
                     }
                 },
@@ -190,9 +192,9 @@ fun HomeScreen(nav: NavController) {
                     }
                     items(summaries, key = { it.id }) { row ->
                         if (row.localDraft) {
-                            DeletableDraft(row, onClick = { nav.navigate(row.route) }, onDelete = { confirmDelete = row })
+                            DeletableDraft(row, onClick = { if (onTop()) nav.navigate(row.route) }, onDelete = { confirmDelete = row })
                         } else {
-                            ProjectTile(row, onClick = { nav.navigate(row.route) })
+                            ProjectTile(row, onClick = { if (onTop()) nav.navigate(row.route) })
                         }
                     }
                 }
