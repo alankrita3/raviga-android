@@ -93,6 +93,16 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 quoteExpired -> "This quote has expired. Get a new one before submitting."
                 else -> staleMessage
             }
+        /**
+         * R-100 (her decision, 2026-11-04; iOS a5f8fc9): quotes hold 90 days, said quietly at the end of the quote. Once
+         * expired, Submit is "Get a new quote" and this line explains why; nothing while the brief has changed since.
+         */
+        val priceLine: String?
+            get() = when {
+                quote == null || briefChanged -> null
+                quoteExpired -> "Prices are updated every three months."
+                else -> Time.shortDate(quote?.expiresAt).takeIf { it.isNotBlank() }?.let { "Price valid until $it." }
+            }
         val submitted get() = submittedProjectId != null
         /** R-094 P2-6: a send with this quote is out and unanswered; a retry sends it as it was. */
         val held get() = draft?.holdsSentSubmit == true

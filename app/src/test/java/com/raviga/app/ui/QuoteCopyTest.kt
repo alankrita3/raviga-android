@@ -67,6 +67,11 @@ class QuoteCopyTest {
         val edited = fresh.copy(draft = draft.copy(quotedVersion = 0))
         assertEquals("The brief changed since this quote.", edited.staleLine)
 
+        // R-100 (iOS a5f8fc9): the date while it holds, why once it ran out, nothing after an edit.
+        assertEquals("Price valid until ${com.raviga.app.util.Time.shortDate(iso(now + 60_000))}.", fresh.priceLine)
+        assertEquals("Prices are updated every three months.", later.priceLine)
+        assertEquals(null, edited.priceLine)
+
         val refused = fresh.copy(staleMessage = "That quote has already been used. Get a fresh quote and try again.")
         assertEquals(true, refused.needsNewQuote)
         assertEquals("That quote has already been used. Get a fresh quote and try again.", refused.staleLine)

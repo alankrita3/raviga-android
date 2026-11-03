@@ -63,7 +63,6 @@ import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
-import com.raviga.app.util.Time
 
 @Composable
 fun QuoteScreen(nav: NavController, projectId: String) {
@@ -209,10 +208,6 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     Text("Ready in $weeks after approval", style = RaType.bodyMedium, color = Ink.ink)
                     Spacer(Modifier.height(4.dp))
                     Text(config.quote.timelineNote, style = RaType.secondary, color = Ink.graphite)
-                    quote.expiresAt?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text("This price holds until ${Time.shortDate(it)}.", style = RaType.caption, color = Ink.graphite) // the PM, 2026-11-03; iOS adds the same line
-                    }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -285,6 +280,11 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             Text("Only needed if you want us to deploy the backend into your own AWS account.", style = RaType.caption, color = Ink.graphite)
             Spacer(Modifier.height(20.dp))
             PrivacyPromise()
+            // R-100: the price's date, small and grey, at the end of the quote (as iOS a5f8fc9).
+            state.priceLine?.let {
+                Spacer(Modifier.height(20.dp))
+                Text(it, style = RaType.caption, color = Ink.ash)
+            }
             Spacer(Modifier.height(32.dp))
         }
     }
