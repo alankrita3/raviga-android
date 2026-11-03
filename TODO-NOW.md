@@ -11,9 +11,8 @@ The PM reads this file if the session has closed. Updated 2026-11-03 06:05.
   instrumented on the OnePlus via `am instrument`, never `connectedAndroidTest`, which uninstalls the app and its dev
   client; JaCoCo `createDebugUnitTestCoverageReport`; purchase booking now tested).
 - **QA suite v1 (`qa/results/2026-11-02-android.md`): run.** Open items: J2-J4 and J6 blocked on her (row 37,
-  RevenueCat); voice blocked (no recogniser); E13 N/A (her Drive). J5's page 2 waits on backend: GET
-  /me/credits?before=<cursor> answers 500 on dev (told 11-03 05:58). The app's Show more (5a1fafe) is in; re-run
-  J5 when backend says it's fixed.
+  RevenueCat); voice blocked (no recogniser); E13 N/A (her Drive). J5 PASS (Show more 5a1fafe; backend's
+  cursor fix 10234a5, re-run 11-03 06:01).
 - **R-092 (the iOS review's 41 findings on Android): done**, results in `qa/results/2026-11-03-android-parity.md`:
   23 fixed (one commit per finding, with tests), 17 already fine, the link-code QR open (contract gap, as iOS).
   Copy aligned to iOS's (cancel/closed, save failure, title cap); new Android lines sent to iOS and the PM.
