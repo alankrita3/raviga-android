@@ -211,6 +211,15 @@ class CaptureViewModel(
     fun selectTab(index: Int) {
         if (_state.value.continuing) return
         if (_state.value.listening) stopListening()
+        // Second review 2026-11-03 (Android): the tab being left is saved now. The autosave runs up to half a second
+        // later and saves whatever tab is on screen then; Upload has no text, so the last words typed or said before
+        // the switch were never saved (Back from Upload, a document's review, or the app ended behind the picker
+        // lost them). In the app's scope, as leaving is, so an immediate Back doesn't cancel it.
+        val leaving = _state.value
+        if (leavingTabText(leaving, consumedUtterances, index) != null) {
+            saveJob?.cancel()
+            container.appScope.launch(Dispatchers.IO) { persist(leaving) }
+        }
         _state.update { it.copy(tab = index, error = null) }
     }
 
@@ -713,6 +722,10 @@ class CaptureViewModel(
             }
 
         private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
+
+        /** What switching from [s]'s tab to [toTab] must save first (second review): the left tab's live text, if any. */
+        internal fun leavingTabText(s: State, consumedUtterances: Int, toTab: Int): String? =
+            if (toTab == s.tab) null else liveText(s, consumedUtterances)
 
         /**
          * The text of the note being made, as it stands on screen: the typed text, the speech so far (joined to
