@@ -40,14 +40,20 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   - Pub/Sub (real-time notifications): the robot has no GCP permissions (403), so nothing was enabled. It's optional for
     purchase checks. Turning it on needs the owner to enable the API and give the robot Pub/Sub Admin (an IAM change,
     so it needs her yes; backend can do it with gcloud).
-  - Mine: create the RevenueCat Play app up to the credentials field, put the goog_ key in secrets.properties (never
-    printed), send backend the app id, run one sandbox purchase on the OnePlus.
-  - **Blocked (19:3x):** RevenueCat wants a sign-in in Chrome Profile 27; the login page is open in my tab. License
-    testers: the admin account has no permission for that account-wide page, so the owner adds it or grants the
-    permission.
+  - **Done (about 20:40):** robot's financial access verified by API (voided purchases 200). RevenueCat Play app
+    created in project Raviga (4cdddfbb): "Raviga (Play Store)", com.raviga.app, **app id app01d8cd2f54**. The PM
+    uploaded the JSON ("Valid credentials"). Pub/Sub notifications not connected (later). goog_ key in
+    secrets.properties (written blind from the clipboard, clipboard restored). App id sent to backend for
+    REVENUECAT_APP_IDS on prod. Release APK against prod with the key built locally (not installed, not uploaded).
+  - **Waiting:** backend to confirm prod takes app01d8cd2f54; the license tester for the admin account (the owner's
+    page; the Mirakee PM has the ask). Then: install the prod release APK on the OnePlus (device lock), one Play
+    sandbox purchase, check with `team.py --stage prod ledger --sandbox`.
   - Done: backend's prod URL is in secrets.properties (API_BASE_URL), and Play's listing has the six build-8
     screenshots, the feature graphic and the icon (f0a91aa).
-- **Next step (mine):** the rest of row 37 once RevenueCat is signed in. Then fix whatever her pass on the Play build
+- **Play screenshots at 30 credits (raviga-design, the PM's direction): done 20:55.** Six in
+  `~/Downloads/raviga-play-screenshots/build8-30credits/` with captions.txt; one dev account (cl_01m6gzffbd, project
+  RA-AYVR3V awaiting review on dev). No make-it-live shot (deliver on dev runs a real GitHub transfer). Not uploaded.
+- **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
