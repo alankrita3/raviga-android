@@ -123,15 +123,12 @@ class SettingsViewModel(
         const val KEY_EXPORT_URL = "export_url"
     }
 
-    /** Set when the screen is gone; a deletion that lands after that restarts the app itself (review #15). */
-    @Volatile private var screenGone = false
-
-    override fun onCleared() { screenGone = true }
-
     /**
      * Review #15 (Android): in the app's scope, not the screen's. Leaving Privacy and data while DELETE /me is in
      * flight used to cancel it after the server may have taken it: tokens revoked, this phone not wiped. Now the
-     * request and the wipe run to the end; if the screen has gone meanwhile, the app starts over at Welcome.
+     * request and the wipe run to the end. R-097 #7 (review 2): once it lands the app always starts over at Welcome
+     * through the root (AppEvent.SignedOut), whether this screen is in front, leaving, or gone; the screen no longer
+     * navigates itself, so a deletion landing in its exit animation can't leave the app on Settings.
      */
     fun deleteEverything() {
         if (_state.value.busy) return
@@ -148,7 +145,7 @@ class SettingsViewModel(
             result
                 .onSuccess {
                     _state.update { it.copy(deleted = true) }
-                    if (screenGone) container.emit(AppEvent.SignedOut)
+                    container.emit(AppEvent.SignedOut)
                 }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }

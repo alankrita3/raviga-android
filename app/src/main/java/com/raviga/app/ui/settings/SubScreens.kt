@@ -195,9 +195,7 @@ fun PrivacyScreen(nav: NavController) {
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip"),
     ) { uri -> if (uri != null) vm.saveExport(uri) }
 
-    LaunchedEffect(state.deleted) {
-        if (state.deleted) nav.navigate(Routes.WELCOME) { popUpTo(0) { inclusive = true } }
-    }
+    // R-097 #7: after a deletion the root restarts the app at Welcome (AppEvent.SignedOut), not this screen.
 
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
