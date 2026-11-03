@@ -86,7 +86,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     }
     val project = state.project
     val context = LocalContext.current
-    var revisionSheet by remember { mutableStateOf(false) }
+    // R-094 P2-7 (iOS review 2): new terms open over this screen; after Agree the request being written is back, open.
+    var revisionSheet by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     // R-092 #38 (as iOS): accepting can't be undone; it ends the revision rounds and deletes the brief from the server.
     var confirmAccept by remember { mutableStateOf(false) }
     var message by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
