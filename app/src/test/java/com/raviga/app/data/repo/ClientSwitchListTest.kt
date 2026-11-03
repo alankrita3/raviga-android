@@ -69,4 +69,14 @@ class ClientSwitchListTest {
         projects.refreshAll()
         assertEquals(listOf("RA-OLD"), projects.summaries.value.map { it.ref })
     }
+
+    /** R-094 P2-9: a server that repeats a cursor and a project lists each project once and stops. */
+    @Test fun aRepeatedCursorAndARepeatedProjectAreDropped() = runBlocking {
+        val projects = repo()
+        server.enqueue(MockResponse().setBody("""{"projects":[{"id":"pr_1","ref":"RA-1"},{"id":"pr_2","ref":"RA-2"}],"nextCursor":"c1"}"""))
+        server.enqueue(MockResponse().setBody("""{"projects":[{"id":"pr_2","ref":"RA-2"},{"id":"pr_3","ref":"RA-3"}],"nextCursor":"c1"}"""))
+        projects.refreshAll()
+        assertEquals(listOf("RA-1", "RA-2", "RA-3"), projects.summaries.value.map { it.ref })
+        assertEquals("two pages, then stopped", 2, server.requestCount)
+    }
 }

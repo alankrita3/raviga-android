@@ -103,7 +103,11 @@ class CreditsRepository(
         /** [older] added below [current] without repeating a row; the cursor moves on, the balance is the newer read. */
         internal fun withOlder(current: CreditsResponse, older: CreditsResponse): CreditsResponse {
             val known = current.ledger.mapTo(HashSet()) { it.id }
-            return current.copy(balance = older.balance, ledger = current.ledger + older.ledger.filter { it.id !in known }, nextCursor = older.nextCursor)
+            return current.copy(
+                balance = older.balance,
+                ledger = current.ledger + older.ledger.filter { known.add(it.id) },
+                nextCursor = Paging.next(sent = current.nextCursor, answered = older.nextCursor),   // R-094 P2-9
+            )
         }
 
         /**

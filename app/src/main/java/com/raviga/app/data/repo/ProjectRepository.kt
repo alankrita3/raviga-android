@@ -81,12 +81,14 @@ class ProjectRepository(
     private suspend fun fetchAll(): List<ProjectSummary> {
         val startedFor = generation
         val list = mutableListOf<ProjectSummary>()
+        val seen = HashSet<String>()
         var cursor: String? = null
         var pages = 0
         do {
             val page = apiCall(json) { api.projects(before = cursor) }
-            list += page.projects
-            cursor = page.nextCursor
+            // R-094 P2-9 (iOS review 2): a project already listed is never listed twice, and a repeated cursor ends it.
+            page.projects.filterTo(list) { seen.add(it.id) }
+            cursor = Paging.next(sent = cursor, answered = page.nextCursor)
         } while (cursor != null && ++pages < MAX_PAGES)
         // Review #23 (Android): the phone moved to another client while this ran; the list is the old client's.
         if (startedFor != generation) return _summaries.value
