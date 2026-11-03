@@ -89,7 +89,8 @@ class CreditsRepository(
             refresh()
             return PurchaseOutcome.Success
         }
-        val before = runCatching { refresh().balance }.getOrNull() ?: _credits.value?.balance
+        // R-094 P2-8: a slow network holds the store sheet at most 5 s for this read; then the phone's copy stands.
+        val before = baseline(fresh = { refresh().balance }, cached = _credits.value?.balance)
         return book(
             before = before,
             store = { billing.purchase(activity, pack.productId) },
@@ -100,6 +101,12 @@ class CreditsRepository(
     }
 
     companion object {
+        const val BASELINE_CAP_MS = 5_000L
+
+        /** The balance to measure a purchase against: a fresh read within [capMs], else [cached]. */
+        internal suspend fun baseline(fresh: suspend () -> Int, cached: Int?, capMs: Long = BASELINE_CAP_MS): Int? =
+            runCatching { kotlinx.coroutines.withTimeoutOrNull(capMs) { fresh() } }.getOrNull() ?: cached
+
         /** [older] added below [current] without repeating a row; the cursor moves on, the balance is the newer read. */
         internal fun withOlder(current: CreditsResponse, older: CreditsResponse): CreditsResponse {
             val known = current.ledger.mapTo(HashSet()) { it.id }
@@ -142,10 +149,18 @@ class CreditsRepository(
         }
     }
 
-    suspend fun restore(): Int {
+    /**
+     * R-094 P2-8 (iOS review 2): measured against a fresh read, so the screen can say what came back; [Restored.added]
+     * is 0 when nothing new was booked (or the starting balance couldn't be read).
+     */
+    suspend fun restore(): Restored {
+        val before = baseline(fresh = { refresh().balance }, cached = null)
         if (billing.isAvailable) billing.restore()
-        return sync()
+        val after = sync()
+        return Restored(balance = after, added = if (before != null && after > before) after - before else 0)
     }
+
+    data class Restored(val balance: Int, val added: Int)
 
     val storeReady: Boolean get() = billing.isReady
 }

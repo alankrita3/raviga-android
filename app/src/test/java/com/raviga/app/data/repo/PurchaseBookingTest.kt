@@ -3,6 +3,7 @@ package com.raviga.app.data.repo
 import com.raviga.app.data.billing.PurchaseOutcome
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -83,5 +84,15 @@ class PurchaseBookingTest {
             assertEquals(outcome, run.book(before = 10, store = outcome))
             assertEquals("no reads, no sync for $outcome", 0, run.reads + run.syncs + run.waits)
         }
+    }
+
+    /** R-094 P2-8: the read before the store sheet waits at most the cap, then the phone's copy stands. */
+    @Test fun aSlowBaselineReadFallsBackToTheCachedBalance() = runBlocking {
+        val started = System.nanoTime()
+        val before = CreditsRepository.baseline(fresh = { kotlinx.coroutines.delay(5_000); 99 }, cached = 10, capMs = 50)
+        assertEquals(10, before)
+        assertTrue("held about the cap, not the read", (System.nanoTime() - started) / 1_000_000 < 2_000)
+        assertEquals("a quick read wins", 12, CreditsRepository.baseline(fresh = { 12 }, cached = 10))
+        assertEquals("a failed read falls back", 10, CreditsRepository.baseline(fresh = { error("offline") }, cached = 10))
     }
 }

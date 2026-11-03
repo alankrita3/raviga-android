@@ -160,7 +160,10 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(restoring = true, error = null, notice = null) }
             runCatching { container.credits.restore() }
-                .onSuccess { _state.update { it.copy(notice = "Purchases checked. Balance is up to date.") } }
+                .onSuccess { r ->
+                    val line = if (r.added > 0) "Purchases checked. ${com.raviga.app.util.Money.credits(r.added)} added." else "Purchases checked. Balance is up to date."
+                    _state.update { it.copy(notice = line) }
+                }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(restoring = false) }
         }
