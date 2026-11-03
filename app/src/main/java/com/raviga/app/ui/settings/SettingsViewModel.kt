@@ -13,7 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(private val container: AppContainer) : ViewModel() {
+class SettingsViewModel(
+    private val container: AppContainer,
+    /** Review 2026-11-03 (Android): the export link outlives the app being ended while the save picker is open. */
+    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+) : ViewModel() {
 
     data class State(
         val me: Me? = null,
@@ -27,7 +31,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         val github: String = "",
     )
 
-    private val _state = MutableStateFlow(State())
+    private val _state = MutableStateFlow(State(exportUrl = saved.get<String>(KEY_EXPORT_URL)))
     val state: StateFlow<State> = _state.asStateFlow()
 
     val isDemo: Boolean get() = container.isDemo
@@ -81,22 +85,41 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null, exportUrl = null, exportMessage = "Collecting your data") }
             runCatching { container.session.exportData { st -> _state.update { it.copy(exportMessage = st.message ?: it.exportMessage) } } }
-                .onSuccess { r -> _state.update { it.copy(exportUrl = r.downloadUrl, exportMessage = null, notice = "Your data is ready, with the drafts from this phone added. Choose where to save it.") } }
+                .onSuccess { r ->
+                    saved[KEY_EXPORT_URL] = r.downloadUrl
+                    _state.update { it.copy(exportUrl = r.downloadUrl, exportMessage = null, notice = "Your data is ready, with the drafts from this phone added. Choose where to save it.") }
+                }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine(), exportMessage = null) } }
             _state.update { it.copy(busy = false) }
         }
     }
 
-    /** Saves the server's zip, plus this phone's drafts, into the file the client picked. */
+    /**
+     * Saves the server's zip, plus this phone's drafts, into the file the client picked. Review 2026-11-03 (Android):
+     * the picker has already made that file; with no link to fill it from (it was lost with the app) it used to stay
+     * as an empty zip with no word on screen. Now it is removed and the screen says so; a failed save removes it too.
+     */
     fun saveExport(target: android.net.Uri) {
-        val url = _state.value.exportUrl ?: return
+        val url = _state.value.exportUrl
         viewModelScope.launch {
+            if (url == null) {
+                container.exports.discard(target)
+                _state.update { it.copy(error = "The download link has expired. Ask for a new one.") }
+                return@launch
+            }
             _state.update { it.copy(busy = true, error = null, exportMessage = "Saving") }
             runCatching { container.exports.write(url, target) }
-                .onSuccess { _state.update { it.copy(exportUrl = null, exportMessage = null, notice = "Saved.") } }
+                .onSuccess {
+                    saved.remove<String>(KEY_EXPORT_URL)
+                    _state.update { it.copy(exportUrl = null, exportMessage = null, notice = "Saved.") }
+                }
                 .onFailure { e -> _state.update { it.copy(exportMessage = null, error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
         }
+    }
+
+    private companion object {
+        const val KEY_EXPORT_URL = "export_url"
     }
 
     fun deleteEverything() {

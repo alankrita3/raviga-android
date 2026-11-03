@@ -43,6 +43,7 @@ import com.raviga.app.ui.status.StatusCopy
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.raviga.app.push.Notifications
@@ -183,7 +184,7 @@ fun NotificationsScreen(nav: NavController) {
 @Composable
 fun PrivacyScreen(nav: NavController) {
     val container = LocalAppContainer.current
-    val vm: SettingsViewModel = viewModel { SettingsViewModel(container) }
+    val vm: SettingsViewModel = viewModel { SettingsViewModel(container, createSavedStateHandle()) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val legal = state.config.legal

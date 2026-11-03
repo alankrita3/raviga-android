@@ -22,7 +22,21 @@ class ExportBuilder(
     private val http: OkHttpClient,
     private val drafts: DraftStore,
 ) {
-    suspend fun write(serverZipUrl: String, target: Uri) = withContext(Dispatchers.IO) {
+    /** Removes a file the save picker made that will not be filled (no link, or the save failed). */
+    suspend fun discard(target: Uri) = withContext(Dispatchers.IO) {
+        runCatching { android.provider.DocumentsContract.deleteDocument(context.contentResolver, target) }
+        Unit
+    }
+
+    /** A save that fails part way leaves no empty or half-written zip behind ([discard]). */
+    suspend fun write(serverZipUrl: String, target: Uri) = try {
+        writeZip(serverZipUrl, target)
+    } catch (e: Exception) {
+        discard(target)
+        throw e
+    }
+
+    private suspend fun writeZip(serverZipUrl: String, target: Uri) = withContext(Dispatchers.IO) {
         (context.contentResolver.openOutputStream(target, "w") ?: throw com.raviga.app.data.UserFacingException("Couldn't open the file to save into.")).use { out ->
             ZipOutputStream(out.buffered()).use { zip ->
                 if (!serverZipUrl.startsWith("demo:")) http.newCall(Request.Builder().url(serverZipUrl).build()).execute().use { response ->
