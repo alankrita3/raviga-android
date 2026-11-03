@@ -390,7 +390,7 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
         ) { padding ->
             Processing(
                 title = state.progressMessage ?: "Reading your document",
-                line = if (state.fetching) "Copying it to this phone to read. It isn't sent anywhere." else "Read on your phone. Long documents take a little longer.",
+                line = if (state.fetching) "Copying it to this phone to read it. The file stays on your phone." else "Read on your phone. Long documents take a little longer.",
                 progress = state.progress,
                 modifier = Modifier.padding(padding),
             )
