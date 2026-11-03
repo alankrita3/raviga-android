@@ -42,9 +42,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         /** Idempotency-Key → project id, so a retried submit replays instead of charging twice. */
         val submits: Map<String, String> = emptyMap(),
         val ledger: List<LedgerEntry> = emptyList(),
-        val resubmitted: Set<String> = emptySet(),
         val statusChangedAt: Map<String, String> = emptyMap(),
-        val unread: Map<String, Int> = emptyMap(),
         /** R-079: the confirmed recovery email, and one waiting for its code (always 123456 in demo). */
         val recoveryEmail: String? = null,
         val pendingEmail: String? = null,
@@ -121,23 +119,39 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         return s.copy(projects = s.projects + (p.id to p))
     }
 
-    private fun transition(s: State, project: Project, status: String, by: String, note: String = ""): Pair<State, Project> {
+    private fun transition(s: State, project: Project, status: String, by: String): Pair<State, Project> {
         val now = Time.nowIso()
-        var p = project.copy(status = status, history = project.history + HistoryEntry(status, now, by, note))
+        var p = project.copy(status = status, statusChangedAt = now, history = project.history + HistoryEntry(status, now, by))
         // v0.6: closing deletes the brief and everything written about it; dates and counts stay.
         if (status in config.retention.briefDeletedOn) {
             p = p.copy(
                 document = null,
                 title = "",
-                review = p.review.copy(comments = emptyList()),
-                revisions = p.revisions.copy(requests = emptyList()),
-                history = p.history.map { it.copy(note = "") },
+                reports = p.reports.map { it.copy(description = null) },
                 delivery = p.delivery?.copy(note = ""),
                 contentDeletedAt = now,
             )
         }
         val withMilestones = p.copy(timeline = p.timeline?.copy(milestones = milestones(status, p)))
-        return put(s, withMilestones).copy(statusChangedAt = s.statusChangedAt + (p.id to now)) to withMilestones
+        val lined = withMilestones.copy(statusLine = statusLine(withMilestones))
+        return put(s, lined).copy(statusChangedAt = s.statusChangedAt + (p.id to now)) to lined
+    }
+
+    /** Contract v0.10.0 section 5: the fixed line per status, credits and dates filled in. */
+    private fun statusLine(p: Project): String = when (p.status) {
+        ProjectStatus.SUBMITTED -> "We're checking your brief against what we build. This step is free."
+        ProjectStatus.APPROVED -> {
+            val expired = p.quote?.expiresAt?.let { Time.parse(it)?.isBefore(Instant.now()) } == true
+            if (expired) "Accepted. This price has expired: get a new quote to start building."
+            else "Accepted. Pay ${p.quote?.credits ?: 0} credits to start building."
+        }
+        ProjectStatus.REJECTED -> if ((p.payment?.credits ?: 0) > 0) "Not accepted. Your credits are refunded." else "Not accepted. This project is outside what we build. Nothing was charged."
+        ProjectStatus.BUILDING -> "Building and testing. Estimated delivery by ${Time.shortDate(p.timeline?.estimatedDeliveryDate)}."
+        ProjectStatus.DELIVERED -> "Delivered. Check it, then approve it or tell us what's wrong."
+        ProjectStatus.REVISION_REQUESTED -> "We're fixing what you reported."
+        ProjectStatus.ACCEPTED -> "Approved by you."
+        ProjectStatus.CANCELLED -> "Cancelled."
+        else -> ""
     }
 
     private fun ledger(s: State, type: String, credits: Int, ref: LedgerRef? = null, note: String = ""): State {
@@ -190,30 +204,12 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         var next = s
         var p = project
         when (p.status) {
-            ProjectStatus.SUBMITTED -> {
-                val firstPass = p.id !in s.resubmitted
-                if (firstPass && elapsed > 20_000) {
-                    val comment = Comment(
-                        id = "cm_" + UUID.randomUUID().toString().take(6),
-                        createdAt = Time.nowIso(),
-                        author = "team",
-                        body = "Thanks, this is clear and we can build it. One question before we approve: should payments be in the first release, or can it launch without them and add payments in a revision? Edit the brief if anything changes and resubmit.",
-                    )
-                    p = p.copy(review = p.review.copy(comments = listOf(comment) + p.review.comments, decidedAt = Time.nowIso()), unreadComments = p.unreadComments + 1)
-                    val (n, t) = transition(next, p, ProjectStatus.CHANGES_REQUESTED, "team", "Question about payments")
-                    next = n; p = t
-                } else if (!firstPass && elapsed > 15_000) {
-                    val days = p.quote?.estimatedWorkingDays ?: 10
-                    val eta = Time.addWorkingDays(LocalDate.now(), days)
-                    p = p.copy(
-                        review = p.review.copy(decidedAt = Time.nowIso()),
-                        timeline = Timeline(estimatedWorkingDays = days, estimatedDeliveryDate = Time.isoDate(eta), milestones = emptyList()),
-                    )
-                    val (n, t) = transition(next, p, ProjectStatus.APPROVED, "team", "Approved")
-                    next = n; p = t
-                }
+            // v0.10.0: the demo team accepts a reviewed brief after a few seconds; the client then pays.
+            ProjectStatus.SUBMITTED -> if (elapsed > 8_000) {
+                val (n, t) = transition(next, p.copy(decidedAt = Time.nowIso()), ProjectStatus.APPROVED, "team")
+                next = n; p = t
             }
-            ProjectStatus.APPROVED -> if (elapsed > 40_000) {
+            ProjectStatus.BUILDING -> if (elapsed > 40_000) {
                 val slug = p.title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "project" }
                 val now = Time.nowIso()
                 val hasGithub = p.submission?.githubUsername?.isNotBlank() == true || s.deliveryTargets.githubUsername.isNotBlank()
@@ -229,43 +225,49 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                         acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
                     ),
                 )
-                val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team", "Delivered")
+                val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team")
                 next = n; p = t
             }
             ProjectStatus.REVISION_REQUESTED -> if (elapsed > 25_000) {
-                val last = p.revisions.requests.lastOrNull()?.message ?: "as requested"
+                val now = Time.nowIso()
                 p = p.copy(
-                    revisions = p.revisions.copy(requests = p.revisions.requests.map { r -> if (r.resolvedAt == null) r.copy(resolvedAt = Time.nowIso()) else r }),
-                    delivery = p.delivery?.copy(deliveredAt = Time.nowIso(), note = "Revision delivered: $last. Pull the latest commit on main."),
+                    reports = p.reports.map { r -> if (r.resolvedAt == null) r.copy(resolvedAt = now) else r },
+                    delivery = p.delivery?.copy(
+                        deliveredAt = now, note = "Fixed what you reported. Pull the latest commit on main.",
+                        acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
+                    ),
                 )
-                val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team", "Revision delivered")
+                val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team")
                 next = n; p = t
             }
         }
         return next to p
     }
 
+    /** v0.10.0: Submitted, Approved, Paid, Building and QA, Delivered, Approved by you. */
     private fun milestones(status: String, p: Project): List<Milestone> {
-        val order = listOf("submitted" to "Submitted", "review" to "Reviewed", "approved" to "Approved", "build" to "Building", "delivered" to "Delivered", "accepted" to "Accepted")
-        val reached = when (status) {
-            ProjectStatus.SUBMITTED -> 2
-            ProjectStatus.CHANGES_REQUESTED, ProjectStatus.REJECTED -> 2
-            ProjectStatus.APPROVED -> 4
-            ProjectStatus.DELIVERED, ProjectStatus.REVISION_REQUESTED -> 6
+        val order = listOf(
+            "submitted" to "Submitted", "approved" to "Approved", "paid" to "Paid",
+            "build" to "Building and QA", "delivered" to "Delivered", "accepted" to "Approved by you",
+        )
+        val current = when (status) {
+            ProjectStatus.SUBMITTED, ProjectStatus.REJECTED, ProjectStatus.CANCELLED -> 2
+            ProjectStatus.APPROVED -> 3
+            ProjectStatus.BUILDING, ProjectStatus.REVISION_REQUESTED -> 4
+            ProjectStatus.DELIVERED -> 6
             ProjectStatus.ACCEPTED -> 7
             else -> 0
         }
         return order.mapIndexed { i, (id, label) ->
             val st = when {
-                i + 1 < reached -> "done"
-                i + 1 == reached -> "current"
+                i + 1 < current -> "done"
+                i + 1 == current -> "current"
                 else -> "upcoming"
             }
             val at = when (id) {
                 "submitted" -> p.submission?.submittedAt
-                "review" -> p.review.decidedAt
-                "approved" -> p.history.lastOrNull { it.status == ProjectStatus.APPROVED }?.at
-                "build" -> p.history.lastOrNull { it.status == ProjectStatus.APPROVED }?.at
+                "approved" -> p.decidedAt
+                "paid", "build" -> p.payment?.paidAt
                 "delivered" -> p.delivery?.deliveredAt
                 "accepted" -> p.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at
                 else -> null
@@ -387,8 +389,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 ProjectSummary(
                     id = it.id, ref = it.ref, title = it.title, status = it.status, createdAt = it.createdAt, updatedAt = it.updatedAt,
                     statusChangedAt = it.statusChangedAt ?: it.history.lastOrNull()?.at ?: it.updatedAt,
+                    statusLine = it.statusLine,
                     credits = it.quote?.credits, estimatedDeliveryDate = it.timeline?.estimatedDeliveryDate,
-                    unreadComments = it.unreadComments, contentDeletedAt = it.contentDeletedAt,
+                    contentDeletedAt = it.contentDeletedAt,
                 )
             },
         )
@@ -401,11 +404,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun cancelProject(id: String, body: Empty): Project = mutate { s ->
         val p = requireProject(s, id)
-        if (!ProjectStatus.canCancel(p.status)) throw ApiException(ApiException.INVALID_STATE, 409, "This project can no longer be cancelled.")
-        var next = s
-        val refund = p.submission?.creditsCharged ?: 0
-        if (refund > 0) next = ledger(next, "refund_project", refund, LedgerRef(projectId = id), "Cancelled ${p.title}")
-        transition(next, p, ProjectStatus.CANCELLED, "client")
+        // v0.10.0: free until paid; after payment it's 409.
+        if (!ProjectStatus.canCancel(p.status) || p.payment != null) throw ApiException(ApiException.INVALID_STATE, 409, "This project can no longer be cancelled.", details = buildJsonObject { put("status", p.status) })
+        transition(s, p, ProjectStatus.CANCELLED, "client")
     }
 
     // ----- stateless AI (contract v0.6): text in, brief out, nothing kept -----
@@ -539,14 +540,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         }
         val q = requireToken(next, body.quoteToken, body.document)
         val quote = q.quote
-        val balance = balanceOf(next)
-        if (balance < quote.credits) throw ApiException(
-            ApiException.INSUFFICIENT_CREDITS, 402, "You need ${quote.credits - balance} more credits.",
-            details = buildJsonObject { put("required", quote.credits); put("balance", balance) },
-        )
+        // v0.10.0: submitting is free; the demo team reviews it (submitted), then accepts it (approved) and it's paid.
         val now = Time.nowIso()
         val id = "pr_" + UUID.randomUUID().toString().replace("-", "").take(10)
-        next = ledger(next, "charge", -quote.credits, LedgerRef(projectId = id), body.document.title)
         val project = Project(
             id = id,
             ref = "RA-" + UUID.randomUUID().toString().replace("-", "").take(6).uppercase(),
@@ -556,60 +552,51 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             updatedAt = now,
             document = held(body.document, 1),
             quote = quote.copy(status = "used"),
-            lockedVersion = 1,
-            submission = Submission(submittedAt = now, githubUsername = next.deliveryTargets.githubUsername.ifBlank { null }, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = quote.credits),
+            submission = Submission(submittedAt = now, githubUsername = next.deliveryTargets.githubUsername.ifBlank { null }, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
             timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
-            revisions = Revisions(used = 0, included = config.revisions.includedRounds),
             history = emptyList(),
         )
         next = next.copy(quotes = next.quotes + (body.quoteToken to q.copy(used = true)), submits = next.submits + (idempotencyKey to id))
         transition(next, project, ProjectStatus.SUBMITTED, "client")
     }
 
-    override suspend fun resubmit(id: String, idempotencyKey: String, body: ResubmitRequest): Project = mutate { s ->
+    /** v0.10.0 section 11: pay an accepted project; after its price expired, with a new quote's token for the same brief. */
+    override suspend fun pay(id: String, idempotencyKey: String, body: PayRequest): Project = mutate { s ->
         s.submits[idempotencyKey]?.let { return@mutate s to requireProject(s, it) }
         val p = requireProject(s, id)
-        if (p.status != ProjectStatus.CHANGES_REQUESTED) throw ApiException(ApiException.INVALID_STATE, 409, "Only projects with comments can be resubmitted.", details = buildJsonObject { put("status", p.status) })
+        if (p.status != ProjectStatus.APPROVED || p.payment != null) throw ApiException(ApiException.INVALID_STATE, 409, "This project can't be paid now.", details = buildJsonObject { put("status", p.status) })
         requireConsent(s)
-        val q = requireToken(s, body.quoteToken, body.document)
-        val quote = q.quote
-        val charged = p.submission?.creditsCharged ?: 0
-        val diff = quote.credits - charged
         var next = s
-        if (diff > 0) {
-            val balance = balanceOf(s)
-            if (balance < diff) throw ApiException(ApiException.INSUFFICIENT_CREDITS, 402, "You need ${diff - balance} more credits.", details = buildJsonObject { put("required", diff); put("balance", balance) })
-            next = ledger(next, "charge", -diff, LedgerRef(projectId = id), "Resubmitted ${body.document.title}")
-        } else if (diff < 0) {
-            next = ledger(next, "refund_project", -diff, LedgerRef(projectId = id), "Resubmitted ${body.document.title}")
+        var quote = p.quote ?: throw ApiException(ApiException.INVALID_STATE, 409, "No price on this project.")
+        val token = body.quoteToken
+        if (token == null) {
+            val expired = quote.expiresAt?.let { Time.parse(it)?.isBefore(Instant.now()) } == true
+            if (expired) throw ApiException(
+                ApiException.QUOTE_STALE, 409, "This price has expired. Get a new quote to start building.",
+                details = buildJsonObject { put("expired", true) },
+            )
+        } else {
+            val doc = p.document ?: throw ApiException(ApiException.INVALID_STATE, 409, "The brief is no longer held.")
+            val q = requireToken(s, token, com.raviga.app.data.api.DocumentBody(doc.title, doc.sections.map { com.raviga.app.data.api.SectionBody(it.id, it.body) }))
+            quote = q.quote.copy(status = "used")
+            next = next.copy(quotes = next.quotes + (token to q.copy(used = true)))
         }
-        val now = Time.nowIso()
-        val version = (p.document?.version ?: 0) + 1
-        val project = p.copy(
-            title = body.document.title,
-            document = held(body.document, version),
-            lockedVersion = version,
-            quote = quote.copy(status = "used"),
-            submission = p.submission?.copy(submittedAt = now, creditsCharged = quote.credits),
-            review = p.review.copy(decidedAt = null),
-            timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
+        val balance = balanceOf(next)
+        if (balance < quote.credits) throw ApiException(
+            ApiException.INSUFFICIENT_CREDITS, 402, "You need ${quote.credits - balance} more credits.",
+            details = buildJsonObject { put("required", quote.credits); put("balance", balance) },
         )
-        next = next.copy(quotes = next.quotes + (body.quoteToken to q.copy(used = true)), submits = next.submits + (idempotencyKey to id))
-        val (n, t) = transition(next, project, ProjectStatus.SUBMITTED, "client", "Resubmitted")
-        n.copy(resubmitted = n.resubmitted + id) to t
-    }
-
-    override suspend fun comments(id: String): CommentsResponse = mutate { s ->
-        val p = requireProject(s, id)
-        val cleared = p.copy(unreadComments = 0)
-        put(s, cleared, touch = false) to CommentsResponse(p.review.comments)
-    }
-
-    override suspend fun addComment(id: String, body: NewCommentRequest): Comment = mutate { s ->
-        val p = requireProject(s, id)
-        if (!ProjectStatus.canComment(p.status)) throw ApiException(ApiException.INVALID_STATE, 409, "Comments open after submission.")
-        val comment = Comment(id = "cm_" + UUID.randomUUID().toString().take(6), createdAt = Time.nowIso(), author = "client", body = body.body.trim(), sectionId = body.sectionId)
-        put(s, p.copy(review = p.review.copy(comments = listOf(comment) + p.review.comments))) to comment
+        val now = Time.nowIso()
+        next = ledger(next, "charge", -quote.credits, LedgerRef(projectId = id), p.title)
+        val eta = Time.addWorkingDays(LocalDate.now(), quote.estimatedWorkingDays.coerceAtLeast(1))
+        val paid = p.copy(
+            quote = quote,
+            payment = Payment(quote.credits, now),
+            submission = p.submission?.copy(creditsCharged = quote.credits),
+            timeline = (p.timeline ?: Timeline()).copy(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = Time.isoDate(eta)),
+        )
+        next = next.copy(submits = next.submits + (idempotencyKey to id))
+        transition(next, paid, ProjectStatus.BUILDING, "client")
     }
 
     // ----- delivery -----
@@ -621,21 +608,17 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         transition(s, project, ProjectStatus.ACCEPTED, "client")
     }
 
-    override suspend fun requestRevision(id: String, body: RevisionRequestBody): Project = mutate { s ->
+    /** v0.10.0 section 12: "Something's wrong" with a delivery: a fixed category and a short description. */
+    override suspend fun report(id: String, body: ReportRequest): Project = mutate { s ->
         val p = requireProject(s, id)
-        if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Revisions can be requested after delivery.")
-        if (p.revisions.used >= p.revisions.included) throw ApiException(
-            ApiException.REVISION_LIMIT_REACHED, 409, "Your included revision rounds are used up.",
-            details = buildJsonObject { put("used", p.revisions.used); put("included", p.revisions.included) },
-        )
-        val now = Time.nowIso()
-        val request = RevisionRequest(id = "rv_" + UUID.randomUUID().toString().take(6), createdAt = now, message = body.message.trim())
-        val comment = Comment(id = "cm_" + UUID.randomUUID().toString().take(6), createdAt = now, author = "client", body = body.message.trim())
-        val project = p.copy(
-            revisions = p.revisions.copy(used = p.revisions.used + 1, requests = p.revisions.requests + request),
-            review = p.review.copy(comments = listOf(comment) + p.review.comments),
-        )
-        transition(s, project, ProjectStatus.REVISION_REQUESTED, "client")
+        if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Reports are for a delivered project.", details = buildJsonObject { put("status", p.status) })
+        val text = body.description.trim()
+        if (body.category !in config.report.categories.map { it.id } || text.isEmpty() || text.length > config.report.descriptionMaxChars) {
+            throw ApiException(ApiException.INVALID_ARGUMENT, 400, "Pick what's wrong and describe it in up to ${config.report.descriptionMaxChars} characters.")
+        }
+        if (demoPolicyHit(text)) throw policyRefusal("We can't send that report. Describe what isn't working in the delivered project.")
+        val report = Report(id = "rp_" + UUID.randomUUID().toString().take(6), createdAt = Time.nowIso(), category = body.category, description = text)
+        transition(s, p.copy(reports = p.reports + report), ProjectStatus.REVISION_REQUESTED, "client")
     }
 
     // ----- delivery targets -----
@@ -794,11 +777,13 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                     Bracket("pro", "Pro", 50, 150, "Multiple platforms, complex data, admin tooling", QuoteTimeline(2, 4)),
                     Bracket("enterprise", "Enterprise", 151, null, "Quoted as a custom engagement", null),
                 ),
-                validDays = 14,
+                validDays = 90,
                 timelineNote = "Most projects are delivered well ahead of this estimate.",
             ),
-            revisions = RevisionsConfig(2),
+            payment = com.raviga.app.data.api.PaymentConfig(90),
             acceptance = AcceptanceConfig(14),
+            report = com.raviga.app.data.api.ReportConfig(),
+            briefLimits = com.raviga.app.data.api.BriefLimits(0, 0),
             retention = RetentionConfig(deletionGraceDays = 7, exportLinkHours = 24, jobHours = 24, aiResultMinutes = 15),
             limits = LimitsConfig(),
             ai = AiConfig(

@@ -80,7 +80,6 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                         ?: project.submission?.githubUsername?.ifBlank { null },
                     platforms = GoLiveLogic.platforms(brief?.section(SectionIds.PLATFORMS)?.body.orEmpty()),
                     hasPaidServices = brief?.section(SectionIds.INTEGRATIONS)?.body.orEmpty().isNotBlank(),
-                    revisions = project.revisions,
                 )
                 Spacer(Modifier.height(4.dp))
                 Illustration(Picture.Delivered, height = 180.dp, radius = Ra.tileRadius)
@@ -98,10 +97,9 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                     Spacer(Modifier.height(10.dp))
                 }
                 Spacer(Modifier.height(10.dp))
-                val commentsOpen = project.contentDeletedAt == null && !ProjectStatus.isTerminal(project.status)
+                // v0.10.0 (R-103): no messaging in the app; support's email is the way to reach a person.
                 Text(
-                    if (commentsOpen) "Stuck on a step? Write to the team in this project's comments."
-                    else "Stuck on a step? Write to ${state.config.legal.supportEmail}.",
+                    "Stuck on a step? Write to ${state.config.legal.supportEmail}.",
                     style = RaType.caption,
                     color = Ink.ash,
                 )

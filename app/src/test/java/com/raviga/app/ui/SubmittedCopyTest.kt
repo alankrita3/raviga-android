@@ -24,20 +24,11 @@ class SubmittedCopyTest {
         assertEquals("As submitted", cancelled.document?.sections?.first()?.body)
     }
 
-    @Test fun aChangesRoundStillEditsTheNewestVersion() {
-        val changes = DocumentViewModel.State(draft = draft, project = Project(id = "pr_1", status = ProjectStatus.CHANGES_REQUESTED))
-        assertEquals("Edited after", changes.document?.sections?.first()?.body)
-    }
-
-    /** R-094 P2-5 (iOS review 2, the PM's words): a cancel in a changes round keeps that round's edits, and says so. */
-    @Test fun editsSinceSubmitAreKeptAndSaid() {
-        assertEquals(true, draft.hasEditsSinceSubmit)
-        assertEquals("both versions stay on the phone", listOf(1, 2), draft.versions.map { it.version })
-        assertEquals(
-            "Your 27 credits come back to your balance and the brief is deleted from our servers. Your copy stays on this phone. " +
-                "Your edits since you submitted are kept as a version.",
-            com.raviga.app.ui.status.StatusCopy.cancelConfirmLine(27, hasCopy = true, editsSinceSubmit = draft.hasEditsSinceSubmit),
-        )
+    /** v0.10.0: no changes rounds; a submitted brief shows the version that was submitted, whatever was edited after. */
+    @Test fun anOpenProjectShowsTheSubmittedVersionToo() {
+        val accepted = DocumentViewModel.State(draft = draft, project = Project(id = "pr_1", status = ProjectStatus.APPROVED))
+        assertEquals("As submitted", accepted.document?.sections?.first()?.body)
+        assertEquals(false, accepted.editable)
     }
 
     @Test fun aNewVersionWithTheSameWordsIsNoEdit() {

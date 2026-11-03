@@ -99,28 +99,23 @@ fun QuoteScreen(nav: NavController, projectId: String) {
     androidx.activity.compose.BackHandler(enabled = state.submitting) {}
 
     ScreenScaffold(
-        topBar = { RaTopBar(title = if (state.isResubmit) "New quote" else "Quote", onBack = { if (!state.submitting) nav.popBackStack() }) },
+        topBar = { RaTopBar(title = "Quote", onBack = { if (!state.submitting) nav.popBackStack() }) },
         bottomBar = {
             if (quote == null || state.quoting || state.rejected) return@ScreenScaffold
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                when {
-                    state.needsNewQuote -> PrimaryButton("Get a new quote", onClick = { vm.requestQuote() })
-                    state.shortBy > 0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
-                    state.isResubmit -> PrimaryButton(
-                        when {
-                            state.due > 0 -> "Resubmit and pay ${state.due} more ${if (state.due == 1) "credit" else "credits"}"
-                            state.due < 0 -> "Resubmit and get ${Money.credits(-state.due)} back"
-                            else -> "Resubmit"
-                        },
-                        loading = state.submitting, onClick = { vm.submit() },
+                if (state.needsNewQuote) {
+                    PrimaryButton("Get a new quote", onClick = { vm.requestQuote() })
+                } else {
+                    // R-103 (contract v0.10.0; the PM's copy, as iOS): submitting is free; paying comes after acceptance.
+                    Text(
+                        FREE_TO_SUBMIT, style = RaType.caption, color = Ink.graphite, textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                     )
-                    else -> PrimaryButton("Submit and pay ${Money.credits(quote.credits)}", loading = state.submitting, onClick = { vm.submit() })
+                    PrimaryButton("Submit", loading = state.submitting, onClick = { vm.submit() })
                 }
                 Spacer(Modifier.height(10.dp))
-                LockedCaption(
-                    if (state.isResubmit) "Your brief locks again until the team replies." else "Private. We delete your brief from our servers after delivery.",
-                )
+                LockedCaption("Private. We delete your brief from our servers after delivery.")
             }
         },
     ) { padding ->
@@ -179,17 +174,6 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 }
                 Spacer(Modifier.height(20.dp))
             }
-            if (state.isResubmit && state.alreadyCharged > 0) {
-                Text(settlementLine(quote.credits, state.alreadyCharged), style = RaType.body, color = Ink.ink)
-                Spacer(Modifier.height(20.dp))
-            }
-            if (state.shortBy > 0) {
-                Text(
-                    "You have ${Money.credits(state.balance)}. You need ${state.shortBy} more.",
-                    style = RaType.body, color = Ink.ink,
-                )
-                Spacer(Modifier.height(20.dp))
-            }
             state.staleLine?.let { line ->
                 Text(line, style = RaType.secondary, color = Ink.amber)
                 Spacer(Modifier.height(20.dp))
@@ -237,7 +221,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             Spacer(Modifier.height(20.dp))
             Text("What happens next", style = RaType.bodyMedium, color = Ink.ink)
             Spacer(Modifier.height(8.dp))
-            NumberedSteps(nextSteps(config.revisions.includedRounds))
+            NumberedSteps(nextSteps())
             Spacer(Modifier.height(20.dp))
 
             Hairline()
@@ -319,17 +303,6 @@ private fun BreakdownTile(parts: List<Pair<String, Int>>) {
     }
 }
 
-/** "You already paid 40 credits. This adds 8 credits." (same wording as iOS) */
-internal fun settlementLine(newCredits: Int, alreadyPaid: Int): String {
-    val diff = newCredits - alreadyPaid
-    val paid = "You already paid ${Money.credits(alreadyPaid)}."
-    return when {
-        diff > 0 -> "$paid This adds ${Money.credits(diff)}."
-        diff < 0 -> "$paid This returns ${Money.credits(-diff)} to your balance."
-        else -> "$paid No change."
-    }
-}
-
 /**
  * "Sized for payments, an Android app and two integrations." A leading capital is lowered unless
  * the word is a name: another capital inside it ("iOS app", "WhatsApp") or a platform or brand.
@@ -368,13 +341,15 @@ internal fun timelineText(minWeeks: Int, maxWeeks: Int, workingDays: Int): Strin
     }
 }
 
-/** "What happens next" (same wording as iOS). */
-internal fun nextSteps(includedRounds: Int): List<String> = listOf(
-    "We review your brief within a working day.",
-    "You get an approval, or comments to answer here.",
-    "We build it and keep you posted on this screen.",
-    "You get the code with a handover guide and steps to make it live. Accept it, or ask for a revision. " +
-        (if (includedRounds == 1) "One round is" else "$includedRounds rounds are") + " included.",
+/** R-103: above Submit (the PM's final copy, as iOS). */
+internal const val FREE_TO_SUBMIT = "Free to submit. You pay only once we accept it."
+
+/** "What happens next", contract v0.10.0 (R-103): submit free, pay after acceptance, report instead of revisions. */
+internal fun nextSteps(): List<String> = listOf(
+    "We check your brief. Most are accepted at once; some take up to a working day.",
+    "Once it's accepted, you pay the quoted credits and we start building.",
+    "We build and test it. This screen shows each step.",
+    "You get the code with a handover guide and steps to make it live. Approve it, or tell us what's wrong and we fix it.",
 )
 
 /**

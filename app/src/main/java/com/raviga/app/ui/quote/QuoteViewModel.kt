@@ -62,17 +62,6 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val clock: Long = System.currentTimeMillis(),
     ) {
         val quote get() = draft?.quote
-        val isResubmit get() = project?.status == ProjectStatus.CHANGES_REQUESTED
-        val alreadyCharged get() = project?.submission?.creditsCharged ?: 0
-        /** Credits that will actually leave the balance now. */
-        val due: Int get() = ((quote?.credits ?: 0) - if (isResubmit) alreadyCharged else 0)
-        /**
-         * Second review 2026-11-03 (Android): never while a send is held (R-094 P2-6). The first send may have charged
-         * already, so the balance is down by this very quote, and "You need N more" with Buy credits blocked the retry
-         * that turns the draft into the paid project. If it really is short, the server answers 402, the hold goes, and
-         * Buy credits shows.
-         */
-        val shortBy: Int get() = if (draft?.holdsSentSubmit == true) 0 else (due - balance).coerceAtLeast(0)
         val rejected get() = draft?.isRefused == true || project?.isRejected == true
         val refusalReason get() = draft?.refusal?.reason ?: project?.screening?.reason
         /** The brief changed since this quote. */
@@ -216,7 +205,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     /**
      * Opening the quote for a brief with no current quote asks for one. Never while or after submitting: a submit
      * clears the quote token, and with the project not loaded yet this used to ask for a new quote, an AI call nobody
-     * asked for (QA L1, 2026-11-03). A submitted brief is quoted again only once the team asked for changes.
+     * asked for (QA L1, 2026-11-03). A submitted brief is never quoted here again (contract v0.10.0: an expired price
+     * is re-quoted on the project screen, before paying).
      */
     private fun maybeQuote() {
         val s = _state.value
@@ -227,8 +217,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
             if (d.pendingJob.kind == com.raviga.app.data.drafts.PendingJob.QUOTE) resumeQuoteOnce()
             return
         }
-        val editable = d.serverProjectId == null || s.project?.status == ProjectStatus.CHANGES_REQUESTED
-        if (s.needsNewQuote && d.document != null && editable && !s.rejected && !quotedOnce) requestQuote()
+        if (s.needsNewQuote && d.document != null && d.serverProjectId == null && !s.rejected && !quotedOnce) requestQuote()
     }
 
     private var resumedQuote = false
@@ -305,23 +294,11 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
             runCatching {
-                if (s.isResubmit) {
-                    // A held retry sends nothing new, so the account's target isn't touched either (R-097 #4).
-                    if (!s.held && github != s.me?.deliveryTargets?.githubUsername) container.session.setDeliveryTargets(github, null)
-                    container.drafts.resubmit(draft.id, keyFor(draft.quoteToken.orEmpty()))
-                } else {
-                    container.drafts.submit(draft.id, github, null, keyFor(draft.quoteToken.orEmpty()))
-                }
-            }.recoverCatching { e ->
-                // A resubmit that landed under an earlier key shows up as invalid_state; check before calling it an error.
-                val sid = draft.serverProjectId
-                if ((e as? ApiException)?.code != ApiException.INVALID_STATE || sid == null) throw e
-                val now = container.projects.refresh(sid)
-                if (now.status != ProjectStatus.SUBMITTED && now.status != ProjectStatus.APPROVED) throw e
-                now
+                // Contract v0.10.0: free; the project comes back submitted, or approved at once by the policy check.
+                container.drafts.submit(draft.id, github, null, keyFor(draft.quoteToken.orEmpty()))
             }.onSuccess { project ->
                 submitKey = null
-                afterSubmit(project, draft, s.isResubmit)
+                afterSubmit(project, draft)
                 _state.update { it.copy(submitting = false, submittedProjectId = project.id) }
             }.onFailure { e ->
                 // R-092 #19 / R-091: a submit whose answer was lost, retried: the server names the project it already
@@ -334,7 +311,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                     if (adopted != null) {
                         submitKey = null
                         // R-094 P2-12 (iOS review 2): the same follow-up as a submit whose answer arrived.
-                        afterSubmit(adopted, draft, s.isResubmit)
+                        afterSubmit(adopted, draft)
                         _state.update { it.copy(submitting = false, submittedProjectId = adopted.id) }
                         return@onFailure
                     }
@@ -345,9 +322,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     /** What follows a submit, whether its answer arrived or the draft was turned into the project the server has. */
-    private suspend fun afterSubmit(project: Project, draft: com.raviga.app.data.drafts.LocalDraft, isResubmit: Boolean) {
-        submittedEvent(project, draft, isResubmit)?.let { (bracket, credits) -> container.analytics.projectSubmitted(bracket, credits) }
-        runCatching { container.credits.refresh() }
+    private suspend fun afterSubmit(project: Project, draft: com.raviga.app.data.drafts.LocalDraft) {
+        submittedEvent(project, draft).let { (bracket, credits) -> container.analytics.projectSubmitted(bracket, credits) }
         runCatching { container.session.refreshMe() }
     }
 
@@ -385,9 +361,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
             }
         }
 
-        /** project_submitted's values: POST /projects only (contract v0.9); a resubmit is a different call, not counted. */
-        internal fun submittedEvent(project: Project, draft: com.raviga.app.data.drafts.LocalDraft, isResubmit: Boolean): Pair<String?, Int>? =
-            if (isResubmit) null
-            else (project.quote?.bracketId ?: draft.quote?.bracketId) to (project.quote?.credits ?: draft.quote?.credits ?: 0)
+        /** project_submitted's values: POST /projects (contract v0.9). */
+        internal fun submittedEvent(project: Project, draft: com.raviga.app.data.drafts.LocalDraft): Pair<String?, Int> =
+            (project.quote?.bracketId ?: draft.quote?.bracketId) to (project.quote?.credits ?: draft.quote?.credits ?: 0)
     }
 }

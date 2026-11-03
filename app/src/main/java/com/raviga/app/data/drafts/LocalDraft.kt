@@ -131,14 +131,13 @@ data class PendingJob(
 @Serializable
 data class Refusal(val reason: String, val at: String)
 
-/** R-094 P2-6: what a submit or resubmit sent, kept until its answer is seen (exactly one of the two bodies). */
+/** R-094 P2-6: what a submit sent, kept until its answer is seen. (Resubmit is gone since contract v0.10.0.) */
 @Serializable
 data class SentSubmit(
     val quoteToken: String,
     /** The brief version the body carries. */
     val version: Int,
     val submit: com.raviga.app.data.api.SubmitProjectRequest? = null,
-    val resubmit: com.raviga.app.data.api.ResubmitRequest? = null,
 ) {
     companion object {
         /**

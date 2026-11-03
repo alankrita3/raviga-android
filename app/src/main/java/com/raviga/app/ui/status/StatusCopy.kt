@@ -6,61 +6,49 @@ import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectStatus
 import com.raviga.app.data.api.ProjectSummary
 import com.raviga.app.ui.theme.Ink
-import com.raviga.app.util.Time
 
 /** The shared status vocabulary from DESIGN.md: same words on iOS, Android and in push copy. */
 object StatusCopy {
 
     fun markColor(status: String): Color = when (status) {
         ProjectStatus.DRAFT, ProjectStatus.CANCELLED -> Ink.ash
-        ProjectStatus.SUBMITTED, ProjectStatus.CHANGES_REQUESTED, ProjectStatus.REVISION_REQUESTED -> Ink.amber
-        ProjectStatus.APPROVED -> Ink.blue
+        ProjectStatus.SUBMITTED, ProjectStatus.REVISION_REQUESTED -> Ink.amber
+        ProjectStatus.APPROVED, ProjectStatus.BUILDING -> Ink.blue
         ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED -> Ink.moss
         ProjectStatus.REJECTED -> Ink.brick
         else -> Ink.ash
     }
 
+    /** The chip on a project (contract v0.10.0 statuses; the line beside it is the server's statusLine). */
     fun detailTitle(status: String): String = when (status) {
         ProjectStatus.DRAFT -> "Draft"
-        ProjectStatus.SUBMITTED -> "Awaiting review"
-        ProjectStatus.CHANGES_REQUESTED -> "Comments from the team"
-        ProjectStatus.APPROVED -> "In build"
+        ProjectStatus.SUBMITTED -> "In review"
+        ProjectStatus.APPROVED -> "Accepted"
+        ProjectStatus.BUILDING -> "In build"
         ProjectStatus.DELIVERED -> "Delivered"
-        ProjectStatus.REVISION_REQUESTED -> "Revision in progress"
-        ProjectStatus.ACCEPTED -> "Accepted"
+        ProjectStatus.REVISION_REQUESTED -> "Being fixed"
+        ProjectStatus.ACCEPTED -> "Approved by you"
         ProjectStatus.REJECTED -> "Not accepted"
         ProjectStatus.CANCELLED -> "Cancelled"
         else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
     }
 
-    // Status dates come from statusChangedAt (contract v0.8.1); older shapes fall back to the last history entry, then updatedAt.
-    fun rowLine(summary: ProjectSummary): String =
-        rowLine(summary.status, summary.updatedAt, summary.estimatedDeliveryDate, summary.statusChangedAt ?: summary.updatedAt)
+    /**
+     * Contract v0.10.0 (R-103): a project's line is the server's statusLine, shown as it comes (it fills in credits and
+     * dates); never composed here. Only a cache from before v0.10.0 lacks it, then the chip's words stand in.
+     */
+    fun rowLine(summary: ProjectSummary): String = summary.statusLine.ifBlank { detailTitle(summary.status) }
 
-    fun rowLine(project: Project): String = rowLine(
-        project.status, project.updatedAt, project.timeline?.estimatedDeliveryDate,
-        project.statusChangedAt ?: project.history.lastOrNull()?.at ?: project.updatedAt,
-    )
+    fun rowLine(project: Project): String = project.statusLine.ifBlank { detailTitle(project.status) }
 
-    fun rowLine(status: String, updatedAt: String?, estimatedDeliveryDate: String?, statusChangedAt: String? = updatedAt): String = when (status) {
-        ProjectStatus.DRAFT -> "Draft, edited ${Time.relative(updatedAt)}"
-        ProjectStatus.SUBMITTED -> "Submitted, awaiting review"
-        ProjectStatus.CHANGES_REQUESTED -> "The team left comments"
-        ProjectStatus.APPROVED -> if (estimatedDeliveryDate != null) "Approved, in build. Ready by ${Time.shortDate(estimatedDeliveryDate)}" else "Approved, in build"
-        ProjectStatus.DELIVERED -> "Delivered, review the repo"
-        ProjectStatus.REVISION_REQUESTED -> "Revision requested"
-        ProjectStatus.ACCEPTED -> "Accepted on ${Time.shortDate(statusChangedAt)}"
-        ProjectStatus.REJECTED -> "Not accepted, credits returned"
-        ProjectStatus.CANCELLED -> "Cancelled, credits returned"
-        else -> detailTitle(status)
-    }
-
+    /** Only when a push carries no body of its own (the server always sends one). */
     fun pushLine(status: String): String = when (status) {
-        ProjectStatus.CHANGES_REQUESTED -> "The team left comments on your brief."
-        ProjectStatus.APPROVED -> "Approved. We have started building."
-        ProjectStatus.DELIVERED -> "Your code is ready. Review the repo."
-        ProjectStatus.REJECTED -> "Not accepted. Your credits have been returned."
-        ProjectStatus.ACCEPTED -> "Accepted. Thank you."
+        ProjectStatus.APPROVED -> "Accepted. Pay to start building."
+        ProjectStatus.BUILDING -> "Paid. We're building it."
+        ProjectStatus.DELIVERED -> "Delivered. Check it, then approve it or tell us what's wrong."
+        ProjectStatus.REVISION_REQUESTED -> "We're fixing what you reported."
+        ProjectStatus.REJECTED -> "Not accepted."
+        ProjectStatus.CANCELLED -> "Cancelled."
         else -> "Your project was updated."
     }
 
@@ -97,15 +85,13 @@ object StatusCopy {
      * R-092 #37 (iOS review, iOS 26900b8): cancel makes no draft, and "Your copy stays on this phone" only when there is
      * one (after a restore there may be none). The confirm says beforehand what the closed screen says after.
      */
-    fun cancelConfirmLine(credits: Int, hasCopy: Boolean, editsSinceSubmit: Boolean = false): String =
-        (if (credits > 0) "Your ${com.raviga.app.util.Money.credits(credits)} ${if (credits == 1) "comes" else "come"} back to your balance and the brief is deleted from our servers."
-        else "The brief is deleted from our servers.") + copyLine(hasCopy) +
-            // R-094 P2-5 (the PM's words): a changes round's edits stay on the phone as a version.
-            (if (editsSinceSubmit) " Your edits since you submitted are kept as a version." else "")
+    fun cancelConfirmLine(hasCopy: Boolean): String =
+        // v0.10.0: cancel is only before payment, so nothing comes back; the brief goes.
+        "Nothing was charged. The brief is deleted from our servers." + copyLine(hasCopy)
 
     /** The line under a closed project whose brief the server deleted. */
     fun deletedLine(day: String, hasCopy: Boolean): String =
-        "We deleted this brief and its comments from our servers on $day." + copyLine(hasCopy)
+        "We deleted this brief from our servers on $day." + copyLine(hasCopy)
 
     private fun copyLine(hasCopy: Boolean) = if (hasCopy) " Your copy stays on this phone." else ""
 
@@ -148,7 +134,7 @@ object StatusCopy {
         "network" -> "Couldn't reach Raviga. Check your connection and try again."
         "decode" -> "Raviga sent something this version can't read. Try again later."
         "consent_required" -> "Allow AI processing before continuing."
-        "insufficient_credits" -> fallback ?: "You need more credits to submit."
+        "insufficient_credits" -> fallback ?: "You need more credits to pay for this project."
         "version_conflict" -> "The brief changed elsewhere. Reload and try again."
         // The server's message says which case (expired, used, brief changed; contract 11 step 3), as on iOS.
         "quote_stale" -> fallback ?: "The brief changed since this quote. Get a new quote."
@@ -159,7 +145,6 @@ object StatusCopy {
         // R-097: the server's invalid_state (the screens that can meet it reload the project on it); the app's own
         // invalid_state lines (httpStatus 0, "Write the brief first.") keep their words.
         "invalid_state" -> fallback ?: "That step isn't available any more. The project has been refreshed."
-        "revision_limit_reached" -> "Your included revision rounds are used up. Email us and we can add more."
         "active_projects" -> "Finish or cancel your active projects before deleting your data."
         "aws_role_not_ready" -> "AWS hasn't finished creating the role yet. Give it a minute and check again."
         "otp_invalid" -> "That recovery key doesn't match. Check it and try again."

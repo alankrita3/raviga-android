@@ -82,8 +82,9 @@ class Analytics(private val sink: AnalyticsSink) {
     fun creditsPurchased(productId: String, credits: Int) =
         log("credits_purchased", "product_id" to productId.ifKnown(PRODUCTS), "credits" to credits)
 
-    fun deliveryAccepted(bracket: String?, revisionsUsed: Int) =
-        log("delivery_accepted", "bracket" to bracket.ifKnown(BRACKETS), "revisions_used" to revisionsUsed.coerceAtLeast(0))
+    /** Contract v0.10.0 (section 22): `reports`, the delivery reports sent, replaces `revisions_used`. */
+    fun deliveryAccepted(bracket: String?, reports: Int) =
+        log("delivery_accepted", "bracket" to bracket.ifKnown(BRACKETS), "reports" to reports.coerceAtLeast(0))
 
     private fun log(name: String, vararg params: Pair<String, Any?>) {
         if (!enabled) return

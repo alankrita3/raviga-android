@@ -155,8 +155,13 @@ data class AppConfig(
     val minAppVersion: Map<String, String> = emptyMap(),
     val credits: CreditsConfig = CreditsConfig(),
     val quote: QuoteConfig = QuoteConfig(),
-    val revisions: RevisionsConfig = RevisionsConfig(),
+    /** v0.10.0 (R-103): an accepted project left unpaid this long is cancelled. */
+    val payment: PaymentConfig = PaymentConfig(),
     val acceptance: AcceptanceConfig = AcceptanceConfig(),
+    /** v0.10.0 (R-103): "Something's wrong" with a delivery: fixed categories, a short description. */
+    val report: ReportConfig = ReportConfig(),
+    /** v0.10.0: the fair-use cap on new briefs (0 means none); past it /ai/draft answers 429 rate_limited. */
+    val briefLimits: BriefLimits = BriefLimits(),
     val retention: RetentionConfig = RetentionConfig(),
     val limits: LimitsConfig = LimitsConfig(),
     val ai: AiConfig = AiConfig(),
@@ -192,7 +197,7 @@ data class CreditPack(
 @Serializable
 data class QuoteConfig(
     val brackets: List<Bracket> = emptyList(),
-    val validDays: Int = 14,
+    val validDays: Int = 90,
     val timelineNote: String = "Most projects are delivered well ahead of this estimate.",
 )
 
@@ -208,7 +213,23 @@ data class Bracket(
 )
 
 @Serializable
-data class RevisionsConfig(val includedRounds: Int = 2)
+data class PaymentConfig(val unpaidCancelDays: Int = 90)
+
+@Serializable
+data class ReportConfig(
+    val categories: List<ReportCategory> = listOf(
+        ReportCategory("not_as_brief", "It doesn't match the brief"),
+        ReportCategory("bug", "Something doesn't work (a bug)"),
+        ReportCategory("other", "Something else"),
+    ),
+    val descriptionMaxChars: Int = 1000,
+)
+
+@Serializable
+data class ReportCategory(val id: String, val label: String)
+
+@Serializable
+data class BriefLimits(val perDay: Int = 0, val perMonth: Int = 0)
 
 @Serializable
 data class AcceptanceConfig(val autoAcceptDays: Int = 14)
@@ -302,22 +323,27 @@ data class Grievance(
 
 // ---------- Projects (sections 5, 7) ----------
 
+/**
+ * Contract v0.10.0 (R-103): submit is free; the policy check or the team accepts (approved, unpaid) or declines
+ * (rejected); the client pays (building); the team delivers; the client approves (accepted) or reports a problem
+ * (revision_requested) and the team delivers again. No messaging, no resubmit.
+ */
 object ProjectStatus {
     const val DRAFT = "draft"
     const val SUBMITTED = "submitted"
-    const val CHANGES_REQUESTED = "changes_requested"
     const val APPROVED = "approved"
+    const val BUILDING = "building"
     const val DELIVERED = "delivered"
     const val REVISION_REQUESTED = "revision_requested"
     const val ACCEPTED = "accepted"
     const val REJECTED = "rejected"
     const val CANCELLED = "cancelled"
 
-    /** Statuses in which inputs and the document can still change. */
-    fun isEditable(status: String) = status == DRAFT || status == CHANGES_REQUESTED
+    /** Only a draft (on the phone) can change; a submitted brief is v1 for good. */
+    fun isEditable(status: String) = status == DRAFT
     fun isTerminal(status: String) = status == ACCEPTED || status == REJECTED || status == CANCELLED
-    fun canCancel(status: String) = status == SUBMITTED || status == CHANGES_REQUESTED
-    fun canComment(status: String) = status != DRAFT && !isTerminal(status)
+    /** Free until paid: submitted, or accepted and not yet paid. */
+    fun canCancel(status: String) = status == SUBMITTED || status == APPROVED
 }
 
 object SectionIds {
@@ -367,17 +393,22 @@ data class Project(
     val statusChangedAt: String? = null,
     /** The brief, held only from submit until the project closes (contract v0.6). */
     val document: ProjectDocument? = null,
+    /** v0.10.0: the fixed line for the status, filled in by the server (credits, dates). Show it as it comes. */
+    val statusLine: String = "",
+    /** What the project keeps of its quote: price, timeline and expiresAt (paid at /pay; re-quoted when expired). */
     val quote: Quote? = null,
-    val lockedVersion: Int? = null,
     val submission: Submission? = null,
-    val review: Review = Review(),
+    /** v0.10.0: null until paid. */
+    val payment: Payment? = null,
+    /** When the project was accepted or declined. */
+    val decidedAt: String? = null,
     val timeline: Timeline? = null,
     val delivery: Delivery? = null,
-    val revisions: Revisions = Revisions(),
-    val unreadComments: Int = 0,
+    /** v0.10.0: the client's delivery reports, oldest first. */
+    val reports: List<Report> = emptyList(),
     val history: List<HistoryEntry> = emptyList(),
     val screening: ProjectScreening? = null,
-    /** Set once the server deleted the brief, title, comments and notes (accepted, cancelled, rejected). */
+    /** Set once the server deleted the brief and title (accepted, cancelled, rejected). */
     val contentDeletedAt: String? = null,
 ) {
     val isEditable: Boolean get() = ProjectStatus.isEditable(status)
@@ -397,9 +428,10 @@ data class ProjectSummary(
     val updatedAt: String? = null,
     /** When the project entered its current status (contract v0.8.1). */
     val statusChangedAt: String? = null,
+    /** v0.10.0: the same fixed line as the project's. */
+    val statusLine: String = "",
     val credits: Int? = null,
     val estimatedDeliveryDate: String? = null,
-    val unreadComments: Int = 0,
     /** Set once the server deleted the brief and title (accepted, cancelled, rejected). */
     val contentDeletedAt: String? = null,
 )
@@ -415,7 +447,6 @@ data class HistoryEntry(
     val status: String,
     val at: String? = null,
     val by: String = "system",
-    val note: String = "",
 )
 
 /** clear | review | rejected. Only rejected changes what the client sees. */
@@ -498,33 +529,32 @@ data class Complexity(val score: Int = 0, val drivers: List<String> = emptyList(
 data class BreakdownItem(val area: String, val credits: Int)
 
 @Serializable
+data class Payment(val credits: Int = 0, val paidAt: String? = null)
+
+/** v0.10.0: "Something's wrong" with a delivery. [description] is null once the content is deleted. */
+@Serializable
+data class Report(
+    val id: String,
+    val createdAt: String? = null,
+    val category: String = "other",
+    val description: String? = null,
+    val resolvedAt: String? = null,
+)
+
+@Serializable
+data class ReportRequest(val category: String, val description: String)
+
+/** Empty while the project's quote holds; after it expired, the token of a new quote for the same brief. */
+@Serializable
+data class PayRequest(val quoteToken: String? = null)
+
+@Serializable
 data class Submission(
     val submittedAt: String? = null,
     val githubUsername: String? = null,
     val awsAccountId: String? = null,
     val creditsCharged: Int = 0,
 )
-
-@Serializable
-data class Review(
-    val comments: List<Comment> = emptyList(),
-    val decidedAt: String? = null,
-)
-
-@Serializable
-data class Comment(
-    val id: String,
-    val createdAt: String? = null,
-    val author: String = "team",   // team | client
-    val body: String,
-    val sectionId: String? = null,
-)
-
-@Serializable
-data class CommentsResponse(val comments: List<Comment> = emptyList())
-
-@Serializable
-data class NewCommentRequest(val body: String, val sectionId: String? = null)
 
 @Serializable
 data class Timeline(
@@ -535,7 +565,7 @@ data class Timeline(
 
 @Serializable
 data class Milestone(
-    val id: String,                // submitted | review | approved | build | delivered | accepted
+    val id: String,                // v0.10.0: submitted | approved | paid | build | delivered | accepted
     val label: String,
     val at: String? = null,
     val state: String = "upcoming", // done | current | upcoming
@@ -572,24 +602,6 @@ data class Transfer(
 
 @Serializable
 data class AwsDelivery(val status: String = "not_requested", val note: String = "")
-
-@Serializable
-data class Revisions(
-    val used: Int = 0,
-    val included: Int = 2,
-    val requests: List<RevisionRequest> = emptyList(),
-)
-
-@Serializable
-data class RevisionRequest(
-    val id: String,
-    val createdAt: String? = null,
-    val message: String = "",
-    val resolvedAt: String? = null,
-)
-
-@Serializable
-data class RevisionRequestBody(val message: String)
 
 // ---------- Stateless AI, quotes, submit (contract v0.6) ----------
 
@@ -650,9 +662,6 @@ data class SubmitProjectRequest(
     val githubUsername: String? = null,
     val awsAccountId: String? = null,
 )
-
-@Serializable
-data class ResubmitRequest(val document: DocumentBody, val quoteToken: String)
 
 // ---------- Delivery targets (section 12) ----------
 

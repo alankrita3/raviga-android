@@ -1,6 +1,6 @@
 package com.raviga.app.ui.status
 
-import com.raviga.app.data.api.Revisions
+import com.raviga.app.data.api.ReportCategory
 import com.raviga.app.data.api.AwsDelivery
 import com.raviga.app.data.api.Delivery
 import com.raviga.app.data.api.ProjectStatus
@@ -39,8 +39,6 @@ object GoLiveLogic {
         githubUsername: String?,
         platforms: Platforms,
         hasPaidServices: Boolean,
-        /** R-092 #41 (iOS review): the project's own rounds, never the config's (they can differ per project). */
-        revisions: Revisions,
     ): List<Step> = buildList {
         val transfer = delivery.transfer ?: Transfer()
         add(Step("github", "Accept the code on GitHub", transferLine(transfer, githubUsername), done = transfer.status == "accepted"))
@@ -79,17 +77,21 @@ object GoLiveLogic {
         if (platforms.web) {
             add(Step("domain", "Put it on your domain", "The guide shows how to point your domain at it. Share access and we can do it for you."))
         }
+        // R-103: approve it, or report what's wrong and the team delivers again (no round limit).
         val accepted = status == ProjectStatus.ACCEPTED
-        val rounds = if (revisions.included == 1) "One round is" else "${revisions.included} rounds are"
         add(
             Step(
                 "accept",
-                if (accepted) "Delivery accepted" else "Accept the delivery",
-                if (accepted) "It's yours. Ask the team any time if you need more." else "Or ask for a revision. $rounds included.",
+                if (accepted) "Delivery approved" else "Approve the delivery",
+                if (accepted) "It's yours." else "Or tell us what's wrong and we'll fix it and deliver again.",
                 done = accepted,
             ),
         )
     }
+
+    /** A report's category in config's words; an id this build doesn't know shows as "Something else". */
+    fun reportLabel(id: String, categories: List<ReportCategory>): String =
+        categories.firstOrNull { it.id == id }?.label ?: categories.firstOrNull { it.id == "other" }?.label ?: "Something else"
 
     /** Where the repository transfer stands (same wording as iOS). Pending is queued on our side; only initiated reached GitHub. */
     /**

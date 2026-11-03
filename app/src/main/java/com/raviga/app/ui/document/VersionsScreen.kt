@@ -95,10 +95,9 @@ fun VersionPreviewScreen(nav: NavController, projectId: String, version: Int) {
     var error by remember { mutableStateOf<String?>(null) }
     var restoring by remember { mutableStateOf(false) }
     val draft by remember(projectId) { container.drafts.draft(projectId) }.collectAsStateWithLifecycle(container.drafts.get(projectId))
-    val project = draft?.serverProjectId?.let { container.projects.cachedProject(it) }
     val v = draft?.versions?.firstOrNull { it.version == version }
     val editable = draft?.let { d ->
-        !d.isRefused && (d.serverProjectId == null || project?.status == com.raviga.app.data.api.ProjectStatus.CHANGES_REQUESTED)
+        !d.isRefused && d.serverProjectId == null
     } == true
     val canRestore = editable && v != null && version != draft?.current?.version
 

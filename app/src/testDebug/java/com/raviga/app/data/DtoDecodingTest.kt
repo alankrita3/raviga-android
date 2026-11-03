@@ -253,6 +253,31 @@ class DtoDecodingTest {
         assertEquals("", me.deliveryTargets.githubUsername)
     }
 
+    /** Contract v0.10.0 (R-103): statusLine, payment, reports, the new milestones; no comments, revisions or notes. */
+    @Test
+    fun `a v0_10_0 project decodes`() {
+        val p = json.decodeFromString(Project.serializer(), """{"id":"pr_1","ref":"RA-A1B2C3","title":"Tiffin delivery app",
+            "status":"revision_requested","statusLine":"We're fixing what you reported.","createdAt":"a","updatedAt":"b","statusChangedAt":"b",
+            "document":null,"quote":{"id":"qt_1","credits":30,"usd":300,"inr":25500,"bracketId":"standard","estimatedWorkingDays":10,
+            "timeline":{"minWeeks":1,"maxWeeks":2},"documentHash":"h","expiresAt":"2027-02-01T00:00:00Z"},
+            "submission":{"submittedAt":"a","githubUsername":"","awsAccountId":null,"creditsCharged":30},
+            "payment":{"credits":30,"paidAt":"c"},"decidedAt":"a",
+            "timeline":{"estimatedWorkingDays":10,"estimatedDeliveryDate":"2026-11-18","milestones":[{"id":"paid","label":"Paid","at":"c","state":"done"}]},
+            "delivery":null,"reports":[{"id":"rp_1","createdAt":"d","category":"bug","description":"The login button does nothing.","resolvedAt":null}],
+            "screening":{"status":"clear","reason":null,"checkedAt":"a"},"contentDeletedAt":null,
+            "history":[{"status":"submitted","at":"a","by":"client"},{"status":"approved","at":"a","by":"system"}]}""")
+        assertEquals("We're fixing what you reported.", p.statusLine)
+        assertEquals(30, p.payment?.credits)
+        assertEquals("bug", p.reports.single().category)
+        assertEquals("Paid", p.timeline?.milestones?.single()?.label)
+        val config = json.decodeFromString(AppConfig.serializer(), """{"payment":{"unpaidCancelDays":90},
+            "report":{"categories":[{"id":"bug","label":"Something doesn't work (a bug)"}],"descriptionMaxChars":1000},
+            "briefLimits":{"perDay":5,"perMonth":20},"quote":{"brackets":[],"validDays":90}}""")
+        assertEquals(90, config.payment.unpaidCancelDays)
+        assertEquals(1000, config.report.descriptionMaxChars)
+        assertEquals(5, config.briefLimits.perDay)
+    }
+
     @Test
     fun `captured dev fixtures decode by name`() {
         // Any fixture copied from the iOS session decodes with the matching DTO, chosen by filename.
@@ -269,8 +294,6 @@ class DtoDecodingTest {
                     name == "config" -> json.decodeFromString(AppConfig.serializer(), text).also { assertTrue(it.credits.packs.isNotEmpty()) }
                     name == "me" -> json.decodeFromString(Me.serializer(), text)
                     name == "credits" -> json.decodeFromString(com.raviga.app.data.api.CreditsResponse.serializer(), text)
-                    name == "comments" -> json.decodeFromString(com.raviga.app.data.api.CommentsResponse.serializer(), text)
-                    name == "comment" -> json.decodeFromString(com.raviga.app.data.api.Comment.serializer(), text)
                     name.startsWith("delivery-targets") -> json.decodeFromString(com.raviga.app.data.api.DeliveryTargets.serializer(), text)
                     name == "aws-connect" -> json.decodeFromString(com.raviga.app.data.api.AwsConnectInfo.serializer(), text)
                     name.startsWith("projects") -> json.decodeFromString(ProjectsResponse.serializer(), text)

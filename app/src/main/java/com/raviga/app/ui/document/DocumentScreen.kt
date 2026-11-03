@@ -175,7 +175,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                     }
                     editable && document != null -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         PrimaryButton(
-                            if (state.status == ProjectStatus.CHANGES_REQUESTED) "Get a new quote" else "Get a quote",
+                            "Get a quote",
                             enabled = state.busyMessage == null,
                             onClick = { nav.navigate(Routes.quote(draftId)) },
                             modifier = Modifier.weight(1f),
@@ -584,14 +584,6 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
     val project = state.project
     val draft = state.draft
     when {
-        project?.status == ProjectStatus.CHANGES_REQUESTED -> Text(
-            "The team left comments. Read them, edit, then get a new quote.",
-            style = RaType.secondary, color = Ink.link,
-            modifier = Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) {
-                // R-092 #41: opened from the status screen, go back to it rather than stacking a second one.
-                nav.openProjectScreen(Routes.status(project.id))
-            },
-        )
         project?.contentDeletedAt != null && draft != null -> Text(
             "${StatusCopy.rowLine(project)}. Raviga deleted its copy; this one is kept only on this phone.",
             style = RaType.secondary, color = Ink.graphite,
