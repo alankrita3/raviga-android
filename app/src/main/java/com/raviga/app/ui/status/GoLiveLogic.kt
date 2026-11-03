@@ -92,8 +92,13 @@ object GoLiveLogic {
     }
 
     /** Where the repository transfer stands (same wording as iOS). Pending is queued on our side; only initiated reached GitHub. */
-    fun transferLine(transfer: Transfer, githubUsername: String?): String {
-        val name = githubUsername?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "your GitHub account"
+    /**
+     * [currentTarget] is this account's GitHub username now. R-094 P2-11 (iOS review 2, contract v0.9.7): a transfer
+     * names the account it was sent to, which a later change of target doesn't move; older projects fall back.
+     */
+    fun transferLine(transfer: Transfer, currentTarget: String?): String {
+        val sentTo = transfer.githubUsername?.takeIf { it.isNotBlank() } ?: currentTarget
+        val name = sentTo?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "your GitHub account"
         return when (transfer.status) {
             "awaiting_target" -> "Add your GitHub username to receive the repository."
             "pending" -> "We're sending the repository to $name. GitHub will email you to accept it."

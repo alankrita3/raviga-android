@@ -563,6 +563,11 @@ data class Transfer(
     val status: String = "pending", // awaiting_target | pending | initiated | accepted | failed
     val initiatedAt: String? = null,
     val error: String? = null,
+    /**
+     * Contract v0.9.7 (R-096): the GitHub account the transfer was sent to, kept when the target changes later;
+     * null while awaiting_target and on projects delivered before v0.9.7. For pending, the last try's name.
+     */
+    val githubUsername: String? = null,
 )
 
 @Serializable

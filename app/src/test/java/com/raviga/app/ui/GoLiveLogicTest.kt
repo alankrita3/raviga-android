@@ -73,4 +73,19 @@ class GoLiveLogicTest {
             GoLiveLogic.transferLine(com.raviga.app.data.api.Transfer(status = "failed", error = "GitHub said 422"), "octocat"),
         )
     }
+
+    /** R-094 P2-11 (contract v0.9.7): the line names the account the transfer went to, not today's target. */
+    @Test fun aTransferNamesTheAccountItWasSentTo() {
+        val sent = com.raviga.app.data.api.Transfer(status = "initiated", githubUsername = "old-name")
+        assertEquals("Transfer sent to @old-name. Accept it from the email GitHub sent you.", GoLiveLogic.transferLine(sent, "new-name"))
+        val older = com.raviga.app.data.api.Transfer(status = "accepted", githubUsername = null)
+        assertEquals("before v0.9.7: today's target", "Transferred to @new-name.", GoLiveLogic.transferLine(older, "new-name"))
+    }
+
+    @Test fun theNewFieldDecodes() {
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val t = json.decodeFromString(com.raviga.app.data.api.Transfer.serializer(), """{"status":"accepted","githubUsername":"octocat"}""")
+        assertEquals("octocat", t.githubUsername)
+        assertEquals(null, json.decodeFromString(com.raviga.app.data.api.Transfer.serializer(), """{"status":"awaiting_target","githubUsername":null}""").githubUsername)
+    }
 }
