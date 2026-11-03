@@ -250,6 +250,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 value = state.github,
                 onValueChange = { vm.setGithub(it) },
                 placeholder = "octocat",
+                label = "GitHub username",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
             )

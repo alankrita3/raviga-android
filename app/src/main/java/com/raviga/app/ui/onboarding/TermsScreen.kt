@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextAlign
+import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.LegalLinks
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.SpotIllustration
@@ -136,13 +137,16 @@ fun TermsScreen(nav: NavController, next: String? = null) {
             // Contract v0.9, wording shared with iOS: its own block, the switch off until the client turns it on.
             Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
             Spacer(Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = 20.dp).switchRow(analyticsOn, enabled = !busy) { analyticsOn = it },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     Text("Allow usage analytics", style = RaType.body, color = Ink.ink)
                     Text(config.analytics.providers.joinToString(", "), style = RaType.secondary, color = Ink.graphite)
                 }
                 Spacer(Modifier.width(12.dp))
-                Switch(checked = analyticsOn, enabled = !busy, onCheckedChange = { analyticsOn = it }, colors = switchColors())
+                Switch(checked = analyticsOn, enabled = !busy, onCheckedChange = null, colors = switchColors())
             }
             StatusCopy.grievanceLine(legal.grievance)?.let {
                 Text(it, style = RaType.secondary, color = Ink.graphite)

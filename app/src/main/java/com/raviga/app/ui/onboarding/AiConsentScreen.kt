@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.raviga.app.ui.LocalAppContainer
+import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.BottomBar
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.Hairline
@@ -76,14 +77,14 @@ fun AiConsentScreen(nav: NavController) {
             Text("Before we send this to AI", style = RaType.title, color = Ink.ink)
             Spacer(Modifier.height(8.dp))
             // R-028 (as iOS): the switch comes first, so it is never hidden behind the Continue bar on a short phone.
-            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().switchRow(allow) { allow = it }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Allow AI processing", style = RaType.bodyMedium, color = Ink.ink)
                     Text("Needed to write your brief", style = RaType.caption, color = Ink.graphite)
                 }
                 Switch(
                     checked = allow,
-                    onCheckedChange = { allow = it },
+                    onCheckedChange = null,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Ink.surface, checkedTrackColor = Ink.link, checkedBorderColor = Ink.link,
                         uncheckedThumbColor = Ink.surface, uncheckedTrackColor = Ink.ruleStrong, uncheckedBorderColor = Ink.ruleStrong,

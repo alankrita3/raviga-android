@@ -1,5 +1,7 @@
 package com.raviga.app.ui.home
 
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.semantics.customActions
@@ -256,8 +258,9 @@ private fun DeletableDraft(row: HomeViewModel.Row, onClick: () -> Unit, onDelete
 private fun CreditsPill(balance: Int, onClick: () -> Unit) {
     Row(
         Modifier
+            .minimumInteractiveComponentSize()   // R-092 #40: 48dp to tap
             .clip(CircleShape)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = "$balance ${if (balance == 1) "credit" else "credits"}" }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

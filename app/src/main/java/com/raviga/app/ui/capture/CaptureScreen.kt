@@ -1,5 +1,7 @@
 package com.raviga.app.ui.capture
 
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.Role
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
@@ -188,8 +190,9 @@ private fun AccentPicker(accent: DictationEngine.Accent, enabled: Boolean, onPic
     Box {
         Row(
             Modifier
+                .minimumInteractiveComponentSize()   // R-092 #40: 48dp to tap
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = enabled) { open = true }
+                .clickable(enabled = enabled, role = Role.Button) { open = true }
                 .semantics { contentDescription = "Speaking in ${accent.label}" }
                 .padding(horizontal = 6.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -350,6 +353,7 @@ private fun CapturePhase(
                         value = state.typed,
                         onValueChange = { vm.setTyped(it) },
                         placeholder = HINT,
+                        label = "Your description",
                         minHeight = 240.dp,
                     )
                 }
@@ -432,6 +436,7 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
                 value = state.transcript,
                 onValueChange = { vm.setTranscript(it) },
                 placeholder = HINT,
+                label = if (state.tab == CaptureViewModel.TAB_UPLOAD) "What we read" else if (state.tab == CaptureViewModel.TAB_TYPE) "Your description" else "What we heard",
                 modifier = Modifier.focusRequester(focus),
             )
             Spacer(Modifier.height(8.dp))

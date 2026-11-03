@@ -1,5 +1,6 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -110,6 +111,7 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
             val on = i == selected
             Column(
                 Modifier
+                    .minimumInteractiveComponentSize()   // R-092 #40: 48dp to tap
                     .width(IntrinsicSize.Max)
                     .clip(RoundedCornerShape(6.dp))
                     .clickable(enabled = enabled, role = Role.Tab) { onSelect(i) }

@@ -58,6 +58,7 @@ fun RegenerateSheet(
                     value = instruction,
                     onValueChange = { instruction = it },
                     placeholder = "Make it shorter, add offline mode…",
+                    label = "What to change",
                     minLines = 2,
                 )
                 Spacer(Modifier.height(16.dp))

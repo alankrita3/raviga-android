@@ -251,6 +251,7 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
                 onValueChange = { vm.setBody(it) },
                 placeholder = state.hint ?: "Write here. Start a line with \"- \" for a bullet.",
                 minLines = 10,
+                label = state.heading,
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
             )
             Spacer(Modifier.height(8.dp))

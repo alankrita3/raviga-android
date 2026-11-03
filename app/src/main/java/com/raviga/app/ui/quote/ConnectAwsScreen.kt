@@ -160,6 +160,7 @@ fun ConnectAwsScreen(nav: NavController) {
                 value = state.accountId,
                 onValueChange = { vm.setAccountId(it) },
                 placeholder = "123456789012",
+                label = "AWS account ID",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = !state.busy,

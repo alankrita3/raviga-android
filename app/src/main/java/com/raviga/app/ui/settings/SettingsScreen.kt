@@ -31,6 +31,7 @@ import androidx.navigation.NavController
 import com.raviga.app.data.local.DebugFlags
 import com.raviga.app.push.Notifications
 import com.raviga.app.ui.LocalAppContainer
+import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.RaRow
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.Hairline
@@ -139,7 +140,11 @@ fun SettingsScreen(nav: NavController) {
 private fun DebugBackendRow(context: Context, isDemo: Boolean) {
     var useDemo by remember { mutableStateOf(DebugFlags.useDemoBackend(context)) }
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = Ra.gutter, vertical = Ra.rowPadding + 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().switchRow(useDemo) { useDemo = it; DebugFlags.setUseDemoBackend(context, it) }
+                .padding(horizontal = Ra.gutter, vertical = Ra.rowPadding + 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(Modifier.weight(1f)) {
                 Text("Demo backend (debug)", style = RaType.bodyMedium, color = Ink.ink)
                 Text(
@@ -149,7 +154,7 @@ private fun DebugBackendRow(context: Context, isDemo: Boolean) {
             }
             Switch(
                 checked = useDemo,
-                onCheckedChange = { useDemo = it; DebugFlags.setUseDemoBackend(context, it) },
+                onCheckedChange = null,
                 colors = switchColors(),
             )
         }

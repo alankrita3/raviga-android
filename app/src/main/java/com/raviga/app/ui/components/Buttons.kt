@@ -1,5 +1,6 @@
 package com.raviga.app.ui.components
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import android.os.Build
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -150,7 +151,7 @@ fun TertiaryButton(
 fun DestructiveButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) =
     TertiaryButton(text, onClick, modifier, enabled, color = Ink.brick)
 
-/** Small link-blue text action used inline next to headings ("Edit", "Regenerate"). */
+/** Small link-blue text action used inline next to headings ("Edit", "Regenerate"); 48dp to tap (R-092 #40). */
 @Composable
 fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, color: Color = Ink.link) {
     Text(
@@ -158,6 +159,7 @@ fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
         style = RaType.secondaryMedium,
         color = if (enabled) color else Ink.ash,
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(6.dp))
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),

@@ -1,5 +1,8 @@
 package com.raviga.app.ui.settings
 
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.Role
+import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.SpotIllustration
 import com.raviga.app.ui.components.Picture
 import androidx.compose.foundation.layout.offset
@@ -118,6 +121,7 @@ fun DeliveryTargetsScreen(nav: NavController) {
                     value = state.github,
                     onValueChange = { vm.setGithub(it) },
                     placeholder = "octocat",
+                    label = "GitHub username",
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
                 )
@@ -202,7 +206,11 @@ fun PrivacyScreen(nav: NavController) {
                 Text("Privacy and data", style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(8.dp))
             }
-            Row(Modifier.fillMaxWidth().padding(horizontal = Ra.gutter, vertical = Ra.rowPadding), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().switchRow(aiOn, enabled = !state.busy) { vm.setAiProcessing(it) }
+                    .padding(horizontal = Ra.gutter, vertical = Ra.rowPadding),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     Text("AI processing", style = RaType.bodyMedium, color = Ink.ink)
                     Text(
@@ -210,17 +218,21 @@ fun PrivacyScreen(nav: NavController) {
                         style = RaType.secondary, color = Ink.graphite,
                     )
                 }
-                Switch(checked = aiOn, enabled = !state.busy, onCheckedChange = { vm.setAiProcessing(it) }, colors = switchColors())
+                Switch(checked = aiOn, enabled = !state.busy, onCheckedChange = null, colors = switchColors())
             }
             Hairline(Modifier.padding(horizontal = Ra.gutter))
-            Row(Modifier.fillMaxWidth().padding(horizontal = Ra.gutter, vertical = Ra.rowPadding), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().switchRow(analyticsOn, enabled = !state.busy) { vm.setAnalytics(it) }
+                    .padding(horizontal = Ra.gutter, vertical = Ra.rowPadding),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     // Contract v0.9, wording shared with iOS.
                     Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
                     Text(if (analyticsOn) "Allowed" else "Not allowed", style = RaType.body, color = Ink.ink)
                     Text(state.config.analytics.providers.joinToString(", "), style = RaType.secondary, color = Ink.graphite)
                 }
-                Switch(checked = analyticsOn, enabled = !state.busy, onCheckedChange = { vm.setAnalytics(it) }, colors = switchColors())
+                Switch(checked = analyticsOn, enabled = !state.busy, onCheckedChange = null, colors = switchColors())
             }
             Hairline(Modifier.padding(horizontal = Ra.gutter))
             Column(Modifier.padding(horizontal = Ra.gutter)) {
@@ -268,7 +280,7 @@ fun PrivacyScreen(nav: NavController) {
                             addStyle(SpanStyle(color = Ink.link), at, at + email.length)
                         },
                         style = RaType.body, color = Ink.ink,
-                        modifier = Modifier.clickable { emailLink(context, email, "Raviga grievance") }.padding(vertical = 4.dp),
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) { emailLink(context, email, "Raviga grievance") }.padding(vertical = 4.dp),
                     )
                 }
                 // Contract v0.9.2: the line sits next to the privacy policy link, as on the consent screen; v0.9.3 adds
