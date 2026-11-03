@@ -1,5 +1,6 @@
 package com.raviga.app.ui.settings
 
+import com.raviga.app.di.AppEvent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raviga.app.BuildConfig
@@ -122,10 +123,21 @@ class SettingsViewModel(
         const val KEY_EXPORT_URL = "export_url"
     }
 
+    /** Set when the screen is gone; a deletion that lands after that restarts the app itself (review #15). */
+    @Volatile private var screenGone = false
+
+    override fun onCleared() { screenGone = true }
+
+    /**
+     * Review #15 (Android): in the app's scope, not the screen's. Leaving Privacy and data while DELETE /me is in
+     * flight used to cancel it after the server may have taken it: tokens revoked, this phone not wiped. Now the
+     * request and the wipe run to the end; if the screen has gone meanwhile, the app starts over at Welcome.
+     */
     fun deleteEverything() {
-        viewModelScope.launch {
-            _state.update { it.copy(busy = true, error = null) }
-            runCatching {
+        if (_state.value.busy) return
+        _state.update { it.copy(busy = true, error = null) }
+        container.appScope.launch {
+            val result = runCatching {
                 container.session.deleteMe()
                 // Drafts were only ever here; they go too, and so does any copy of a document left mid-read.
                 container.draftStore.wipe()
@@ -133,7 +145,11 @@ class SettingsViewModel(
                 // Contract v0.9 section 22: collection off and the SDK's data dropped.
                 container.analytics.clearAfterDeletion()
             }
-                .onSuccess { _state.update { it.copy(deleted = true) } }
+            result
+                .onSuccess {
+                    _state.update { it.copy(deleted = true) }
+                    if (screenGone) container.emit(AppEvent.SignedOut)
+                }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
         }
