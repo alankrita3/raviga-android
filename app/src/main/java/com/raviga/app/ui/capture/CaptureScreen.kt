@@ -382,11 +382,11 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
         BackHandler { vm.cancelReading() }
         ScreenScaffold(
             topBar = { RaTopBar(onBack = { vm.cancelReading() }) },
-            bottomBar = { BottomBar { SecondaryButton("Stop reading", onClick = { vm.cancelReading() }) } },
+            bottomBar = { BottomBar { SecondaryButton(if (state.fetching) "Stop" else "Stop reading", onClick = { vm.cancelReading() }) } },
         ) { padding ->
             Processing(
                 title = state.progressMessage ?: "Reading your document",
-                line = "Read on your phone. Long documents take a little longer.",
+                line = if (state.fetching) "Copying it to this phone to read. It isn't sent anywhere." else "Read on your phone. Long documents take a little longer.",
                 progress = state.progress,
                 modifier = Modifier.padding(padding),
             )

@@ -1,5 +1,6 @@
 package com.raviga.app.data.files
 
+import kotlinx.coroutines.ensureActive
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -24,7 +25,8 @@ class FileImporter(private val context: Context) {
         class Unreadable : Problem("Couldn't open that file. Try again, or choose another copy.")
     }
 
-    suspend fun import(uri: Uri, maxBytes: Long, accepted: List<String>): Picked = withContext(Dispatchers.IO) {
+    /** [onName]: the file's name, as soon as it's known (R-094 P2-16: "Getting <name>" while a cloud copy downloads). */
+    suspend fun import(uri: Uri, maxBytes: Long, accepted: List<String>, onName: (String) -> Unit = {}): Picked = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         var name = "Document"
         var size = -1L
@@ -36,6 +38,7 @@ class FileImporter(private val context: Context) {
                 }
             }
         }
+        onName(name)
         val type = FileTypes.resolve(name, resolver.getType(uri), accepted) ?: throw Problem.Unsupported()
         if (size > maxBytes) throw Problem.TooLarge(maxBytes)
 
@@ -47,6 +50,7 @@ class FileImporter(private val context: Context) {
                     val buffer = ByteArray(64 * 1024)
                     var total = 0L
                     while (true) {
+                        ensureActive()   // R-094 P2-16: Stop takes effect between chunks
                         val n = src.read(buffer)
                         if (n < 0) break
                         total += n
@@ -58,6 +62,8 @@ class FileImporter(private val context: Context) {
             }
         } catch (e: Problem) {
             out.delete(); throw e
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            out.delete(); throw e   // stopped: no copy kept, and not "unreadable"
         } catch (e: Exception) {
             out.delete(); throw Problem.Unreadable()
         }

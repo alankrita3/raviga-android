@@ -83,6 +83,8 @@ class CaptureViewModel(
         val transcript: String = "",
         /** Reading a document on the phone. */
         val reading: Boolean = false,
+        /** R-094 P2-16: the picked file is still being copied to the phone (a cloud copy downloading). */
+        val fetching: Boolean = false,
         val progress: Float? = null,
         val progressMessage: String? = null,
         val error: String? = null,
@@ -300,17 +302,32 @@ class CaptureViewModel(
         if (!_state.value.reading) return
         readJob?.cancel()
         readJob = null
-        _state.update { it.copy(phase = Phase.CAPTURE, tab = TAB_UPLOAD, reading = false, progress = null, progressMessage = null) }
+        _state.update { it.copy(phase = Phase.CAPTURE, tab = TAB_UPLOAD, reading = false, fetching = false, progress = null, progressMessage = null) }
     }
 
     fun pickedFile(uri: Uri) {
         val limits = container.session.config.value.limits
-        _state.update { it.copy(error = null) }
+        // R-094 P2-16 (iOS review 2): getting the file (a slow cloud download) shows "Getting <name>" with Stop.
+        _state.update {
+            it.copy(
+                error = null, phase = Phase.TRANSCRIPT, tab = TAB_UPLOAD, reading = true, fetching = true,
+                progress = null, progressMessage = "Getting the file",
+            )
+        }
         readJob = viewModelScope.launch {
             val picked = try {
-                container.files.import(uri, limits.fileMaxBytes, limits.acceptedFileTypes)
+                container.files.import(uri, limits.fileMaxBytes, limits.acceptedFileTypes) { name ->
+                    _state.update { s -> if (s.fetching) s.copy(progressMessage = "Getting $name") else s }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e   // stopped from the screen; cancelReading() has set it back
             } catch (e: Exception) {
-                _state.update { it.copy(error = (e as? com.raviga.app.data.UserFacingException)?.message ?: "Couldn't open that file. Try again, or choose another copy.") }
+                _state.update {
+                    it.copy(
+                        phase = Phase.CAPTURE, reading = false, fetching = false, progressMessage = null,
+                        error = (e as? com.raviga.app.data.UserFacingException)?.message ?: "Couldn't open that file. Try again, or choose another copy.",
+                    )
+                }
                 return@launch
             }
             // A new document is a new note, even if an earlier one was already saved.
@@ -318,7 +335,7 @@ class CaptureViewModel(
             acknowledgedText = null
             _state.update {
                 it.copy(
-                    phase = Phase.TRANSCRIPT, tab = TAB_UPLOAD, reading = true, transcript = "", file = null,
+                    phase = Phase.TRANSCRIPT, tab = TAB_UPLOAD, reading = true, fetching = false, transcript = "", file = null,
                     progress = null, progressMessage = "Reading ${picked.name}", error = null,
                 )
             }
