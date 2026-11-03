@@ -15,8 +15,8 @@ Sources:
 - Does the app collect or share required user data? **Yes.**
 - Is all user data encrypted in transit? **Yes.** The app talks to the backend over HTTPS only; ML Kit, RevenueCat
   and FCM also use HTTPS.
-- Can users request deletion? **Yes.** In the app: Settings → Privacy and data → "Delete my data". On the web: a deletion page
-  is still needed (checklist item 9).
+- Can users request deletion? **Yes.** In the app: Settings → Privacy and data → "Delete my data". On the web:
+  `https://legal.ravigaapps.com/delete-account` (live since 2026-10-30).
 - Account creation: **yes, "Other"**. The app creates a client account for the phone by itself, with no password but
   with a recovery key. Play's deletion rule covers this
   ([account deletion](https://support.google.com/googleplay/android-developer/answer/13327111)).
@@ -30,6 +30,7 @@ Sources:
 | App activity → Other user-generated content | Notes and brief text, sent to the backend to draft and price (Anthropic deletes it within 30 days, longer only if flagged for abuse) and stored on submit until the project closes; text read from uploaded files | App functionality | Required for the core flow |
 | Messages → Other in-app messages | Comments between the client and the team on a project | App functionality | Optional |
 | Personal info → Other info | GitHub username and AWS account ID, for delivery | App functionality | Optional |
+| Personal info → Email address | A recovery email, only if the client adds one (Settings → Recovery email, or the Protect your credits offer after a purchase): a 6-digit code is sent to it, and it can restore the account on a new phone (R-079, 2026-11-02) | Account management | **Optional** |
 | Financial info → Purchase history | Credit purchases through Play Billing and RevenueCat | App functionality, account management | Required to buy credits |
 | Device or other IDs | The app's install ID, the Firebase Installation ID (push), the RevenueCat user ID (the client ID), ML Kit's identifier | App functionality; analytics (ML Kit diagnostics only) | Required |
 | App info and performance → Diagnostics | Device model, OS version, app version and locale sent at registration; ML Kit's latency and error codes | App functionality; analytics (ML Kit) | Required |
@@ -42,8 +43,8 @@ Sources:
 - Photos and videos, location, contacts, calendar, health, SMS or email, installed apps, web browsing, search history.
 - Crash logs: there's no crash-reporting SDK.
 - Advertising id: never. AD_ID and the Privacy Sandbox ad id, attribution and install-referrer permissions are removed from the manifest, and `play-services-ads-identifier` is excluded from both Analytics and RevenueCat.
-- Name, email, phone and address: the app never asks for them. A client could type them into notes; that text is
-  covered above.
+- Name, phone and address: the app never asks for them. Email only as the optional recovery email above. A client
+  could type any of these into notes; that text is covered above.
 
 ## 2. Pre-launch checklist (Android)
 
