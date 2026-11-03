@@ -69,7 +69,7 @@ fun NotificationPromptScreen(nav: NavController, next: String) {
             Text("Stay in the loop", style = RaType.title, color = Ink.ink)
             Spacer(Modifier.height(12.dp))
             Text(
-                "We'll let you know when your quote is ready, when we need your input, and when your project is delivered.",
+                "We'll let you know when your quote is ready, when your brief is accepted, and when your project is delivered.",
                 style = RaType.body,
                 color = Ink.graphite,
             )
