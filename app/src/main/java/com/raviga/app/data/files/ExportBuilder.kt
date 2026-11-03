@@ -61,12 +61,20 @@ class ExportBuilder(
                     zip.write(json.toByteArray(Charsets.UTF_8))
                     zip.closeEntry()
                 }
+                // R-094 P2-13: drafts this build couldn't open go in too, exactly as stored.
+                drafts.exportUnreadable().forEach { (name, bytes) ->
+                    zip.putNextEntry(ZipEntry("drafts/unreadable/$name"))
+                    zip.write(bytes)
+                    zip.closeEntry()
+                }
             }
         }
     }
 
     private companion object {
         const val README = "These drafts were kept only on your phone and were never sent to Raviga's servers.\n" +
-            "Each file holds a draft's notes (the text of what you said, typed or uploaded), every version of its brief, and its quote if it had one.\n"
+            "Each file holds a draft's notes (the text of what you said, typed or uploaded), every version of its brief, and its quote if it had one.\n" +
+            "The unreadable folder, if there is one, holds drafts this version of the app couldn't open, exactly as they were stored " +
+            "(.sealed files are still encrypted with this phone's key).\n"
     }
 }

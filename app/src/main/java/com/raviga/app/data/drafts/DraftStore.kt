@@ -95,6 +95,21 @@ class DraftStore(
         json.encodeToString(LocalDraft.serializer(), d)
     }
 
+    /**
+     * R-094 P2-13 (iOS review 2): drafts on this phone that this build couldn't read, for the data export, as they
+     * are: the plain text when it opens ("<id>.json"), else the stored bytes ("<id>.sealed"). Nothing is left out.
+     */
+    suspend fun exportUnreadable(): Map<String, ByteArray> = withContext(Dispatchers.IO) {
+        val known = _drafts.value
+        dir.listFiles { f -> f.name.endsWith(EXT) }.orEmpty()
+            .filter { f -> f.name.removeSuffix(EXT) !in known }
+            .associate { f ->
+                val id = f.name.removeSuffix(EXT)
+                val raw = f.readBytes()
+                runCatching { sealer.open(raw) }.fold(onSuccess = { "$id.json" to it }, onFailure = { "$id.sealed" to raw })
+            }
+    }
+
     private suspend fun write(draft: LocalDraft) = withContext(Dispatchers.IO) {
         dir.mkdirs()
         val bytes = sealer.seal(json.encodeToString(LocalDraft.serializer(), draft).toByteArray(Charsets.UTF_8))
