@@ -41,6 +41,15 @@ object StatusCopy {
 
     fun rowLine(project: Project): String = project.statusLine.ifBlank { detailTitle(project.status) }
 
+    /**
+     * The statusLine as it comes, with a date kept on one line ("17\u00A0Nov", "10\u00A0Nov\u00A02027"): the words are the
+     * server's, only the spaces inside a date stop it splitting across lines.
+     */
+    fun keepDatesTogether(line: String): String =
+        line.replace(Regex("""\b(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b( \d{4})?""")) { m ->
+            m.groupValues[1] + "\u00A0" + m.groupValues[2] + m.groupValues[3].replace(' ', '\u00A0')
+        }
+
     /** Only when a push carries no body of its own (the server always sends one). */
     fun pushLine(status: String): String = when (status) {
         ProjectStatus.APPROVED -> "Accepted. Pay to start building."

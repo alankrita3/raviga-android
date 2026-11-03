@@ -46,6 +46,14 @@ class StatusCopyTest {
         assertEquals("Too many requests. Wait a moment and try again.", plain.userLine())
     }
 
+    /** The server's words, with a date kept on one line. */
+    @Test
+    fun `dates in a status line never split`() {
+        assertEquals("Building and testing. Estimated delivery by 17\u00A0Nov.", StatusCopy.keepDatesTogether("Building and testing. Estimated delivery by 17 Nov."))
+        assertEquals("by 10\u00A0Nov\u00A02027.", StatusCopy.keepDatesTogether("by 10 Nov 2027."))
+        assertEquals("Accepted. Pay 30 credits to start building.", StatusCopy.keepDatesTogether("Accepted. Pay 30 credits to start building."))
+    }
+
     /** Contract v0.10.0: the server's statusLine as it comes; the chip's words only for a cache from before it. */
     @Test
     fun `row lines are the servers status line`() {

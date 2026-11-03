@@ -145,7 +145,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     } else if (project.statusLine.isNotBlank()) {
                         // Contract v0.10.0: the server's line for the status, as it comes.
                         Spacer(Modifier.height(8.dp))
-                        Text(project.statusLine, style = RaType.body, color = Ink.ink)
+                        Text(StatusCopy.keepDatesTogether(project.statusLine), style = RaType.body, color = Ink.ink)
                     }
                     Spacer(Modifier.height(16.dp))
 

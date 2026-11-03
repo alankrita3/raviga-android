@@ -126,7 +126,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 // Contract v0.10.0: the server's line for the status, as it comes (credits and dates filled in).
                 if (project.statusLine.isNotBlank()) {
                     Spacer(Modifier.height(16.dp))
-                    Text(project.statusLine, style = RaType.body, color = Ink.ink)
+                    Text(StatusCopy.keepDatesTogether(project.statusLine), style = RaType.body, color = Ink.ink)
                 }
                 state.newQuote?.let { q ->
                     Spacer(Modifier.height(12.dp))
