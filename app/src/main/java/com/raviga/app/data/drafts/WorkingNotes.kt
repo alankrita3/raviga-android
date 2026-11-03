@@ -17,7 +17,16 @@ import kotlinx.coroutines.withContext
  * between writing a draft or note and recording its id, the next save would make a second draft or add the note
  * twice (QA, 2026-11-02: an empty "Untitled draft" next to the real one after fast typing).
  */
-class WorkingNotes(private val sink: Sink, draftId: String?) {
+class WorkingNotes(
+    private val sink: Sink,
+    draftId: String?,
+    /**
+     * Review 2026-11-03 (Android): the notes this visit had saved, slot -> (input id, text as saved), when Android
+     * ended the app in the background and the screen comes back. A change then edits the same note in the same draft
+     * instead of starting a second draft.
+     */
+    restored: Map<Int, Pair<String, String>> = emptyMap(),
+) {
 
     /** What the notes are saved through: the draft repository in the app, a fake in tests. */
     interface Sink {
@@ -35,10 +44,14 @@ class WorkingNotes(private val sink: Sink, draftId: String?) {
     )
 
     private val lock = Mutex()
-    private val saved = mutableMapOf<Int, Pair<String, String>>()   // slot -> (input id, text as saved)
+    // slot -> (input id, text as saved). Written under [lock]; read by [slots] from the main thread at save time.
+    private val saved = java.util.concurrent.ConcurrentHashMap<Int, Pair<String, String>>(restored)
 
     @Volatile var draftId: String? = draftId
         private set
+
+    /** Slot -> input id of each note this visit is making, for the screen's saved state. */
+    fun slots(): Map<Int, String> = saved.mapValues { it.value.first }
 
     /** The draft, made now if there isn't one yet. */
     suspend fun ensureDraft(): String = withContext(NonCancellable) { lock.withLock { draftLocked() } }

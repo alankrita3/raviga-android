@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -88,7 +89,9 @@ private const val HINT = "Tell us what it does, who it is for, and anything it m
 @Composable
 fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: String = DescribeWith.SPEAK) {
     val container = LocalAppContainer.current
-    val vm: CaptureViewModel = viewModel(key = "capture_$projectId$mode") { CaptureViewModel(container, projectId, mode, tab) }
+    val vm: CaptureViewModel = viewModel(key = "capture_$projectId$mode") {
+        CaptureViewModel(container, projectId, mode, tab, createSavedStateHandle())
+    }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val config by container.session.config.collectAsStateWithLifecycle()

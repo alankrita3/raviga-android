@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import com.raviga.app.data.drafts.DraftStore
+import com.raviga.app.data.drafts.LocalInput
 import com.raviga.app.data.drafts.WorkingNotes
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,8 @@ class CaptureViewModel(
     initialDraftId: String,
     private val mode: String,
     initialTab: String = DescribeWith.SPEAK,
+    /** Review 2026-11-03 (Android): where this visit was, kept across the app being ended in the background. */
+    private val saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
 ) : ViewModel() {
 
     enum class Phase { CAPTURE, TRANSCRIPT, CHOOSE, DRAFTING }
@@ -100,6 +103,20 @@ class CaptureViewModel(
         val hasSpeech get() = committed.isNotEmpty() || partial.isNotBlank()
     }
 
+    /**
+     * Review 2026-11-03 (Android): Android ended the app in the background on this screen and brought it back. The
+     * draft and the notes this visit was making come back with it (their text from the draft), so the screen shows
+     * them and the next change edits the same note; it used to come back empty and start a second draft.
+     */
+    private val restored: Pair<String, Map<Int, LocalInput>>? = saved.get<android.os.Bundle>(SAVED_STATE)?.let { b ->
+        val draft = b.getString(SAVED_DRAFT)?.let { container.drafts.get(it) } ?: return@let null
+        val slots = b.getIntArray(SAVED_SLOTS) ?: IntArray(0)
+        val inputs = b.getStringArray(SAVED_INPUTS) ?: emptyArray()
+        draft.id to slots.indices.mapNotNull { i ->
+            draft.inputs.firstOrNull { it.id == inputs.getOrNull(i) }?.let { slots[i] to it }
+        }.toMap()
+    }
+
     private val _state = MutableStateFlow(
         State(
             tab = when (initialTab) {
@@ -107,7 +124,11 @@ class CaptureViewModel(
                 DescribeWith.UPLOAD -> TAB_UPLOAD
                 else -> TAB_SPEAK
             },
-        ),
+        ).let { fresh ->
+            val b = saved.get<android.os.Bundle>(SAVED_STATE)
+            if (restored == null || b == null) fresh
+            else restoredState(fresh, b.getString(SAVED_PHASE), b.getInt(SAVED_TAB, fresh.tab), restored.second, b.getInt(SAVED_NOTES), b.getString(SAVED_LAST_NAME))
+        },
     )
     val state: StateFlow<State> = _state.asStateFlow()
 
@@ -121,8 +142,24 @@ class CaptureViewModel(
             override suspend fun edit(draftId: String, inputId: String, text: String) { container.drafts.editInput(draftId, inputId, text) }
             override suspend fun remove(draftId: String, inputId: String) { container.drafts.removeInput(draftId, inputId) }
         },
-        initialDraftId.takeIf { it != "new" },
+        restored?.first ?: initialDraftId.takeIf { it != "new" },
+        restored?.second.orEmpty().mapValues { (_, input) -> input.id to input.text },
     )
+
+    /** Read by Android when it saves the screen's state (on the main thread, after ON_STOP's flush). */
+    private fun snapshot(): android.os.Bundle {
+        val s = _state.value
+        val slots = notes.slots().toList()
+        return android.os.Bundle().apply {
+            putString(SAVED_DRAFT, notes.draftId)
+            putIntArray(SAVED_SLOTS, slots.map { it.first }.toIntArray())
+            putStringArray(SAVED_INPUTS, slots.map { it.second }.toTypedArray())
+            putString(SAVED_PHASE, s.phase.name)
+            putInt(SAVED_TAB, s.tab)
+            putInt(SAVED_NOTES, s.savedNotes)
+            putString(SAVED_LAST_NAME, s.lastSavedName)
+        }
+    }
     private val draftId: String? get() = notes.draftId
     private var saveJob: Job? = null
     /** When the oldest change not yet saved was made (uptime ms), 0 when everything is saved. */
@@ -137,7 +174,10 @@ class CaptureViewModel(
     /** The sensitive-data sheet is open for "Add more" on a document: carry on saving, not writing. */
     private var addingMore = false
 
-    init { checkSpeech() }
+    init {
+        checkSpeech()
+        saved.setSavedStateProvider(SAVED_STATE) { snapshot() }
+    }
 
     fun checkSpeech() {
         val accent = _state.value.accent
@@ -578,6 +618,43 @@ class CaptureViewModel(
     }
 
     companion object {
+        private const val SAVED_STATE = "capture_visit"
+        private const val SAVED_DRAFT = "draft"
+        private const val SAVED_SLOTS = "slots"
+        private const val SAVED_INPUTS = "inputs"
+        private const val SAVED_PHASE = "phase"
+        private const val SAVED_TAB = "tab"
+        private const val SAVED_NOTES = "saved_notes"
+        private const val SAVED_LAST_NAME = "last_saved_name"
+
+        /**
+         * The screen as it was when Android ended the app, from the notes the visit had saved ([notes], by slot):
+         * the typed text back in the editor, anything spoken or read back under review (recording had stopped), and
+         * the choices after a saved document. Writing (the brief's job) comes back as the review it started from.
+         */
+        fun restoredState(
+            fresh: State,
+            phase: String?,
+            tab: Int,
+            notes: Map<Int, LocalInput>,
+            savedNotes: Int,
+            lastSavedName: String?,
+        ): State {
+            val was = Phase.entries.firstOrNull { it.name == phase } ?: Phase.CAPTURE
+            val note = notes[tab]
+            val base = fresh.copy(tab = tab, savedNotes = savedNotes, lastSavedName = lastSavedName)
+            return when {
+                was == Phase.CHOOSE || (note == null && was == Phase.DRAFTING && savedNotes > 0) -> base.copy(phase = Phase.CHOOSE)
+                note == null -> base
+                was == Phase.CAPTURE && tab == TAB_TYPE -> base.copy(typed = note.text)
+                else -> base.copy(
+                    phase = Phase.TRANSCRIPT,
+                    transcript = note.text,
+                    file = if (tab == TAB_UPLOAD) FileRead(note.fileName ?: "Document", note.pageCount, truncated = false, notice = null) else null,
+                )
+            }
+        }
+
         const val SAVE_DELAY_MS = 500L
         /** Typing without a pause still saves at least this often (QA G2: a kill within 1 s of a keystroke). */
         const val SAVE_MAX_WAIT_MS = 1_000L
