@@ -1,37 +1,22 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 00:15.
+The PM reads this file if the session has closed. Updated 2026-11-03 06:05.
 
 ## In flight
 
-- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): in progress.**
-  - Done: compiler warnings 0, Lint 0 errors (lint.xml justified), OSV 0 advisories, deps current for AGP 8 (AGP 9 and
-    OkHttp 5/Retrofit 3 waived by the PM), RevenueCat 10, session store off EncryptedSharedPreferences, no `!!`, secret
-    scan clean, no client text in logs/analytics. Gate file: `qa/results/2026-11-02-android-gate.md`.
-  - QA suite P0 done (`qa/results/2026-11-02-android.md`): 7 FAILs fixed (AI consent on every AI call, D4 note limit,
-    H9 brief size, F5 10-note limit, G2 save on kill, G7 swipe spring-back), voice blocked (no recogniser).
-  - R-079 done (d202008, pushed): recovery email, link codes, phones with access, sign out this phone, Protect your
-    credits; checked on the OnePlus (dev and demo). Lint warnings in code: 0 (d23f6cd).
-  - R-082 done (f5f5645, pushed): drafts named from the first note with iOS's rules; Gemini Nano (ML Kit Prompt API
-    beta5) where the phone already has it; client renames never replaced. OnePlus checked (fallback; no Nano there).
-  - Suite P1 in progress (results in `qa/results/2026-11-02-android.md`): N1-N8, M4, O8 PASS (fixes: O8 removed-phone
-    notice f1ed6da, M4 notifications Off on Android 12 909fda1, N4 drafts line fccde21; plus an empty duplicate draft
-    after fast typing, f5142e0). P1 and P2 (offline half) PASS on the emulator (PM's OK). P4 battery PASS. P6 PASS (Home's
-    "Edited …" now recomputed on return, 4e9251d). B6 re-run PASS with backend's per-client terms_bump (a real re-ask).
-  - Gate: "no demo or debug code in Release" done (11667ee: demo backend in src/debug, demo UI behind
-    BuildConfig.DEBUG, strings check clean); logs/analytics/secrets and `!!` lines re-checked and ticked.
-  - M1 (paid run): tap a real Raviga notification with the app closed, in the background and in front; read
-    `logcat -b crash` after each (iOS crashed on the tap). Pre-check 00:58 with the raviga://project link (unknown id):
-    no crash in any state, stays on Home.
-  - O7 PASS (bb823b1, as iOS; device check 11-03 01:14 with backend's per-client 426 switch, now off).
-  - Contract v0.9.5 (backend 45e4c02): new brackets (Standard 23-49, Pro 50-150) and rubric; demo matched (eb9e9a7).
-    In the paid I re-run expect I4 Micro, I5 higher and still Pro; tell backend after so it reads the rubric logs.
-  - I3 code done (4fa33a2, as iOS): expired quote says so from expiresAt (clock ticks at expiry), server's quote_stale
-    message shown, no automatic re-quote. Device check with backend's quote_expiry switch in the paid run.
-  - Next: the paid P1 cases on 11-03's budget (today's ledger is at $2.91 of $3): L1-L8, M1-M3, M5, O1-O4, then O5-O7
-    with backend's switches; P1-P3/P5 offline cases need the emulator (asked the PM; airplane mode cuts Wi-Fi adb).
-    Then P2 (Q, R); release-APK inspection; the independent review; build only with her yes. R-083 after the suite.
+- **Build 8 gate (her order 11-02, `~/Documents/Raviga PM/qa/BUILD-8-GATE.md`): the Android lines are done except
+  the independent review**, which the PM opens once the suite is green. Gate file:
+  `qa/results/2026-11-02-android-gate.md`. Latest: tests and coverage ticked (2f6332b: debug 156, release 132, 4
+  instrumented on the OnePlus via `am instrument`, never `connectedAndroidTest`, which uninstalls the app and its dev
+  client; JaCoCo `createDebugUnitTestCoverageReport`; purchase booking now tested).
+- **QA suite v1 (`qa/results/2026-11-02-android.md`): run.** Open items: J2-J4 and J6 blocked on her (row 37,
+  RevenueCat); voice blocked (no recogniser); E13 N/A (her Drive). J5's page 2 waits on backend: GET
+  /me/credits?before=<cursor> answers 500 on dev (told 11-03 05:58). The app's Show more (5a1fafe) is in; re-run
+  J5 when backend says it's fixed.
+- **R-092 (the iOS review's 41 findings on Android): done**, results in `qa/results/2026-11-03-android-parity.md`:
+  23 fixed (one commit per finding, with tests), 17 already fine, the link-code QR open (contract gap, as iOS).
+  Copy aligned to iOS's (cancel/closed, save failure, title cap); new Android lines sent to iOS and the PM.
   - Dev clients to delete after the suite (backend): cl_01m6efysre00xd9cpwwd1mc9qk (throwaway, its phone signed out in
     the R-079 check), cl_01m6ehqybe00nzgdstet9sy868 (made on restart after that sign-out, then signed out too), and
     the one in use now, cl_01m6ehvcsp00shvab7t7r3mnrw; plus the O8 re-registrations cl_01m6ek2f8s00q5et6rse3jbjdh and
