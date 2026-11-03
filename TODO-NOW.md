@@ -34,8 +34,12 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
     four credit packs exist and are active.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).
 - **Row 37 (RevenueCat Play app), in progress since 19:30, the PM's go.** The split:
-  - Backend creates the RevenueCat service account and its JSON key with gcloud.
-  - The PM uploads the JSON into RevenueCat and grants the service account in Play Console (her yes, in the PM's window).
+  - Her decision (about 20:00): no new service account. RevenueCat uses the existing Play robot's key
+    (~/.config/raviga/raviga-play-publisher.json; path sent to the PM, never the contents). The PM adds View financial
+    data and Manage orders and subscriptions to the robot on com.raviga.app, and uploads the JSON into RevenueCat (her yes).
+  - Pub/Sub (real-time notifications): the robot has no GCP permissions (403), so nothing was enabled. It's optional for
+    purchase checks. Turning it on needs the owner to enable the API and give the robot Pub/Sub Admin (an IAM change,
+    so it needs her yes; backend can do it with gcloud).
   - Mine: create the RevenueCat Play app up to the credentials field, put the goog_ key in secrets.properties (never
     printed), send backend the app id, run one sandbox purchase on the OnePlus.
   - **Blocked (19:3x):** RevenueCat wants a sign-in in Chrome Profile 27; the login page is open in my tab. License
