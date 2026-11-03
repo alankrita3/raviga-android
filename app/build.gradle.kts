@@ -42,7 +42,8 @@ android {
         applicationId = "com.raviga.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        // Build 8 (the PM, 2026-11-03): versionCode 8, matching iOS's build numbers, then +1 per upload.
+        versionCode = 8
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
