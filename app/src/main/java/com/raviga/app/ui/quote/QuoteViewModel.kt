@@ -289,10 +289,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 now
             }.onSuccess { project ->
                 submitKey = null
-                // POST /projects only (contract v0.9); a resubmit is a different call and not counted.
-                if (!s.isResubmit) container.analytics.projectSubmitted(project.quote?.bracketId ?: draft.quote?.bracketId, project.quote?.credits ?: draft.quote?.credits ?: 0)
-                runCatching { container.credits.refresh() }
-                runCatching { container.session.refreshMe() }
+                afterSubmit(project, draft, s.isResubmit)
                 _state.update { it.copy(submitting = false, submittedProjectId = project.id) }
             }.onFailure { e ->
                 // R-092 #19 / R-091: a submit whose answer was lost, retried: the server names the project it already
@@ -302,7 +299,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                     val adopted = runCatching { container.drafts.adoptSubmitted(draft.id, existing) }.getOrNull()
                     if (adopted != null) {
                         submitKey = null
-                        runCatching { container.credits.refresh() }
+                        // R-094 P2-12 (iOS review 2): the same follow-up as a submit whose answer arrived.
+                        afterSubmit(adopted, draft, s.isResubmit)
                         _state.update { it.copy(submitting = false, submittedProjectId = adopted.id) }
                         return@onFailure
                     }
@@ -316,5 +314,19 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 }
             }
         }
+    }
+
+    /** What follows a submit, whether its answer arrived or the draft was turned into the project the server has. */
+    private suspend fun afterSubmit(project: Project, draft: com.raviga.app.data.drafts.LocalDraft, isResubmit: Boolean) {
+        submittedEvent(project, draft, isResubmit)?.let { (bracket, credits) -> container.analytics.projectSubmitted(bracket, credits) }
+        runCatching { container.credits.refresh() }
+        runCatching { container.session.refreshMe() }
+    }
+
+    companion object {
+        /** project_submitted's values: POST /projects only (contract v0.9); a resubmit is a different call, not counted. */
+        internal fun submittedEvent(project: Project, draft: com.raviga.app.data.drafts.LocalDraft, isResubmit: Boolean): Pair<String?, Int>? =
+            if (isResubmit) null
+            else (project.quote?.bracketId ?: draft.quote?.bracketId) to (project.quote?.credits ?: draft.quote?.credits ?: 0)
     }
 }
