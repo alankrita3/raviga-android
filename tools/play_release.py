@@ -5,7 +5,8 @@ at ~/.config/raviga/raviga-play-publisher.json (override with RAVIGA_PLAY_KEY); 
 The account can release to testing tracks and manage in-app products for Raviga, and nothing for any other app.
 
     .venv/bin/python tools/play_release.py tracks
-    .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal]
+    .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal] [--notes docs/store/release-notes-build8.md]
+    .venv/bin/python tools/play_release.py notes docs/store/release-notes-build8.md   # print what --notes would send
     .venv/bin/python tools/play_release.py products            # list one-time products
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
     .venv/bin/python tools/play_release.py add-region credits_10 FR     # add one country, priced at the USD conversion or its cap
@@ -61,7 +62,27 @@ def tracks(s):
         s.delete(f"{API}/edits/{edit}")
 
 
-def upload(s, aab, track):
+def whats_new(path):
+    """The release notes for Play: the text under the '## Play "What's new"' heading of a notes file (500 max)."""
+    lines, inside = [], False
+    for line in open(path, encoding="utf-8"):
+        if line.startswith("## "):
+            if inside:
+                break
+            inside = line.lower().startswith('## play "what')
+            continue
+        if inside:
+            lines.append(line.rstrip())
+    text = "\n".join(lines).strip()
+    if not text:
+        sys.exit(f"no '## Play \"What's new\"' section in {path}")
+    if len(text) > 500:
+        sys.exit(f"What's new is {len(text)} characters; Play allows 500")
+    return text
+
+
+def upload(s, aab, track, notes_path=None):
+    notes = whats_new(notes_path) if notes_path else "Test build."
     edit = check(s.post(f"{API}/edits", json={}))["id"]
     with open(aab, "rb") as f:
         b = check(s.post(f"{UPLOAD}/edits/{edit}/bundles", params={"uploadType": "media"},
@@ -69,7 +90,7 @@ def upload(s, aab, track):
     vc = str(b["versionCode"])
     check(s.put(f"{API}/edits/{edit}/tracks/{track}", json={"track": track, "releases": [
         {"name": f"{vc} {track} test", "versionCodes": [vc], "status": "draft",
-         "releaseNotes": [{"language": "en-US", "text": "Test build."}]}]}))
+         "releaseNotes": [{"language": "en-US", "text": notes}]}]}))
     check(s.post(f"{API}/edits/{edit}:commit"))
     print(f"uploaded versionCode {vc} (sha256 {b['sha256'][:12]}…) as a draft {track} release")
 
@@ -196,7 +217,8 @@ def main():
     a = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = a.add_subparsers(dest="cmd", required=True)
     sub.add_parser("tracks")
-    u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal")
+    u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal"); u.add_argument("--notes")
+    n = sub.add_parser("notes"); n.add_argument("path")
     sub.add_parser("products")
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
     r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
@@ -204,8 +226,12 @@ def main():
     sp = sub.add_parser("set-price"); sp.add_argument("id"); sp.add_argument("region"); sp.add_argument("amount")
     rg = sub.add_parser("regions"); rg.add_argument("region", nargs="?")
     args = a.parse_args()
+    if args.cmd == "notes":   # no Play call: just what --notes would send
+        text = whats_new(args.path)
+        print(text); print(f"({len(text)} characters)")
+        return
     s = session()
-    {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track), "products": lambda: products(s),
+    {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track, args.notes), "products": lambda: products(s),
      "product": lambda: product(s, args.id, args.title, args.usd),
      "add-region": lambda: add_region(s, args.id, args.region),
      "withdraw-region": lambda: withdraw_region(s, args.id, args.region),
