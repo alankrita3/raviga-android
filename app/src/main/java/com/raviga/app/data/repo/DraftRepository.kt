@@ -1,5 +1,6 @@
 package com.raviga.app.data.repo
 
+import com.raviga.app.data.drafts.SentSubmit
 import com.raviga.app.data.api.AiDocument
 import com.raviga.app.data.api.AiInput
 import com.raviga.app.data.api.ApiException
@@ -336,16 +337,28 @@ class DraftRepository(
     /** Creates the server project, charged. The brief stays here as the client's own copy. */
     suspend fun submit(id: String, githubUsername: String?, awsAccountId: String?, idempotencyKey: String): Project = guarded(id) {
         val draft = require(id)
-        val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-        val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
-        val project = projects.submit(
-            SubmitProjectRequest(current.document.body(), token, githubUsername?.ifBlank { null }, awsAccountId?.ifBlank { null }),
-            idempotencyKey,
-        )
+        // R-094 P2-6: a send already out with this token goes again exactly as it was.
+        val held = draft.sentSubmit?.takeIf { draft.holdsSentSubmit }?.let { s -> s.submit?.let { it to s.version } }
+        val (request, version) = held ?: run {
+            val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
+            val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
+            val request = SubmitProjectRequest(current.document.body(), token, githubUsername?.ifBlank { null }, awsAccountId?.ifBlank { null })
+            touch(id) { it.copy(sentSubmit = SentSubmit(token, current.version, submit = request)) }
+            request to current.version
+        }
+        val project = sending(id) { projects.submit(request, idempotencyKey) }
         touch(id) {
-            it.copy(serverProjectId = project.id, submittedVersion = current.version, submittedAt = Time.nowIso(), quoteToken = null)
+            it.copy(serverProjectId = project.id, submittedVersion = version, submittedAt = Time.nowIso(), quoteToken = null, sentSubmit = null)
         }
         project
+    }
+
+    /** R-094 P2-6: a held send is let go only when the server answered that it didn't take it. */
+    private suspend fun <T> sending(id: String, call: suspend () -> T): T = try {
+        call()
+    } catch (e: ApiException) {
+        if (SentSubmit.refusedForGood(e)) runCatching { touch(id) { it.copy(sentSubmit = null) } }
+        throw e
     }
 
     /**
@@ -358,9 +371,11 @@ class DraftRepository(
         touch(id) {
             it.copy(
                 serverProjectId = projectId,
-                submittedVersion = it.current?.version ?: it.submittedVersion,
+                // The version that was sent (R-094 P2-6), else the newest.
+                submittedVersion = it.sentSubmit?.version ?: it.current?.version ?: it.submittedVersion,
                 submittedAt = project.submission?.submittedAt ?: Time.nowIso(),
                 quoteToken = null,
+                sentSubmit = null,
             )
         }
         return project
@@ -369,10 +384,17 @@ class DraftRepository(
     suspend fun resubmit(id: String, idempotencyKey: String): Project = guarded(id) {
         val draft = require(id)
         val projectId = draft.serverProjectId ?: throw ApiException(ApiException.INVALID_STATE, message = "This brief hasn't been submitted.")
-        val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-        val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
-        val project = projects.resubmit(projectId, ResubmitRequest(current.document.body(), token), idempotencyKey)
-        touch(id) { it.copy(submittedVersion = current.version, submittedAt = Time.nowIso(), quoteToken = null) }
+        // R-094 P2-6: as submit, a resubmit already out with this token goes again exactly as it was.
+        val held = draft.sentSubmit?.takeIf { draft.holdsSentSubmit }?.let { s -> s.resubmit?.let { it to s.version } }
+        val (request, version) = held ?: run {
+            val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
+            val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
+            val request = ResubmitRequest(current.document.body(), token)
+            touch(id) { it.copy(sentSubmit = SentSubmit(token, current.version, resubmit = request)) }
+            request to current.version
+        }
+        val project = sending(id) { projects.resubmit(projectId, request, idempotencyKey) }
+        touch(id) { it.copy(submittedVersion = version, submittedAt = Time.nowIso(), quoteToken = null, sentSubmit = null) }
         project
     }
 

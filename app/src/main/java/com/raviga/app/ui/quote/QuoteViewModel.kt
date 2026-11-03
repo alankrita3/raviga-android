@@ -73,8 +73,12 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val briefChanged: Boolean get() = draft != null && !draft.quoteIsCurrent
         /** The quote ran out (QA I3: from expiresAt, before any submit). */
         val quoteExpired: Boolean get() = quote?.expiresAt?.let { Time.parse(it)?.toEpochMilli() }?.let { it <= clock } == true
-        /** No quote for this exact brief, it ran out, or the server refused it. */
-        val needsNewQuote: Boolean get() = draft != null && (briefChanged || quoteExpired || staleMessage != null)
+        /**
+         * No quote for this exact brief, it ran out, or the server refused it. R-094 P2-6: not while a submit sent with
+         * this quote is unanswered; that one is retried as it was (the server decides, past the local expiry too), and
+         * nothing is re-quoted, which would mean a new token and a second project.
+         */
+        val needsNewQuote: Boolean get() = draft != null && (staleMessage != null || (!draft.holdsSentSubmit && (briefChanged || quoteExpired)))
         /** Why a new quote is needed, in iOS's words; the server's own message when it refused the quote. */
         val staleLine: String?
             get() = when {

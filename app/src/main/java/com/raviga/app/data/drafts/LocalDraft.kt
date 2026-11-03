@@ -37,7 +37,15 @@ data class LocalDraft(
     val titleSource: String? = null,
     /** R-083: an AI job started for this draft whose result hasn't been collected yet (the app was closed). */
     val pendingJob: PendingJob? = null,
+    /**
+     * R-094 P2-6 (iOS review 2): a submit or resubmit sent with [quoteToken] whose answer wasn't seen. A retry sends
+     * this exact body (a GitHub name changed since doesn't apply to it), even after the quote's local expiry or an
+     * edit: the server decides (contract v0.9.7: a used token answers with its project for 90 days).
+     */
+    val sentSubmit: SentSubmit? = null,
 ) {
+    /** A send with the current token is out and unanswered: it is retried as it was, never re-quoted. */
+    val holdsSentSubmit: Boolean get() = sentSubmit != null && sentSubmit.quoteToken == quoteToken
     val current: LocalVersion? get() = versions.lastOrNull()
     val document: Document? get() = current?.document
 
@@ -122,3 +130,24 @@ data class PendingJob(
 /** Screening refused this brief; it is frozen and can only be deleted. */
 @Serializable
 data class Refusal(val reason: String, val at: String)
+
+/** R-094 P2-6: what a submit or resubmit sent, kept until its answer is seen (exactly one of the two bodies). */
+@Serializable
+data class SentSubmit(
+    val quoteToken: String,
+    /** The brief version the body carries. */
+    val version: Int,
+    val submit: com.raviga.app.data.api.SubmitProjectRequest? = null,
+    val resubmit: com.raviga.app.data.api.ResubmitRequest? = null,
+) {
+    companion object {
+        /**
+         * The server answered and didn't take it: a 4xx other than a conflict, and not quote_stale naming the project
+         * it already has (R-091). Then the body may change (another name, a new quote). Anything else (offline, a 5xx,
+         * a lost answer) keeps it for the retry.
+         */
+        fun refusedForGood(e: com.raviga.app.data.api.ApiException): Boolean =
+            e.httpStatus in 400..499 && e.code != com.raviga.app.data.api.ApiException.CONFLICT &&
+                !(e.code == com.raviga.app.data.api.ApiException.QUOTE_STALE && e.detailString("projectId") != null)
+    }
+}
