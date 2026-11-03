@@ -63,9 +63,11 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   against what we build.", no delivery note, Credits empty line), "Ready in … after payment" (1acdf9b), dates in
   statusLines kept on one line (caef6c6). Unit tests debug 234, release 209.
   - R-103 Play captures delivered (captions.txt in build8-30credits/; raviga-design's session closed, relayed via the
-    PM). **05-quote waits on the PM's choice:** it still says "after approval"; 7 quotes on a new draft went 27-31.
-  - **Next (PM OK pending):** rewrite I3 (90-day), the 429 brief cap (fault brief_cap) and Q (report, redeliver,
-    approve) in QA-SUITE-v1 (iOS takes K and L), then run them plus the gate regression lines on the OnePlus.
+    PM).
+  - **QA v0.10.0 (PM split):** suite I3, O9/O10, Q rewritten (Raviga PM d796cd3, Q6 corrected 15b2ad1); run on
+    the OnePlus against dev: 21 pass, 0 fail (`~/Documents/Raviga PM/qa/results/2026-11-04-android-v0100.md`);
+    one bug found and fixed (cf5d296, "you.." on a closed brief). **Waiting:** iOS's rewritten K and L, then run them.
+  - 05-quote: PM decision (c), design masks the "after approval" line; noted in captions.txt.
   - Screenshot account cl_01m6h22gp4: GitHub target cleared (no transfers on deliver). Debug account
     cl_01m6ehvcsp: GitHub target cleared too. A third salon draft (quoted 29) stays on the phone.
 - **R-100 on main (1477bdd):** "Price valid until <date>." small grey at the end of the quote; expired → "Get a new
