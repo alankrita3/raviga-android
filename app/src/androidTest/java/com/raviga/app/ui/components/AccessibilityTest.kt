@@ -81,6 +81,15 @@ class AccessibilityTest {
         assertEquals(androidx.compose.ui.semantics.Role.Button, role)
     }
 
+    /** A recovery code field tells autofill it's a one-time code, so it's never offered to be saved as a password. */
+    @Test fun aCodeFieldIsAOneTimeCodeForAutofill() {
+        rule.setContent {
+            RaTextField(value = "", onValueChange = {}, placeholder = "6-digit code", contentType = androidx.compose.ui.autofill.ContentType.SmsOtpCode)
+        }
+        val config = rule.onNode(hasSetTextAction(), useUnmergedTree = true).fetchSemanticsNode().config
+        assertEquals(androidx.compose.ui.autofill.ContentType.SmsOtpCode, if (SemanticsProperties.ContentType in config) config[SemanticsProperties.ContentType] else null)
+    }
+
     /** Content descriptions on the text field's node and the plain nodes inside it: what TalkBack reads with the field. */
     private fun names(): List<String> {
         fun collect(node: androidx.compose.ui.semantics.SemanticsNode): List<String> =

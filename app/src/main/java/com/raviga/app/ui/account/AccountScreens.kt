@@ -286,7 +286,9 @@ private fun EmailRestore(state: MovePhoneViewModel.State, vm: MovePhoneViewModel
             onValueChange = vm::setRestoreOtp,
             placeholder = "6-digit code",
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            // A one-time code, not a password: autofill offers SMS codes and never asks to save it (seen 11-03).
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            contentType = androidx.compose.ui.autofill.ContentType.SmsOtpCode,
         )
         Spacer(Modifier.height(4.dp))
         InlineAction("Confirm", enabled = state.otpReady, onClick = { vm.askRestore(Restore.Email(sentTo, state.restoreOtp)) }, modifier = Edge)
@@ -397,7 +399,8 @@ fun RecoveryEmailScreen(nav: NavController) {
                         onValueChange = vm::setOtp,
                         placeholder = "6-digit code",
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        contentType = androidx.compose.ui.autofill.ContentType.SmsOtpCode,
                     )
                 }
                 else -> RaTextField(

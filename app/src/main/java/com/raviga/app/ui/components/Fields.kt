@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentType as autofillContentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -50,6 +51,8 @@ fun RaTextField(
     isError: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
     label: String? = null,
+    /** What autofill should take the field for (a one-time code, so it's never offered to be saved as a password). */
+    contentType: androidx.compose.ui.autofill.ContentType? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -67,7 +70,8 @@ fun RaTextField(
             .background(Ink.surface, shape)
             .border(if (focused || isError) 1.5.dp else Ra.hairline, outline, shape)
             .padding(Ra.fieldPadding)
-            .named(label ?: placeholder),
+            .named(label ?: placeholder)
+            .then(if (contentType != null) Modifier.semantics { autofillContentType = contentType } else Modifier),
         enabled = enabled,
         textStyle = textStyle.copy(color = if (enabled) Ink.ink else Ink.ash),
         cursorBrush = SolidColor(Ink.link),
