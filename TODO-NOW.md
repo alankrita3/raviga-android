@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 08:40.
+The PM reads this file if the session has closed. Updated 2026-11-03 08:19.
 
 ## In flight
 
