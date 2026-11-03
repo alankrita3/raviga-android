@@ -93,8 +93,12 @@ fun QuoteScreen(nav: NavController, projectId: String) {
         nav.navigate(Routes.status(id)) { popUpTo(Routes.HOME); launchSingleTop = true }
     }
 
+    // Review 2026-11-03 (Android): leaving cancels the submit in flight (the ViewModel's scope) after the server may
+    // have charged it; the screen stays until the answer is in, as Capture does while it writes.
+    androidx.activity.compose.BackHandler(enabled = state.submitting) {}
+
     ScreenScaffold(
-        topBar = { RaTopBar(title = if (state.isResubmit) "New quote" else "Quote", onBack = { nav.popBackStack() }) },
+        topBar = { RaTopBar(title = if (state.isResubmit) "New quote" else "Quote", onBack = { if (!state.submitting) nav.popBackStack() }) },
         bottomBar = {
             if (quote == null || state.quoting || state.rejected) return@ScreenScaffold
             BottomBar {
