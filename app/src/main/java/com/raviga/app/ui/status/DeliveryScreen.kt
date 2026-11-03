@@ -207,9 +207,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                             }
                         }
                     }
-                    delivery?.note?.takeIf { it.isNotBlank() }?.let {
-                        Labelled("Delivery note") { BodyText(it) }
-                    }
+                    // R-103 (her rule, PM 11-04): no team text reaches the client; the delivered statusLine says it.
                     if (project.status == ProjectStatus.DELIVERED && delivery?.acceptBy != null) {
                         Spacer(Modifier.height(16.dp))
                         Text("Approved automatically on ${Time.shortDate(delivery.acceptBy)} if you do nothing.", style = RaType.caption, color = Ink.graphite)
@@ -337,7 +335,7 @@ private fun CategoryRow(label: String, selected: Boolean, enabled: Boolean, onCl
     }
 }
 
-/** A caption label over its content, as on iOS ("Repository", "Backend", "Delivery note"). */
+/** A caption label over its content, as on iOS ("Repository", "Backend"). */
 @Composable
 private fun Labelled(label: String, content: @Composable () -> Unit) {
     Spacer(Modifier.height(16.dp))

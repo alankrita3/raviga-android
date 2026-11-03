@@ -346,7 +346,7 @@ internal const val FREE_TO_SUBMIT = "Free to submit. You pay only once we accept
 
 /** "What happens next", contract v0.10.0 (R-103): submit free, pay after acceptance, report instead of revisions. */
 internal fun nextSteps(): List<String> = listOf(
-    "We check your brief. Most are accepted at once; some take up to a working day.",
+    "We check your brief against what we build.",
     "Once it's accepted, you pay the quoted credits and we start building.",
     "We build and test it. This screen shows each step.",
     "You get the code with a handover guide and steps to make it live. Approve it, or tell us what's wrong and we fix it.",

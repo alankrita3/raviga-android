@@ -275,7 +275,7 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                     if (state.credits == null && state.error == null && container.session.hasAccount) ProgressRule(Modifier.padding(vertical = 12.dp))
                     else if (state.credits?.ledger.isNullOrEmpty()) {
                         Spacer(Modifier.height(8.dp))
-                        Text("No credits yet. Buy a pack to submit your first project.", style = RaType.body, color = Ink.graphite)
+                        Text("No credits yet. You buy them when a project is accepted.", style = RaType.body, color = Ink.graphite)
                     }
                 }
             }
