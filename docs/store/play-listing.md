@@ -1,8 +1,9 @@
 # Google Play store listing
 
 Drafted 2026-10-29 (R-052). The copy is final as of 2026-10-30 (R-057, her decisions through the PM): short description
-B, opening B with one sentence added, 18+, and the feature graphic (cream, merged r, two squares). Nothing goes into
-Play Console until the PM says so. Every sentence comes from the iOS listing (`Raviga iOS/docs/store/listing.md`, R-042), plus
+B, opening B with one sentence added, 18+, and the feature graphic (cream, merged r, two squares). **In Play since
+2026-11-03 (the PM's go, by API):** the en-US short and full descriptions below. Play had only the title until then.
+The full description is the same text as App Store Connect's, word for word (1,907 characters). Every sentence comes from the iOS listing (`Raviga iOS/docs/store/listing.md`, R-042), plus
 the sentence she added. Its facts are checked against this app and dev's `/config` (below). Character counts are
 Python `len()`, which is how Play counts.
 
@@ -21,7 +22,7 @@ Custom software, built with AI. Describe it, approve the quote, get the code.
 
 Option A ("Say what you want built. See the price first, and get the code handed to you.") was not chosen.
 
-## Full description (4,000 max): 1,882
+## Full description (4,000 max): 1,907
 
 The opening (one paragraph), a blank line, then the body. Plain text: Play doesn't render Markdown, so headings are
 plain lines.
@@ -35,7 +36,9 @@ and in "Code handed to you":
 Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code and a handover guide. Go live in a few simple steps, or we'll do it for you. AI does the building; our team checks each project before it's handed over.
 ```
 
-Body (1,615), the iOS body word for word, with the legal links on Raviga's domain:
+Body (1,640), the iOS body word for word, with the legal links on Raviga's domain. Under "Built by AI, checked by
+experts", her approved onboarding sentence replaces "The Raviga team builds every project using Claude, Anthropic's AI,
+and reviews it before it reaches you." (the PM, 2026-11-03, as on iOS 1df5e46):
 
 ```text
 Describe it your way
@@ -48,7 +51,7 @@ See the price first
 Get a quote in credits, with a breakdown of the work and a delivery estimate. A typical project is ready in 1 to 2 weeks after approval. You approve the quote before anything is built.
 
 Built by AI, checked by experts
-The Raviga team builds every project using Claude, Anthropic's AI, and reviews it before it reaches you. Follow each step in the app, and answer the team's questions there.
+AI builds your project at speed. Experts recommend the right tech stack, or use yours, and review the work before it reaches you. Follow each step in the app, and answer the team's questions there.
 
 Code handed to you
 Your project arrives as a GitHub repository transferred to your account, with a handover guide. Go live in a few simple steps, or we'll do it for you. Two revision rounds are included.
