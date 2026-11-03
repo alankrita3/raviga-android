@@ -1,9 +1,21 @@
 # Play Console: Data safety form, answers for build 8
 
-To enter with her signed in: Play Console → Raviga → Policy and programs → App content → Data safety → Start (or
-Manage). The questions below are in the form's order, each with the answer to pick. Prepared 2026-11-03 from the app at
-main 569679c (checked against the code, the merged manifest and `docs/play-launch-readiness.md` section 1). The
-answers are hers to confirm before **Submit**; nothing here has been entered.
+**Applied 2026-11-03 16:48 by the Play service account** (her typed yes: "Data safety"), through the API:
+`.venv/bin/python tools/play_release.py data-safety docs/store/data-safety.csv`. Play checked the file line by line
+and accepted it. `docs/store/data-safety.csv` is the form in Play's own CSV format: 50 answered rows, the answers below.
+To change an answer, edit the CSV and run the same command again. The Console form is no longer needed.
+
+Two differences from the first draft below (the PM's decisions, 2026-11-03):
+- Step 2, question 5 (delete some data without deleting the account) is **No** for now. Yes requires a web page that
+  explains how, and the legal site describes only whole-account deletion. Backend is drafting a "Delete some of your
+  data" section of legal.ravigaapps.com/delete-account for her legal read. Once it's live, switch to Yes: set
+  `DATA_DELETION_YES`, add the page as `PSL_DATA_DELETION_URL` and re-apply. The store listing reads the same either
+  way ("You can request that data be deleted", from the account-deletion link).
+- "Can users log in with accounts created outside the app?" (`PSL_HAS_OUTSIDE_APP_ACCOUNTS`) stays blank. Play only
+  allows it for apps that don't create their own accounts.
+
+The questions below are in the form's order, each with the answer to pick. Prepared 2026-11-03 from the app at main
+569679c (checked against the code, the merged manifest and `docs/play-launch-readiness.md` section 1).
 
 ## Step 1: Overview
 
@@ -21,8 +33,9 @@ Read, then **Next**.
 4. **Add a link that users can use to request that their account and associated data is deleted** →
    `https://legal.ravigaapps.com/delete-account`
 5. **Do you provide a way for users to request that some or all of their data is deleted, without requiring them to
-   delete their account?** → **Yes** (in the app: remove the recovery email, the GitHub username or the AWS account;
-   delete drafts and notes, which never leave the phone).
+   delete their account?** → **No, for now** (applied). It becomes **Yes** once the legal site has the "Delete some of
+   your data" section (see the top). In the app you can already remove the recovery email, the GitHub username or the
+   AWS account, and delete drafts and notes, which never leave the phone.
 6. If asked about an **independent security review** badge → **No** (none done).
 
 **Next**.

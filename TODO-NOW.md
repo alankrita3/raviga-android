@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 16:47.
+The PM reads this file if the session has closed. Updated 2026-11-03 16:50.
 
 ## In flight
 
@@ -14,8 +14,11 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:47.
   into main (0e5f114). Draft "8 internal test": versionCode 8, status draft, en-US release notes (446 characters),
   sha256 79de35d565a8…, dev stage. It replaced the never-rolled-out versionCode 1 draft.
   **Rolled out to internal 16:44** by the Play service account (API edit draft→completed, commit 200; her typed yes).
-  The robot can't do the email tester list, its opt-in link or license testers (Console only). It can do Data
-  safety through the API (CSV), on the PM's go.
+  The robot can't do the email tester list, its opt-in link or license testers (Console only).
+  **Data safety applied 16:48** through the API (`tools/play_release.py data-safety docs/store/data-safety.csv`;
+  Play accepted it). Partial deletion is No until the legal site has a "Delete some of your data" section (backend
+  is drafting it for her legal read), then switch to Yes and re-apply. License testers are held until row 37 (the
+  PM: an account-wide setting that also touches the Mirakee apps).
   - **The PM (13:00): we do the Console clicks in Chrome ourselves.** These are: (1) the rollout, (2) the tester list
     with administrator@miraquill.com, (3) Data safety from `docs/store/data-safety.md`, (4) license testing,
     RESPOND_NORMALLY. Steps and clicks are in `docs/store/internal-test.md` sections 3 and 4.
@@ -25,7 +28,7 @@ The PM reads this file if the session has closed. Updated 2026-11-03 16:47.
     nothing was submitted there. I closed my stray Console tab there; team@ stays signed in. Wait for the PM's
     "invite sent" (developer account Raviga Apps, 8466887053850812701). Then use only URLs with
     `?authuser=administrator@miraquill.com` and check the avatar before each click (stop if it shows team@). Accept the
-    invite, then the steps still left: the tester list and opt-in link, and license testing.
+    invite, then the step still left: the tester list and its opt-in link (the PM is asking her how).
     Chrome rule (her plan, 11-03): never quit Chrome, never `open` URLs from the shell, and never script other
     profiles' tabs. Use only my Claude-extension tabs in Profile 40, and close them when done.
   - `docs/store/data-safety.md`: the Play form's answers in order (step 3).

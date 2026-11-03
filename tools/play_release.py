@@ -7,6 +7,7 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py tracks
     .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal] [--notes docs/store/release-notes-build8.md]
     .venv/bin/python tools/play_release.py notes docs/store/release-notes-build8.md   # print what --notes would send
+    .venv/bin/python tools/play_release.py data-safety docs/store/data-safety.csv     # set the Data safety form (Play's CSV)
     .venv/bin/python tools/play_release.py products            # list one-time products
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
     .venv/bin/python tools/play_release.py add-region credits_10 FR     # add one country, priced at the USD conversion or its cap
@@ -213,12 +214,23 @@ def set_price(s, pid, code, amount):
     print(f"{pid} {code}: {old['currencyCode']} {old.get('units')}.{str(old.get('nanos', 0)).zfill(9)[:2]} -> {units}.{frac}")
 
 
+def data_safety(s, path):
+    """Sets the app's Data safety form from Play's CSV format (the Console's "Import from CSV" columns). Play validates
+    it line by line and applies it at once (no edit). docs/store/data-safety.csv holds the answers in
+    docs/store/data-safety.md."""
+    text = open(path, encoding="utf-8").read()
+    answered = sum(1 for line in text.splitlines()[1:] if line.split(",")[2:3] not in ([""], []))
+    check(s.post(f"{API}/dataSafety", json={"safetyLabels": text}))
+    print(f"Data safety applied from {path} ({answered} answered rows)")
+
+
 def main():
     a = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = a.add_subparsers(dest="cmd", required=True)
     sub.add_parser("tracks")
     u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal"); u.add_argument("--notes")
     n = sub.add_parser("notes"); n.add_argument("path")
+    ds = sub.add_parser("data-safety"); ds.add_argument("csv")
     sub.add_parser("products")
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
     r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
@@ -236,7 +248,8 @@ def main():
      "add-region": lambda: add_region(s, args.id, args.region),
      "withdraw-region": lambda: withdraw_region(s, args.id, args.region),
      "set-price": lambda: set_price(s, args.id, args.region, args.amount),
-     "regions": lambda: regions(s, args.region)}[args.cmd]()
+     "regions": lambda: regions(s, args.region),
+     "data-safety": lambda: data_safety(s, args.csv)}[args.cmd]()
 
 
 if __name__ == "__main__":
