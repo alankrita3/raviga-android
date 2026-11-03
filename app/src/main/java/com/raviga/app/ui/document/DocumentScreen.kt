@@ -167,6 +167,12 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                 SaveFailingNotice(saveFailing, state.error, Modifier.padding(bottom = 8.dp))   // R-094 P2-4
                 when {
                     rejected -> PrimaryButton("Delete draft", onClick = { confirmDelete = true })
+                    // R-098 P3-4: while a submit is held, read-only, with the way back to its quote (as iOS's See quote).
+                    state.held -> {
+                        Text(com.raviga.app.ui.quote.QuoteViewModel.HELD_LINE, style = RaType.secondary, color = Ink.graphite)
+                        Spacer(Modifier.height(8.dp))
+                        PrimaryButton("See quote", onClick = { nav.navigate(Routes.quote(draftId)) })
+                    }
                     editable && document != null -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         PrimaryButton(
                             if (state.status == ProjectStatus.CHANGES_REQUESTED) "Get a new quote" else "Get a quote",

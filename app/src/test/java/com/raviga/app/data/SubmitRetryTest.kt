@@ -183,4 +183,27 @@ class SubmitRetryTest {
         drafts.submit("ld_1", "new-name", null, "key-1")
         assertTrue(server.takeRequest(1, TimeUnit.SECONDS)?.body?.readUtf8().orEmpty().contains("new-name"))
     }
+
+    /** R-098 P3-4: while a send is held, no note, section, title, version or quote change is taken. */
+    @Test fun whileHeldEditsAreRefused() = runBlocking {
+        val (drafts, _) = setUpDraft()
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        val tries = listOf<suspend () -> Unit>(
+            { drafts.rename("ld_1", "New name") },
+            { drafts.addInput("ld_1", "text", "One more thing about the bakery app.") },
+            { drafts.saveEdit("ld_1", null, listOf(com.raviga.app.data.api.SectionBody("summary", "Edited."))) },
+            { drafts.restore("ld_1", 1) },
+            { drafts.quote("ld_1") },
+        )
+        for (attempt in tries) {
+            try {
+                attempt()
+                fail("expected the held brief to refuse it")
+            } catch (e: ApiException) {
+                assertEquals("Editing opens again once your Submit is confirmed.", e.message)
+            }
+        }
+        assertEquals("nothing changed", 1, drafts.get("ld_1")?.versions?.size)
+    }
 }

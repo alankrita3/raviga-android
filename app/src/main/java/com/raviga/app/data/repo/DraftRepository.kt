@@ -78,6 +78,7 @@ class DraftRepository(
      * replaced (R-082); clearing it hands the name back to the first note, as on iOS.
      */
     suspend fun rename(id: String, title: String): LocalDraft {
+        notHeld(id)
         val clean = title.trim()
         touch(id) { it.copy(title = clean, titleSource = if (clean.isEmpty()) null else LocalDraft.TITLE_USER) }
         return retitle(id)
@@ -99,6 +100,7 @@ class DraftRepository(
         pageCount: Int? = null,
         durationSec: Int? = null,
     ): LocalInput {
+        notHeld(id)
         val input = LocalInput(
             id = "in_" + UUID.randomUUID().toString().replace("-", "").take(16),
             kind = kind,
@@ -125,11 +127,13 @@ class DraftRepository(
     }
 
     suspend fun editInput(id: String, inputId: String, text: String): LocalDraft {
+        notHeld(id)
         touch(id) { d -> d.copy(inputs = d.inputs.map { if (it.id == inputId) it.copy(text = text.trim()) else it }) }
         return retitle(id)
     }
 
     suspend fun removeInput(id: String, inputId: String): LocalDraft {
+        notHeld(id)
         touch(id) { d -> d.copy(inputs = d.inputs.filterNot { it.id == inputId }, inputsInBrief = d.inputsInBrief - inputId) }
         return retitle(id)
     }
@@ -181,6 +185,7 @@ class DraftRepository(
      * doesn't reflect yet into the current brief.
      */
     suspend fun writeBrief(id: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+        notHeld(id)
         // R-083: a draft or append job from before the app closed is collected, not paid for twice.
         if (require(id).pendingJob?.kind.let { it == PendingJob.DRAFT || it == PendingJob.APPEND }) {
             resumePending(id, onProgress)?.let { return@guarded it }
@@ -204,6 +209,7 @@ class DraftRepository(
     }
 
     suspend fun regenerate(id: String, sectionId: String, instruction: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+        notHeld(id)
         val draft = require(id)
         val current = draft.document ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
         val result = tracked(id, { PendingJob(it, PendingJob.REGENERATE, Time.nowIso(), sectionId = sectionId) }) { started ->
@@ -300,6 +306,7 @@ class DraftRepository(
 
     /** The client's own edits: a new version with these section bodies (and title, if given). */
     suspend fun saveEdit(id: String, title: String?, sections: List<SectionBody>): LocalDraft {
+        notHeld(id)
         val draft = require(id)
         val current = draft.document ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
         val bodies = sections.associate { it.id to it.body }
@@ -317,6 +324,7 @@ class DraftRepository(
 
     /** Brings back an older version as a new one; nothing is lost. */
     suspend fun restore(id: String, version: Int): LocalDraft {
+        notHeld(id)
         val draft = require(id)
         val old = draft.versions.firstOrNull { it.version == version } ?: throw ApiException(ApiException.NOT_FOUND, message = "No version $version.")
         return commit(id, AiDocument(old.document.title, old.document.sections, "Restored version $version"), "restore")
@@ -325,6 +333,7 @@ class DraftRepository(
     // ----- Quote and submit -----
 
     suspend fun quote(id: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+        notHeld(id)
         if (require(id).pendingJob?.kind == PendingJob.QUOTE) resumePending(id, onProgress)?.let { return@guarded it }
         val draft = require(id)
         val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
@@ -426,6 +435,15 @@ class DraftRepository(
 
     private fun require(id: String): LocalDraft = get(id) ?: throw ApiException(ApiException.NOT_FOUND, message = "That draft is no longer on this phone.")
 
+    /**
+     * R-098 P3-4 (iOS review 3, the PM's call): while a submit is held the brief is read-only (notes, sections, the
+     * title, versions, a new quote), so what the retry sends is what the phone shows; it opens again once the answer
+     * is seen. An app's own invalid_state line, shown as written.
+     */
+    private fun notHeld(id: String) {
+        if (get(id)?.holdsSentSubmit == true) throw ApiException(ApiException.INVALID_STATE, message = HELD_EDIT)
+    }
+
     private suspend fun touch(id: String, change: (LocalDraft) -> LocalDraft): LocalDraft =
         store.update(require(id).id) { change(it).copy(updatedAt = Time.nowIso()) }
 
@@ -477,6 +495,9 @@ class DraftRepository(
     private fun LocalInput.ai() = AiInput(kind = kind, text = text, languageDetected = languageDetected, fileName = fileName)
 
     companion object {
+        /** R-098: iOS's words for an edit tried while a submit is held. */
+        const val HELD_EDIT = "Editing opens again once your Submit is confirmed."
+
         /** QA F5, iOS's words: a draft already holding [max] notes takes no more. */
         fun noteLimitProblem(count: Int, max: Int): String? =
             if (max in 1..count) "A project can have up to $max notes. Add the rest to an existing one." else null

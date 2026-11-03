@@ -58,9 +58,11 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val isLocalDraft: Boolean get() = draft != null && draft.serverProjectId == null
         val refused: Boolean get() = draft?.isRefused == true || project?.isRejected == true
         val refusalReason: String? get() = draft?.refusal?.reason ?: project?.screening?.reason
-        /** Drafts, and briefs the team sent back with changes, are edited here. */
+        /** R-098 P3-4: a submit sent with this brief's quote is out and unanswered; the brief is read-only meanwhile. */
+        val held: Boolean get() = draft?.holdsSentSubmit == true
+        /** Drafts, and briefs the team sent back with changes, are edited here (not while a submit is held). */
         val editable: Boolean
-            get() = draft != null && !refused && (draft.serverProjectId == null || project?.status == ProjectStatus.CHANGES_REQUESTED)
+            get() = draft != null && !refused && !held && (draft.serverProjectId == null || project?.status == ProjectStatus.CHANGES_REQUESTED)
         /** The server deleted its copy when the project closed, and this phone has none. */
         val contentGone: Boolean get() = draft == null && project?.contentDeletedAt != null
         val title: String

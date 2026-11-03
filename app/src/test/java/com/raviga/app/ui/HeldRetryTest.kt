@@ -45,13 +45,20 @@ class HeldRetryTest {
         assertNull(QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short, github = "octocat"), limits))
     }
 
-    /** R-097 #5 (the PM's words): while held, the quote screen says what goes. */
+    /** R-097 #5, R-098 (the PM's final words): while held, the quote screen says what goes. */
     @Test fun whileHeldTheScreenSaysTheFirstSubmittedBriefGoes() {
         assertEquals(
-            "This sends the brief as you first submitted it. Your later edits stay on this phone as a newer version.",
+            "This sends the brief as you first submitted it. Editing opens again once that's confirmed.",
             QuoteViewModel.State(draft = draft).heldLine,
         )
         assertNull("nothing held: no line", QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldLine)
         assertNull(QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldName)
+    }
+
+    /** R-098 P3-4: while held the brief is read-only; it opens again once the answer is seen. */
+    @Test fun whileHeldTheBriefIsReadOnly() {
+        assertEquals(false, com.raviga.app.ui.document.DocumentViewModel.State(draft = draft).editable)
+        assertEquals(true, com.raviga.app.ui.document.DocumentViewModel.State(draft = draft).held)
+        assertEquals(true, com.raviga.app.ui.document.DocumentViewModel.State(draft = draft.copy(sentSubmit = null)).editable)
     }
 }
