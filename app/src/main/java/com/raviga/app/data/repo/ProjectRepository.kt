@@ -62,8 +62,12 @@ class ProjectRepository(
         _loadedOnce.value = true
     }
 
+    /** Moves on at every [reset]: a list fetched for the previous client is dropped when it lands (review #23). */
+    @Volatile private var generation = 0
+
     /** Forgets everything held for the previous client (sign-out, recovery, deletion). */
     suspend fun reset() {
+        generation++
         _summaries.value = emptyList()
         _projects.value = emptyMap()
         _loadedOnce.value = false
@@ -75,6 +79,7 @@ class ProjectRepository(
     suspend fun refreshAll(force: Boolean = true): List<ProjectSummary> = listGate.run(force) { fetchAll() }
 
     private suspend fun fetchAll(): List<ProjectSummary> {
+        val startedFor = generation
         val list = mutableListOf<ProjectSummary>()
         var cursor: String? = null
         var pages = 0
@@ -83,6 +88,8 @@ class ProjectRepository(
             list += page.projects
             cursor = page.nextCursor
         } while (cursor != null && ++pages < MAX_PAGES)
+        // Review #23 (Android): the phone moved to another client while this ran; the list is the old client's.
+        if (startedFor != generation) return _summaries.value
         _summaries.value = list
         _loadedOnce.value = true
         cache.write(CacheStore.PROJECTS, ListSerializer(ProjectSummary.serializer()), list)
