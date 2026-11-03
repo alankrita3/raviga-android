@@ -8,6 +8,7 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal] [--notes docs/store/release-notes-build8.md]
     .venv/bin/python tools/play_release.py notes docs/store/release-notes-build8.md   # print what --notes would send
     .venv/bin/python tools/play_release.py data-safety docs/store/data-safety.csv     # set the Data safety form (Play's CSV)
+    .venv/bin/python tools/play_release.py images phoneScreenshots 01.png 02.png …   # replace a listing image set (en-US), in order
     .venv/bin/python tools/play_release.py products            # list one-time products
     .venv/bin/python tools/play_release.py product credits_10 "10 credits" 99.99
     .venv/bin/python tools/play_release.py add-region credits_10 FR     # add one country, priced at the USD conversion or its cap
@@ -224,6 +225,25 @@ def data_safety(s, path):
     print(f"Data safety applied from {path} ({answered} answered rows)")
 
 
+def images(s, kind, paths, lang="en-US"):
+    """Replaces one en-US listing image set (phoneScreenshots, featureGraphic, icon, …) with `paths`, in order, in one
+    edit, then reads it back."""
+    edit = check(s.post(f"{API}/edits", json={}))["id"]
+    done = False
+    try:
+        check(s.delete(f"{API}/edits/{edit}/listings/{lang}/{kind}"))
+        for path in paths:
+            with open(path, "rb") as f:
+                check(s.post(f"{UPLOAD}/edits/{edit}/listings/{lang}/{kind}", params={"uploadType": "media"},
+                             headers={"Content-Type": "image/png" if path.endswith(".png") else "image/jpeg"}, data=f, timeout=300))
+        got = check(s.get(f"{API}/edits/{edit}/listings/{lang}/{kind}")).get("images", [])
+        check(s.post(f"{API}/edits/{edit}:commit")); done = True
+        print(f"{kind} ({lang}): {len(got)} image(s) uploaded and committed:", ", ".join(os.path.basename(x) for x in paths))
+    finally:
+        if not done:
+            s.delete(f"{API}/edits/{edit}")
+
+
 def main():
     a = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = a.add_subparsers(dest="cmd", required=True)
@@ -231,6 +251,7 @@ def main():
     u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal"); u.add_argument("--notes")
     n = sub.add_parser("notes"); n.add_argument("path")
     ds = sub.add_parser("data-safety"); ds.add_argument("csv")
+    im = sub.add_parser("images"); im.add_argument("kind"); im.add_argument("paths", nargs="+")
     sub.add_parser("products")
     p = sub.add_parser("product"); p.add_argument("id"); p.add_argument("title"); p.add_argument("usd")
     r = sub.add_parser("add-region"); r.add_argument("id"); r.add_argument("region")
@@ -249,7 +270,8 @@ def main():
      "withdraw-region": lambda: withdraw_region(s, args.id, args.region),
      "set-price": lambda: set_price(s, args.id, args.region, args.amount),
      "regions": lambda: regions(s, args.region),
-     "data-safety": lambda: data_safety(s, args.csv)}[args.cmd]()
+     "data-safety": lambda: data_safety(s, args.csv),
+     "images": lambda: images(s, args.kind, args.paths)}[args.cmd]()
 
 
 if __name__ == "__main__":
