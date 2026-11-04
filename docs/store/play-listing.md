@@ -88,7 +88,7 @@ clients talk only to our team, never to other users; a business service with pay
 
 | Field | Value | Status |
 |---|---|---|
-| Email (required, public) | `support@miraquill.com` | Live: it's the `supportEmail` dev's `/config` returns today (also on the support page). If she wants a Raviga address, `support@ravigaapps.com` is the placeholder until the domain is live. |
+| Email (required, public) | `support@ravigaapps.com` | Her yes (2026-11-04, via the PM): one public address; dev's `/config` `legal.supportEmail` and `legal.grievance.email` are both this (backend a934b4c; prod with v0.10.0). Not set in Play yet (the API's details read `contactEmail: null` on 2026-11-04); set it with the store-settings step before review. |
 | Website (optional) | `https://ravigaapps.com` | **Placeholder**: the domain isn't live. Leave empty until there's a site (iOS leaves its marketing URL empty too). |
 | Phone (optional) | none | |
 | Privacy policy (App content, required) | `https://legal.ravigaapps.com/privacy-policy` | Live on Raviga's domain (backend 5fe84e0, 2026-10-30). |

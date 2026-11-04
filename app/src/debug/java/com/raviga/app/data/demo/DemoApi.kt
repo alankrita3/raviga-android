@@ -802,8 +802,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 termsVersion = "2026-10-31",
                 privacyUrl = "https://legal.ravigaapps.com/privacy-policy",
                 privacyVersion = "2026-10-31",
-                grievance = Grievance("membersupport@miraquill.com", 15),
-                supportEmail = "support@miraquill.com",
+                // One public address (her yes, backend a934b4c, 2026-11-04).
+                grievance = Grievance("support@ravigaapps.com", 15),
+                supportEmail = "support@ravigaapps.com",
                 rightsUrl = "https://legal.ravigaapps.com/your-rights",
             ),
         )
