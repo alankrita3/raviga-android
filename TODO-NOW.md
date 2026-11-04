@@ -5,12 +5,13 @@ The PM reads this file if the session has closed. Updated 2026-11-04 16:50.
 
 ## In flight
 
-- **R-107 (her decision, via the PM, 2026-11-04 ~16:30): AI consent merged into "Before you start"; branch r-107
-  (aac02dc), not merged.** One PUT {termsVersion, privacyVersion, aiProcessing:true, analytics:true only if on}
-  (backend v0.11.4), also for the re-ask; the separate AI sheet and the Settings AI switch are gone; the AI_CONSENT
-  route shows the merged sheet. Button "Allow AI and continue", the caption, "Not now". **Waiting on iOS** for the AI
-  section text, "Your rights", the Settings line that replaces the switch, the row subtitle, the re-ask heading and
-  the consent_required line (asked 16:4x). Then: device check, merge, report to the PM.
+- **R-107 on main (4c41d1a; her decision via the PM, contract v0.11.4): AI consent merged into "Before you
+  start".** One PUT {termsVersion, privacyVersion, aiProcessing:true, analytics:true only if on}, also for the
+  re-ask; no separate AI sheet, no Settings AI switch (the AI_CONSENT route shows the merged sheet with "Before you
+  start"). iOS's verbatim AI section (four lines with a lead-in), "Allow AI and continue", the caption; "Not now" on
+  the first sheet and the AI re-ask only. iOS's choices 2-6 (Your rights unchanged, Settings row, re-ask heading,
+  consent_required line, Not now) are with the PM; her answer may change them. Unit tests debug 244, release 217.
+  **Device check pending** (adb, below).
 - **Contract v0.11.3 on main (c6ff760):** "Brief refunded" ledger line (+1/12 credit, as iOS 507af2e); Capture
   refreshes credits after a draft fails with ai_unavailable/internal. Not checked on the phone (adb below).
 - **adb can't reach the OnePlus since ~16:30 (my doing).** I restarted the adb server to clear an "offline" state; the
