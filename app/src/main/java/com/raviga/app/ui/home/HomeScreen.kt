@@ -262,19 +262,19 @@ private fun DeletableDraft(row: HomeViewModel.Row, onClick: () -> Unit, onDelete
 
 /** Marigold dot and the balance; opens Credits. */
 @Composable
-private fun CreditsPill(balance: Int, onClick: () -> Unit) {
+private fun CreditsPill(balance: Double, onClick: () -> Unit) {
     Row(
         Modifier
             .minimumInteractiveComponentSize()   // R-092 #40: 48dp to tap
             .clip(CircleShape)
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = "$balance ${if (balance == 1) "credit" else "credits"}" }
+            .semantics { contentDescription = com.raviga.app.util.Money.credits(balance) }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Dot(Ink.marigold)
         Spacer(Modifier.width(6.dp))
-        Text("$balance ${if (balance == 1) "credit" else "credits"}", style = RaType.secondaryMedium, color = Ink.ink)
+        Text(com.raviga.app.util.Money.credits(balance), style = RaType.secondaryMedium, color = Ink.ink)
     }
 }
 

@@ -397,12 +397,25 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
         }
         return
     }
+    if (state.needCredits) NeedCreditsSheet(
+        config = com.raviga.app.ui.LocalAppContainer.current.session.config.collectAsStateWithLifecycle().value.credits,
+        onBuy = { productId -> vm.dismissNeedCredits(); nav.navigate(com.raviga.app.ui.nav.Routes.creditsBuy(productId)) },
+        onAllPacks = { vm.dismissNeedCredits(); nav.navigate(com.raviga.app.ui.nav.Routes.CREDITS) },
+        onDismiss = { vm.dismissNeedCredits() },
+    )
     ScreenScaffold(
         topBar = { RaTopBar(onBack = { if (!state.saving) nav.popBackStack() }) },
         bottomBar = {
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
                 SaveFailingNotice(state.saveFailing, state.error, Modifier.padding(bottom = 8.dp))
+                // R-099 (K, as iOS): a new brief says what it costs; adding to a brief is free.
+                if (!vm.isAppend) state.briefLine?.let {
+                    Text(
+                        it, style = RaType.caption, color = Ink.graphite, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    )
+                }
                 PrimaryButton(
                     if (vm.isAppend) "Looks right, add it to the brief" else "Looks right, write the brief",
                     enabled = !state.saving && state.transcript.isNotBlank(),
@@ -550,3 +563,37 @@ private fun fileSource(file: CaptureViewModel.FileRead): String = buildString {
 }
 
 private fun formatTime(sec: Int): String = "%d:%02d".format(sec / 60, sec % 60)
+
+/** R-099 (L, as iOS): a new brief needs credits; the smallest pack covers three. Nothing was counted. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun NeedCreditsSheet(
+    config: com.raviga.app.data.api.CreditsConfig,
+    onBuy: (String) -> Unit,
+    onAllPacks: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheet = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheet,
+        containerColor = Ink.surface,
+        dragHandle = null,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Ra.gutter).padding(top = 24.dp, bottom = 16.dp).navigationBarsPadding()) {
+            Text(com.raviga.app.ui.credits.BriefPricing.NEED_TITLE, style = RaType.heading, color = Ink.ink)
+            Spacer(Modifier.height(8.dp))
+            Text(com.raviga.app.ui.credits.BriefPricing.needBody(config), style = RaType.body, color = Ink.graphite)
+            Spacer(Modifier.height(20.dp))
+            val pack = com.raviga.app.ui.credits.BriefPricing.smallestPack(config)
+            if (pack != null) {
+                PrimaryButton(com.raviga.app.ui.credits.BriefPricing.buyLabel(config).orEmpty(), onClick = { onBuy(pack.productId) })
+                Spacer(Modifier.height(8.dp))
+            }
+            SecondaryButton("See all packs", onClick = onAllPacks)
+            Spacer(Modifier.height(4.dp))
+            com.raviga.app.ui.components.TertiaryButton("Not now", onClick = onDismiss)
+        }
+    }
+}

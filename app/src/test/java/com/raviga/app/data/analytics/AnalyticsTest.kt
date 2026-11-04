@@ -39,7 +39,7 @@ class AnalyticsTest {
         analytics.briefGenerated(inputs = 2, sectionsFilled = 11)
         analytics.quoteViewed("standard", 34)
         analytics.projectSubmitted("standard", 34)
-        analytics.creditsPurchased("credits_25", 27)
+        analytics.creditsPurchased("credits_25", 27.0)
         analytics.deliveryAccepted("standard", 1)
         assertEquals(
             listOf(
@@ -48,7 +48,7 @@ class AnalyticsTest {
                 "brief_generated" to mapOf("inputs" to 2, "sections_filled" to 11),
                 "quote_viewed" to mapOf("bracket" to "standard", "credits" to 34),
                 "project_submitted" to mapOf("bracket" to "standard", "credits" to 34),
-                "credits_purchased" to mapOf("product_id" to "credits_25", "credits" to 27),
+                "credits_purchased" to mapOf("product_id" to "credits_25", "credits" to 27L),
                 "delivery_accepted" to mapOf("bracket" to "standard", "reports" to 1),
             ),
             sink.events,
@@ -59,11 +59,11 @@ class AnalyticsTest {
     fun `values outside the contract's enums are left out, counts are clamped`() {
         analytics.setEnabled(true)
         analytics.quoteViewed("Dental clinic app", 30)
-        analytics.creditsPurchased("promo_pack", 5)
+        analytics.creditsPurchased("promo_pack", 5.0)
         analytics.deliveryAccepted(null, -1)
         analytics.briefGenerated(inputs = 1, sectionsFilled = 40)
         assertEquals(mapOf("credits" to 30), sink.events[0].second)
-        assertEquals(mapOf("credits" to 5), sink.events[1].second)
+        assertEquals(mapOf("credits" to 5L), sink.events[1].second)
         assertEquals(mapOf("reports" to 0), sink.events[2].second)
         assertEquals(12, sink.events[3].second["sections_filled"])
     }

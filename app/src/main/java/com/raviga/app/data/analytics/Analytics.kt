@@ -79,8 +79,9 @@ class Analytics(private val sink: AnalyticsSink) {
 
     fun projectSubmitted(bracket: String?, credits: Int) = log("project_submitted", "bracket" to bracket.ifKnown(BRACKETS), "credits" to credits)
 
-    fun creditsPurchased(productId: String, credits: Int) =
-        log("credits_purchased", "product_id" to productId.ifKnown(PRODUCTS), "credits" to credits)
+    /** v0.11.1: credits are a number (the quarter pack is 0.25); whole packs still log whole numbers. */
+    fun creditsPurchased(productId: String, credits: Double) =
+        log("credits_purchased", "product_id" to productId.ifKnown(PRODUCTS), "credits" to if (credits % 1.0 == 0.0) credits.toLong() else credits)
 
     /** Contract v0.10.0 (section 22): `reports`, the delivery reports sent, replaces `revisions_used`. */
     fun deliveryAccepted(bracket: String?, reports: Int) =
@@ -95,6 +96,6 @@ class Analytics(private val sink: AnalyticsSink) {
 
     companion object {
         val BRACKETS = setOf("micro", "starter", "standard", "pro", "enterprise")
-        val PRODUCTS = setOf("credits_10", "credits_25", "credits_50", "credits_100")
+        val PRODUCTS = setOf("credits_quarter", "credits_10", "credits_25", "credits_50", "credits_100")
     }
 }

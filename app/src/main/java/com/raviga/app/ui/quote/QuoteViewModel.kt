@@ -44,7 +44,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val project: Project? = null,
         val me: Me? = null,
         val config: AppConfig = AppConfig(),
-        val balance: Int = 0,
+        val balance: Double = 0.0,
         val quoting: Boolean = false,
         val progressMessage: String? = null,
         val progress: Float? = null,

@@ -58,7 +58,8 @@ class DtoDecodingTest {
         assertEquals(50, config.quote.brackets.first { it.id == "pro" }.minCredits)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.quote.brackets.map { Triple(it.id, it.minCredits, it.timeline) }, demo.quote.brackets.map { Triple(it.id, it.minCredits, it.timeline) })
-        assertEquals(config.credits.packs.map { it.priceHintUsd }, demo.credits.packs.map { it.priceHintUsd })
+        // v0.9.5 predates the quarter pack (R-099); the whole packs still match.
+        assertEquals(config.credits.packs.map { it.priceHintUsd }, demo.credits.packs.filter { it.credits >= 1.0 }.map { it.priceHintUsd })
     }
 
     /** Captured from the raviga-* dev GET /config on 2026-10-09 (contract v0.8: the rename, shapes as v0.7.1). */
@@ -71,7 +72,7 @@ class DtoDecodingTest {
         assertEquals("Raviga Apps Private Limited", config.legal.companyName)
         // The legal URLs moved to Raviga's domain (backend 5fe84e0); the v0.9.3 test pins the demo to them.
         assertEquals(config.quote.brackets.map { it.timeline }, demo.quote.brackets.map { it.timeline })
-        assertEquals(config.credits.packs.map { it.productId }, demo.credits.packs.map { it.productId })
+        assertEquals(config.credits.packs.map { it.productId }, demo.credits.packs.filter { it.credits >= 1.0 }.map { it.productId })
     }
 
     @Test
@@ -179,11 +180,27 @@ class DtoDecodingTest {
         assertEquals(config.quote.validDays, demo.quote.validDays)
     }
 
+    /** Contract v0.11.2 (dev /config 2026-11-04, R-099): the quarter pack and what a brief costs; the demo sells the same. */
+    @Test
+    fun `v0112 config prices briefs and the demo matches`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v0112.json")!!)
+        assertEquals(0.0833, config.credits.briefPriceCredits, 0.0)
+        assertEquals(1, config.credits.freeBriefs)
+        val quarter = config.credits.packs.first()
+        assertEquals("credits_quarter", quarter.productId)
+        assertEquals(0.25, quarter.credits, 0.0)
+        assertEquals("3 briefs", quarter.label)
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(config.credits.packs, demo.credits.packs)
+        assertEquals(config.credits.briefPriceCredits, demo.credits.briefPriceCredits, 0.0)
+        assertEquals(config.credits.freeBriefs, demo.credits.freeBriefs)
+    }
+
     /** R-060 (10-30): Play sells India at the plan prices and the 100 pack at India's cap; dev's /config hints match (backend c5f333b). */
     @Test
     fun `demo rupee hints match Play's India prices`() {
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
-        assertEquals(listOf(8_499, 21_249, 42_499, 84_000), demo.credits.packs.map { it.priceHintInr })
+        assertEquals(listOf(209, 8_499, 21_249, 42_499, 84_000), demo.credits.packs.map { it.priceHintInr })
     }
 
     /** R-055: /config may still send a person's name and an address; the app decodes neither and shows one line. */
@@ -256,7 +273,7 @@ class DtoDecodingTest {
         val me = json.decodeFromString(Me.serializer(), """{"clientId":"cl_1","createdAt":"2026-10-09T04:30:00Z","credits":{"balance":25},
             "consent":{"terms":null,"privacy":null,"aiProcessing":{"granted":false,"updatedAt":null},"current":false},
             "recoveryEmail":null,"deliveryTargets":{"githubUsername":"","aws":null},"deviceCount":2,"deletion":null}""")
-        assertEquals(25, me.credits.balance)
+        assertEquals(25.0, me.credits.balance, 0.0)
         assertEquals(false, me.consent.aiGranted)
         assertEquals("an older server's githubUsername is ignored (v0.11.0)", null, me.deliveryTargets.aws)
     }

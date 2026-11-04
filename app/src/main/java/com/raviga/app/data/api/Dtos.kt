@@ -110,7 +110,12 @@ data class Me(
 )
 
 @Serializable
-data class CreditsBalance(val balance: Int = 0)
+/** v0.11.1 (R-099): credits are numbers with up to 4 decimals (a brief is a twelfth of a credit). */
+data class CreditsBalance(
+    val balance: Double = 0.0,
+    /** R-099: new briefs this account can still write free (null until backend sends it; then the phone guesses). */
+    val freeBriefsLeft: Int? = null,
+)
 
 @Serializable
 data class RecoveryEmail(val email: String, val verified: Boolean = false)
@@ -179,19 +184,23 @@ data class CreditsConfig(
     /** Kept by the server for older builds. */
     val creditValueInr: Int = 850,
     val packs: List<CreditPack> = emptyList(),
+    /** v0.11.1 (R-099): what a new brief costs after the free ones (a twelfth of a credit); 0 on an older server (as iOS). */
+    val briefPriceCredits: Double = 0.0,
+    /** v0.11.1: new briefs per account that cost nothing. */
+    val freeBriefs: Int = 1,
 )
 
 @Serializable
 data class CreditPack(
     val productId: String,
-    val credits: Int,
-    val bonusCredits: Int = 0,
+    val credits: Double,
+    val bonusCredits: Double = 0.0,
     /** Shown only until the store's real price loads. */
     val priceHintUsd: Double? = null,
     val priceHintInr: Int? = null,
     val label: String = "",
 ) {
-    val total: Int get() = credits + bonusCredits
+    val total: Double get() = credits + bonusCredits
 }
 
 @Serializable
@@ -698,7 +707,9 @@ data class AwsConnectInfo(
 
 @Serializable
 data class CreditsResponse(
-    val balance: Int = 0,
+    val balance: Double = 0.0,
+    /** v0.11.2 (R-099): new briefs this account can still write free. */
+    val freeBriefsLeft: Int? = null,
     val ledger: List<LedgerEntry> = emptyList(),
     val nextCursor: String? = null,
 )
@@ -707,9 +718,9 @@ data class CreditsResponse(
 data class LedgerEntry(
     val id: String,
     val at: String? = null,
-    val type: String = "adjustment", // purchase | bonus | charge | refund_project | refund_store | revision_charge | adjustment
-    val credits: Int = 0,
-    val balanceAfter: Int = 0,
+    val type: String = "adjustment", // purchase | bonus | charge | brief | refund_project | refund_store | revision_charge | adjustment
+    val credits: Double = 0.0,
+    val balanceAfter: Double = 0.0,
     val ref: LedgerRef? = null,
     val note: String = "",
 )
@@ -722,7 +733,7 @@ data class LedgerRef(
 )
 
 @Serializable
-data class SyncResponse(val balance: Int = 0, val reconciled: Boolean = false)
+data class SyncResponse(val balance: Double = 0.0, val reconciled: Boolean = false)
 
 // ---------- Privacy (section 14) ----------
 

@@ -66,7 +66,7 @@ class CreditsRepository(
     }
 
     /** Asks the backend to reconcile with RevenueCat, then reloads the ledger. */
-    suspend fun sync(): Int {
+    suspend fun sync(): Double {
         apiCall(json) { api.syncCredits(UUID.randomUUID().toString()) }
         return refresh().balance
     }
@@ -104,7 +104,7 @@ class CreditsRepository(
         const val BASELINE_CAP_MS = 5_000L
 
         /** The balance to measure a purchase against: a fresh read within [capMs], else [cached]. */
-        internal suspend fun baseline(fresh: suspend () -> Int, cached: Int?, capMs: Long = BASELINE_CAP_MS): Int? =
+        internal suspend fun baseline(fresh: suspend () -> Double, cached: Double?, capMs: Long = BASELINE_CAP_MS): Double? =
             runCatching { kotlinx.coroutines.withTimeoutOrNull(capMs) { fresh() } }.getOrNull() ?: cached
 
         /** [older] added below [current] without repeating a row; the cursor moves on, the balance is the newer read. */
@@ -124,10 +124,10 @@ class CreditsRepository(
          * unknown [before] can't show that, so it is NotBookedYet (the next Credits open syncs, R-092 #20).
          */
         internal suspend fun book(
-            before: Int?,
+            before: Double?,
             store: suspend () -> PurchaseOutcome,
-            balance: suspend () -> Int?,
-            sync: suspend () -> Int?,
+            balance: suspend () -> Double?,
+            sync: suspend () -> Double?,
             wait: suspend () -> Unit = { delay(2_000) },
             /**
              * Review 2026-11-03 (Android): the store took the money, so a sync is due (true) from that moment until
@@ -157,10 +157,10 @@ class CreditsRepository(
         val before = baseline(fresh = { refresh().balance }, cached = null)
         if (billing.isAvailable) billing.restore()
         val after = sync()
-        return Restored(balance = after, added = if (before != null && after > before) after - before else 0)
+        return Restored(balance = after, added = if (before != null && after > before) after - before else 0.0)
     }
 
-    data class Restored(val balance: Int, val added: Int)
+    data class Restored(val balance: Double, val added: Double)
 
     val storeReady: Boolean get() = billing.isReady
 }

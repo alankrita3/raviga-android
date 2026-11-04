@@ -120,7 +120,7 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             }.getOrElse { PurchaseOutcome.Failed(it.userLine()) }
             // Confirmed means the balance synced (contract v0.9); bonus credits included.
             if (outcome == PurchaseOutcome.Success) container.analytics.creditsPurchased(pack.productId, pack.total)
-            if (outcome == PurchaseOutcome.Success && pack.total > 0) offerRecoveryEmailOnce()
+            if (outcome == PurchaseOutcome.Success && pack.total > 0.0) offerRecoveryEmailOnce()
             // NotBookedYet: the repository marked a sync due as soon as the store took the money (next open syncs).
             _state.update {
                 it.copy(
@@ -176,7 +176,7 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
     val vm: CreditsViewModel = viewModel { CreditsViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val balance = state.credits?.balance ?: container.session.me.value?.credits?.balance ?: 0
+    val balance = state.credits?.balance ?: container.session.me.value?.credits?.balance ?: 0.0
 
     // After the first consent (R-056): carry on into the pack the client tapped, once the store knows this account.
     var buyStarted by rememberSaveable { mutableStateOf(false) }
@@ -244,9 +244,13 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(Money.credits(pack.credits), style = RaType.bodyMedium, color = if (enabled) Ink.ink else Ink.ash)
-                        if (pack.bonusCredits > 0) {
+                        if (pack.bonusCredits > 0.0) {
                             Spacer(Modifier.height(6.dp))
-                            Chip("+${pack.bonusCredits} bonus", tone = ChipTone.Marigold)
+                            Chip("+${Money.creditsNumber(pack.bonusCredits)} bonus", tone = ChipTone.Marigold)
+                        } else if (pack.credits < 1.0 && pack.label.isNotBlank()) {
+                            // R-099 (as iOS): the quarter credit says what it buys, "3 briefs" (/config label).
+                            Spacer(Modifier.height(6.dp))
+                            Chip(pack.label, tone = ChipTone.Blue)
                         }
                         if (com.raviga.app.BuildConfig.DEBUG && state.demoBilling) {
                             Spacer(Modifier.height(4.dp))
@@ -304,19 +308,26 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
 @Composable
 private fun LedgerRow(entry: LedgerEntry) {
     val title = when (entry.type) {
-        "purchase" -> "Bought ${entry.ref?.productId?.removePrefix("credits_")?.let { "$it credits" } ?: "credits"}"
+        "purchase" -> "Bought ${Money.credits(entry.credits)}"
         "bonus" -> "Pack bonus"
+        // R-099 (as iOS): the brief's title stays on the phone, so the server's line ("New brief") can't name it.
+        "brief" -> "Brief written"
         "charge" -> entry.note.ifBlank { "Project submitted" }
         "refund_project" -> entry.note.ifBlank { "Project refund" }
         "refund_store" -> "Store refund"
         "revision_charge" -> "Revision"
         else -> entry.note.ifBlank { "Adjustment" }
     }
-    val signed = if (entry.credits > 0) "+${entry.credits}" else "${entry.credits}"
+    val signed = when {
+        // A real minus sign, never a hyphen (as iOS's LedgerFormat).
+        entry.type == "brief" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
+        entry.credits > 0.0 -> "+${Money.creditsNumber(entry.credits)}"
+        else -> "\u2212${Money.creditsNumber(-entry.credits)}"
+    }
     RaRow(
         title = title,
-        subtitle = Time.dateTime(entry.at) + "  ·  balance ${entry.balanceAfter}",
+        subtitle = Time.dateTime(entry.at) + "  ·  balance ${Money.creditsNumber(entry.balanceAfter)}",
         chevron = false,
-        trailing = { Text(signed, style = RaType.bodyMedium, color = if (entry.credits > 0) Ink.moss else Ink.ink) },
+        trailing = { Text(signed, style = RaType.bodyMedium, color = if (entry.credits > 0.0) Ink.moss else Ink.ink) },
     )
 }

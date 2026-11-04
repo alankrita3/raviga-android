@@ -69,6 +69,10 @@ class CaptureViewModel(
     }
 
     data class State(
+        /** R-099: the line above "Looks right, write the brief" (K); null while it can't be worked out yet. */
+        val briefLine: String? = null,
+        /** R-099: the server said 402 for a new brief; the screen offers credits (L). */
+        val needCredits: Boolean = false,
         val phase: Phase = Phase.CAPTURE,
         val tab: Int = 0,                       // 0 speak, 1 type, 2 upload
         val speech: Speech = Speech.Checking,
@@ -136,6 +140,8 @@ class CaptureViewModel(
     )
     val state: StateFlow<State> = _state.asStateFlow()
 
+    fun dismissNeedCredits() = _state.update { it.copy(needCredits = false) }
+
     val isAppend: Boolean get() = mode == "append"
 
     private val notes = WorkingNotes(
@@ -180,6 +186,24 @@ class CaptureViewModel(
 
     init {
         viewModelScope.launch { container.draftStore.saveFailing.collect { f -> _state.update { it.copy(saveFailing = f) } } }
+    }
+
+    init {
+        // After `notes` (draftId reads it; the first combine runs at once).
+        // R-099 (K, as iOS): free only when the server's count isn't 0 and this phone has no other draft with a brief and no
+        // submitted project (/me is often read before the first brief, so it can still say 1 just after it).
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                container.session.me, container.credits.credits, container.session.config, container.drafts.drafts, container.projects.summaries,
+            ) { me, credits, config, drafts, projects ->
+                val wroteBefore = drafts.any { (id, d) -> id != draftId && d.document != null } || projects.isNotEmpty() ||
+                    credits?.ledger?.any { it.type == "brief" } == true
+                val free = com.raviga.app.ui.credits.BriefPricing.freeLeft(credits?.freeBriefsLeft ?: me?.credits?.freeBriefsLeft, wroteBefore)
+                // No line when this draft already has a brief (a rewrite is free) or on a server without brief pricing.
+                if (draftId?.let { drafts[it]?.document } != null) null
+                else com.raviga.app.ui.credits.BriefPricing.line(free, config.credits, credits?.balance ?: me?.credits?.balance ?: 0.0)
+            }.collect { line -> _state.update { it.copy(briefLine = line) } }
+        }
     }
 
     init {
@@ -537,6 +561,8 @@ class CaptureViewModel(
                     _state.update { it.copy(progress = st.progress, progressMessage = st.message ?: it.progressMessage) }
                 }
                 _state.update { it.copy(done = id) }
+                // R-099: the free brief may be used now, and a later one booked a twelfth of a credit.
+                container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
             } catch (e: Exception) {
                 onWriteFailed(id, e)
             }
@@ -617,6 +643,9 @@ class CaptureViewModel(
                 pendingAfterConsent = { writeBrief() }
                 _state.update { it.copy(phase = back, needsConsent = true, progress = null, progressMessage = null) }
             }
+            // R-099 (L): a new brief needs a twelfth of a credit and the account is short; nothing was counted.
+            api?.code == ApiException.INSUFFICIENT_CREDITS ->
+                _state.update { it.copy(phase = back, needCredits = true, error = null, progress = null, progressMessage = null) }
             // A policy refusal froze the draft (DraftRepository); the brief screen explains it.
             api?.code == ApiException.CONTENT_REJECTED && api.detailString("kind") == "policy" ->
                 _state.update { it.copy(done = id) }

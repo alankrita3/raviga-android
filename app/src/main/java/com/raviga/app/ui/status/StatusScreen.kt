@@ -90,7 +90,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                                 PrimaryButton("Connect AWS to start", onClick = { nav.navigate(Routes.CONNECT_AWS) })
                             }
                             state.priceExpired -> PrimaryButton("Get a new quote", loading = state.quoting, enabled = !state.busy, onClick = { vm.requestNewQuote() })
-                            state.shortBy > 0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
+                            state.shortBy > 0.0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
                             else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { vm.pay() })
                         }
                         Spacer(Modifier.height(4.dp))
@@ -141,9 +141,9 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     Spacer(Modifier.height(12.dp))
                     Text("New quote: ${Money.credits(q.quote.credits)}, about ${Money.usd(q.quote.usd ?: (q.quote.credits * state.config.credits.creditValueUsd))}.", style = RaType.bodyMedium, color = Ink.ink)
                 }
-                if (state.shortBy > 0) {
+                if (state.shortBy > 0.0) {
                     Spacer(Modifier.height(12.dp))
-                    Text("You have ${Money.credits(state.balance)}. You need ${state.shortBy} more.", style = RaType.body, color = Ink.ink)
+                    Text("You have ${Money.credits(state.balance)}. You need ${Money.creditsNumber(state.shortBy)} more.", style = RaType.body, color = Ink.ink)
                 }
 
                 project.timeline?.takeIf { it.milestones.isNotEmpty() }?.let { tl ->

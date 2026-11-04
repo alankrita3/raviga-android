@@ -79,9 +79,9 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
 
     val loadedOnce = container.projects.loadedOnce
 
-    val balance: StateFlow<Int> = combine(container.credits.credits, container.session.me) { credits, me ->
-        credits?.balance ?: me?.credits?.balance ?: 0
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+    val balance: StateFlow<Double> = combine(container.credits.credits, container.session.me) { credits, me ->
+        credits?.balance ?: me?.credits?.balance ?: 0.0
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()

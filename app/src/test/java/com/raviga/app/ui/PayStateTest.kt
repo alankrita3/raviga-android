@@ -23,7 +23,7 @@ class PayStateTest {
         id = "pr_1", status = ProjectStatus.APPROVED,
         quote = Quote(id = "qt_1", credits = 30, expiresAt = iso(now + 60_000)),
     )
-    private fun state(project: Project = accepted, balance: Int = 50, clock: Long = now) =
+    private fun state(project: Project = accepted, balance: Double = 50.0, clock: Long = now) =
         StatusViewModel.State(project = project, balance = balance, clock = clock)
 
     @Test fun enoughCreditsPaysTheProjectsPrice() {
@@ -31,22 +31,22 @@ class PayStateTest {
         assertTrue(s.awaitingPayment)
         assertFalse(s.priceExpired)
         assertEquals(30, s.price)
-        assertEquals(0, s.shortBy)
+        assertEquals(0.0, s.shortBy, 0.0)
     }
 
     @Test fun shortOfCreditsSaysByHowMuch() {
-        assertEquals(20, state(balance = 10).shortBy)
+        assertEquals(20.0, state(balance = 10.0).shortBy, 0.0)
     }
 
     @Test fun anExpiredPriceAsksForANewQuoteFirst() {
         val s = state(clock = now + 60_000)
         assertTrue(s.priceExpired)
-        assertEquals("no shortfall line while the price is out of date", 0, s.shortBy)
+        assertEquals("no shortfall line while the price is out of date", 0.0, s.shortBy, 0.0)
         val requoted = s.copy(newQuote = QuoteResult(Quote(id = "qt_2", credits = 34, expiresAt = iso(now + 9_000_000)), "tok2"))
         assertFalse(requoted.priceExpired)
         assertEquals(34, requoted.price)
-        assertEquals(0, requoted.copy(balance = 34).shortBy)
-        assertEquals(4, requoted.copy(balance = 30).shortBy)
+        assertEquals(0.0, requoted.copy(balance = 34.0).shortBy, 0.0)
+        assertEquals(4.0, requoted.copy(balance = 30.0).shortBy, 0.0)
     }
 
     @Test fun onlyAnUnpaidAcceptedProjectIsPaid() {
@@ -60,7 +60,7 @@ class PayStateTest {
         val required = com.raviga.app.data.api.AppConfig(delivery = com.raviga.app.data.api.DeliveryConfig(awsRequiredToPay = true))
         val s = state().copy(config = required)
         assertTrue(s.needsAws)
-        assertEquals("no shortfall line while AWS isn't connected", 0, s.copy(balance = 10).shortBy)
+        assertEquals("no shortfall line while AWS isn't connected", 0.0, s.copy(balance = 10.0).shortBy, 0.0)
         assertFalse(s.copy(awsVerified = true).needsAws)
         assertFalse("only an accepted, unpaid project", s.copy(project = accepted.copy(status = ProjectStatus.BUILDING)).needsAws)
         assertFalse("a server without the rule", state().needsAws)
@@ -77,13 +77,13 @@ class PayStateTest {
     }
 
     @Test fun aFailedPaymentShowsTheNextStep() {
-        val short = StatusViewModel.afterFailedPay(state(balance = 50), ApiException(
+        val short = StatusViewModel.afterFailedPay(state(balance = 50.0), ApiException(
             ApiException.INSUFFICIENT_CREDITS, 402, "You need 20 more credits.",
             details = buildJsonObject { put("required", 30); put("balance", 10) },
         ))
         assertNull("the balance line and Buy credits say it, not an error", short.error)
-        assertEquals(10, short.balance)
-        assertEquals(20, short.shortBy)
+        assertEquals(10.0, short.balance, 0.0)
+        assertEquals(20.0, short.shortBy, 0.0)
 
         val expired = StatusViewModel.afterFailedPay(state(), ApiException(
             ApiException.QUOTE_STALE, 409, "This price has expired. Get a new quote to start building.",

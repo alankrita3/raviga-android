@@ -43,6 +43,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val submits: Map<String, String> = emptyMap(),
         val ledger: List<LedgerEntry> = emptyList(),
         val statusChangedAt: Map<String, String> = emptyMap(),
+        /** v0.11.1 (R-099): new briefs this account has written (the first config.credits.freeBriefs are free). */
+        val briefsWritten: Int = 0,
         /** R-079: the confirmed recovery email, and one waiting for its code (always 123456 in demo). */
         val recoveryEmail: String? = null,
         val pendingEmail: String? = null,
@@ -99,12 +101,12 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     private suspend fun <T> readState(block: (State) -> T): T = lock.withLock { block(load()) }
 
-    private fun balanceOf(s: State) = s.ledger.lastOrNull()?.balanceAfter ?: 0
+    private fun balanceOf(s: State): Double = s.ledger.lastOrNull()?.balanceAfter ?: 0.0
 
     private fun meOf(s: State) = Me(
         clientId = s.clientId,
         createdAt = s.createdAt,
-        credits = CreditsBalance(balanceOf(s)),
+        credits = CreditsBalance(balanceOf(s), freeBriefsLeft = (config.credits.freeBriefs - s.briefsWritten).coerceAtLeast(0)),
         consent = s.consent,
         deliveryTargets = s.deliveryTargets,
         deviceCount = 1,
@@ -154,13 +156,14 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         else -> ""
     }
 
-    private fun ledger(s: State, type: String, credits: Int, ref: LedgerRef? = null, note: String = ""): State {
+    private fun ledger(s: State, type: String, credits: Double, ref: LedgerRef? = null, note: String = ""): State {
         val entry = LedgerEntry(
             id = "le_" + UUID.randomUUID().toString().take(8),
             at = Time.nowIso(),
             type = type,
             credits = credits,
-            balanceAfter = balanceOf(s) + credits,
+            // Four decimals, as the server books them (v0.11.1).
+            balanceAfter = java.math.BigDecimal.valueOf(balanceOf(s) + credits).setScale(4, java.math.RoundingMode.HALF_UP).toDouble(),
             ref = ref,
             note = note,
         )
@@ -453,6 +456,21 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun aiDraft(body: AiDraftRequest): JobEnvelope {
         readState { requireConsent(it) }
+        // v0.11.1 (R-099): the first config.credits.freeBriefs drafts are free, then a twelfth of a credit each,
+        // booked before the job and never refunded; short of it, 402 and nothing counted.
+        mutate { s ->
+            var next = s.copy(briefsWritten = s.briefsWritten + 1)
+            if (s.briefsWritten >= config.credits.freeBriefs) {
+                val price = config.credits.briefPriceCredits
+                val balance = balanceOf(s)
+                if (balance < price) throw ApiException(
+                    ApiException.INSUFFICIENT_CREDITS, 402, "You need a twelfth of a credit for a new brief. Buy credits to continue.",
+                    details = buildJsonObject { put("required", price); put("balance", balance) },
+                )
+                next = ledger(next, "brief", -price, null, "New brief") // as dev: the server never sees a title
+            }
+            next to Unit
+        }
         return startJob("draft", null, listOf("Reading your notes", "Finding the features", "Writing the brief"), 1_100) {
             screenInputs(body.inputs)
             val (texts, notices) = redacted(body.inputs)
@@ -590,11 +608,11 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         }
         val balance = balanceOf(next)
         if (balance < quote.credits) throw ApiException(
-            ApiException.INSUFFICIENT_CREDITS, 402, "You need ${quote.credits - balance} more credits.",
+            ApiException.INSUFFICIENT_CREDITS, 402, "You need ${com.raviga.app.util.Money.credits(quote.credits - balance)} more.",
             details = buildJsonObject { put("required", quote.credits); put("balance", balance) },
         )
         val now = Time.nowIso()
-        next = ledger(next, "charge", -quote.credits, LedgerRef(projectId = id), p.title)
+        next = ledger(next, "charge", -quote.credits.toDouble(), LedgerRef(projectId = id), p.title)
         val eta = Time.addWorkingDays(LocalDate.now(), quote.estimatedWorkingDays.coerceAtLeast(1))
         val paid = p.copy(
             quote = quote,
@@ -704,7 +722,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val pack = config.credits.packs.firstOrNull { it.productId == productId } ?: throw ApiException(ApiException.NOT_FOUND, 404, "No such pack.")
         val tx = "DEMO." + UUID.randomUUID().toString().take(8)
         var next = ledger(s, "purchase", pack.credits, LedgerRef(productId = productId, storeTransactionId = tx), "Demo purchase")
-        if (pack.bonusCredits > 0) next = ledger(next, "bonus", pack.bonusCredits, LedgerRef(productId = productId, storeTransactionId = tx), "Pack bonus")
+        if (pack.bonusCredits > 0.0) next = ledger(next, "bonus", pack.bonusCredits, LedgerRef(productId = productId, storeTransactionId = tx), "Pack bonus")
         next to Unit
     }
 
@@ -721,7 +739,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     }
 
     suspend fun demoAddCredits(credits: Int) = mutate { s ->
-        ledger(s, "adjustment", credits, null, "Demo credits") to Unit
+        ledger(s, "adjustment", credits.toDouble(), null, "Demo credits") to Unit
     }
 
     suspend fun demoReset() = lock.withLock {
@@ -759,11 +777,15 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 creditValueUsd = 10.0,
                 creditValueInr = 850,
                 packs = listOf(
-                    CreditPack("credits_10", 10, 0, priceHintUsd = 99.99, priceHintInr = 8_499, label = "10 credits"),
-                    CreditPack("credits_25", 25, 2, priceHintUsd = 249.99, priceHintInr = 21_249, label = "25 + 2 credits"),
-                    CreditPack("credits_50", 50, 6, priceHintUsd = 499.99, priceHintInr = 42_499, label = "50 + 6 credits"),
-                    CreditPack("credits_100", 100, 15, priceHintUsd = 999.99, priceHintInr = 84_000, label = "100 + 15 credits"),
+                    // v0.11.1 (R-099): the quarter credit, three briefs, first.
+                    CreditPack("credits_quarter", 0.25, 0.0, priceHintUsd = 2.49, priceHintInr = 209, label = "3 briefs"),
+                    CreditPack("credits_10", 10.0, 0.0, priceHintUsd = 99.99, priceHintInr = 8_499, label = "10 credits"),
+                    CreditPack("credits_25", 25.0, 2.0, priceHintUsd = 249.99, priceHintInr = 21_249, label = "25 + 2 credits"),
+                    CreditPack("credits_50", 50.0, 6.0, priceHintUsd = 499.99, priceHintInr = 42_499, label = "50 + 6 credits"),
+                    CreditPack("credits_100", 100.0, 15.0, priceHintUsd = 999.99, priceHintInr = 84_000, label = "100 + 15 credits"),
                 ),
+                briefPriceCredits = 0.0833,
+                freeBriefs = 1,
             ),
             quote = QuoteConfig(
                 brackets = listOf(

@@ -3,6 +3,7 @@ package com.raviga.app.data.api
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -28,6 +29,7 @@ open class ApiException(
 
     fun detailInt(key: String): Int? = runCatching { details?.jsonObject?.get(key)?.jsonPrimitive?.int }.getOrNull()
     fun detailString(key: String): String? = runCatching { details?.jsonObject?.get(key)?.jsonPrimitive?.content }.getOrNull()
+    fun detailDouble(key: String): Double? = runCatching { details?.jsonObject?.get(key)?.jsonPrimitive?.double }.getOrNull()
     fun detailBoolean(key: String): Boolean? = runCatching { details?.jsonObject?.get(key)?.jsonPrimitive?.boolean }.getOrNull()
     fun detailStrings(key: String): List<String> = runCatching {
         details?.jsonObject?.get(key)?.jsonArray?.map { it.jsonPrimitive.content }

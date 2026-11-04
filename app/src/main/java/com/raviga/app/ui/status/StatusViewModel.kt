@@ -35,7 +35,7 @@ class StatusViewModel(
         val busy: Boolean = false,
         val error: String? = null,
         val config: com.raviga.app.data.api.AppConfig = com.raviga.app.data.api.AppConfig(),
-        val balance: Int = 0,
+        val balance: Double = 0.0,
         /** A new quote for the same brief, asked for after the price expired; paid with its token. */
         val newQuote: QuoteResult? = null,
         val quoting: Boolean = false,
@@ -62,7 +62,7 @@ class StatusViewModel(
         val needsAws: Boolean
             get() = awaitingPayment && (awsRequiredByServer || (config.delivery.awsRequiredToPay && !awsVerified))
         /** Credits short of the price (iOS's line: "You have 10 credits. You need 20 more."). */
-        val shortBy: Int get() = if (!awaitingPayment || priceExpired || needsAws) 0 else (price - balance).coerceAtLeast(0)
+        val shortBy: Double get() = if (!awaitingPayment || priceExpired || needsAws) 0.0 else (price - balance).coerceAtLeast(0.0)
     }
 
     private val _state = MutableStateFlow(State())
@@ -213,7 +213,7 @@ class StatusViewModel(
             val api = e as? ApiException
             return when {
                 api?.code == ApiException.INSUFFICIENT_CREDITS ->
-                    s.copy(error = null, balance = api.detailInt("balance") ?: s.balance)
+                    s.copy(error = null, balance = api.detailDouble("balance") ?: s.balance)
                 api?.code == ApiException.QUOTE_STALE && (api.detailBoolean("expired") == true || s.newQuote == null) ->
                     s.copy(error = null, newQuote = null, expiredByServer = true)
                 api?.code == ApiException.AWS_REQUIRED -> s.copy(error = e.userLine(), awsRequiredByServer = true)

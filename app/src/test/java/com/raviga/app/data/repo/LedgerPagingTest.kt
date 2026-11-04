@@ -8,15 +8,15 @@ import org.junit.Test
 
 /** QA J5 (as iOS's Show more): older history pages go below, without repeats, until there is no cursor. */
 class LedgerPagingTest {
-    private fun rows(vararg ids: String) = ids.map { LedgerEntry(id = it, credits = 1) }
+    private fun rows(vararg ids: String) = ids.map { LedgerEntry(id = it, credits = 1.0) }
 
     @Test fun anOlderPageGoesBelowWithoutRepeats() {
-        val first = CreditsResponse(balance = 188, ledger = rows("l9", "l8", "l7"), nextCursor = "c1")
-        val older = CreditsResponse(balance = 189, ledger = rows("l7", "l6", "l5"), nextCursor = "c2")
+        val first = CreditsResponse(balance = 188.0, ledger = rows("l9", "l8", "l7"), nextCursor = "c1")
+        val older = CreditsResponse(balance = 189.0, ledger = rows("l7", "l6", "l5"), nextCursor = "c2")
         val merged = CreditsRepository.withOlder(first, older)
         assertEquals(listOf("l9", "l8", "l7", "l6", "l5"), merged.ledger.map { it.id })
         assertEquals("the cursor moves on", "c2", merged.nextCursor)
-        assertEquals("the newer read of the balance", 189, merged.balance)
+        assertEquals("the newer read of the balance", 189.0, merged.balance, 0.0)
     }
 
     @Test fun theLastPageEndsShowMore() {
