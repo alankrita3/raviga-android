@@ -11,6 +11,48 @@ Python `len()`, which is how Play counts.
 
 **Raviga** (6)
 
+## Full description as in Play since 2026-11-04, R-106 (1,947)
+
+R-106 (her decision, PM-approved copy via iOS): no GitHub; the code and the handover guide are delivered in the client's
+own AWS account. The App Store text word for word (iOS 0e68320); set by API, read-back equal. R-099's Credits sentence
+("Your first brief is free; each new brief after that uses 1/12 credit (about US$0.83).") goes in with the app change,
+on both stores together.
+
+```text
+Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code and a handover guide. Go live in a few simple steps, or we'll do it for you. AI does the building, with automated quality checks and developer oversight when needed.
+
+Describe it your way
+Speak, type, or upload a PDF, Word or text file. Speech is turned into text on your phone, and recordings and files never leave it.
+
+A written brief you control
+AI writes a clear project brief from your notes. Edit any section, regenerate it, and go back to earlier versions. Drafts are kept only on your phone.
+
+See the price first
+Get a quote in credits, with a breakdown of the work and a delivery estimate. A typical project is ready in 1 to 2 weeks after payment. Free to submit: you pay only once we accept it.
+
+Built by AI, quality checked
+AI builds your project at speed, with automated quality checks and developer oversight when needed. Follow each step in the app.
+
+Code handed to you
+Your project runs in your own AWS account, and its code and handover guide are delivered there too. Go live in a few simple steps, or we'll do it for you. If something isn't right, tell us in the app and we fix it.
+
+Credits
+Projects are priced in credits (1 credit is US$10), bought in the app in packs of 10, 25 (plus 2 bonus), 50 (plus 6) and 100 (plus 15). Credits don't expire while your account exists. Nothing is charged until we accept your brief, and if we decline it after you paid, the credits come back.
+
+Private by design
+No sign-up and no password. Your drafts stay on your phone. The brief you submit is kept only to build your project, and deleted from our servers when you accept the delivery. Usage analytics runs only if you turn it on.
+
+You need to be 18 or older and have an AWS account; we build and deliver your project there.
+Terms: https://legal.ravigaapps.com/terms-of-use
+Privacy: https://legal.ravigaapps.com/privacy-policy
+```
+
+## Play product credits_quarter (R-099, 2026-11-04)
+
+Created by API (`tools/play_release.py product credits_quarter "0.25 Credits" 2.49`): consumable one-time product,
+title "0.25 Credits", description "0.25 credits, enough for 3 new briefs in Raviga." (as App Store Connect), US$2.49,
+India ₹209 (/config priceHintInr), 174 regions, ACTIVE.
+
 ## Full description as in Play since 2026-11-04, R-105 (1,957)
 
 R-105 (her decision, PM-approved copy via iOS): every project is built and runs in the client's own AWS account. The

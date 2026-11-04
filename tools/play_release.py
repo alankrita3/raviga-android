@@ -35,10 +35,13 @@ API = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications
 UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PKG}"
 KEY = os.environ.get("RAVIGA_PLAY_KEY", os.path.expanduser("~/.config/raviga/raviga-play-publisher.json"))
 DESCRIPTION = "Credits to pay for building your Raviga projects."
+# A pack's own store description, when it has one (R-099: the quarter credit is for new briefs; as App Store Connect).
+DESCRIPTIONS = {"credits_quarter": "0.25 credits, enough for 3 new briefs in Raviga."}
 # Founder's exclusions, per pack: countries where it is not sold at all.
 NOT_SOLD = {"credits_50": {"KR"}, "credits_100": {"KR"}}  # Korea: 10 and 25 only (her call 10-28)
 # Founder's fixed local prices, per pack (whole units of the local currency); `product` keeps them on a re-run.
-FIXED_PRICES = {"credits_10": {"IN": 8499}, "credits_25": {"IN": 21249}, "credits_50": {"IN": 42499}}  # her plan prices, R-060 (10-30)
+FIXED_PRICES = {"credits_10": {"IN": 8499}, "credits_25": {"IN": 21249}, "credits_50": {"IN": 42499},  # her plan prices, R-060 (10-30)
+                "credits_quarter": {"IN": 209}}  # R-099: /config priceHintInr 209
 
 
 def session() -> requests.Session:
@@ -128,7 +131,7 @@ def product(s, pid, title, usd):
     capped = []
     for _ in range(len(regions) + 1):
         body = {"packageName": PKG, "productId": pid,
-                "listings": [{"languageCode": "en-US", "title": title, "description": DESCRIPTION}],
+                "listings": [{"languageCode": "en-US", "title": title, "description": DESCRIPTIONS.get(pid, DESCRIPTION)}],
                 "purchaseOptions": [{"purchaseOptionId": "default",
                                      "buyOption": {"legacyCompatible": True, "multiQuantityEnabled": False},
                                      "regionalPricingAndAvailabilityConfigs": [
