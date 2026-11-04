@@ -18,25 +18,25 @@ import org.junit.Test
 class CaptureTabSwitchTest {
     @Test fun whatTheDeferredSaveWouldSeeAfterTheSwitchIsNothing() {
         val typed = State(tab = TAB_TYPE, typed = "a flower shop app and the last words")
-        assertNull("why the words were lost", CaptureViewModel.liveText(typed.copy(tab = TAB_UPLOAD), 0))
+        assertNull("why the words were lost", CaptureViewModel.liveText(typed.copy(tab = TAB_UPLOAD)))
     }
 
     @Test fun leavingTheTypeTabSavesWhatWasTyped() {
         val typed = State(tab = TAB_TYPE, typed = "a flower shop app and the last words")
-        assertEquals("a flower shop app and the last words", CaptureViewModel.leavingTabText(typed, 0, TAB_UPLOAD))
-        assertEquals("to Speak too", "a flower shop app and the last words", CaptureViewModel.leavingTabText(typed, 0, TAB_SPEAK))
+        assertEquals("a flower shop app and the last words", CaptureViewModel.leavingTabText(typed, TAB_UPLOAD))
+        assertEquals("to Speak too", "a flower shop app and the last words", CaptureViewModel.leavingTabText(typed, TAB_SPEAK))
     }
 
     @Test fun leavingTheSpeakTabSavesWhatWasHeard() {
         // stopListening() has already turned the live partial into a committed utterance.
         val heard = State(tab = TAB_SPEAK, committed = listOf("A flower shop app.", "With delivery slots."))
-        assertEquals("A flower shop app. With delivery slots.", CaptureViewModel.leavingTabText(heard, 0, TAB_UPLOAD))
-        assertEquals("only what this note hasn't used", "With delivery slots.", CaptureViewModel.leavingTabText(heard, 1, TAB_UPLOAD))
+        assertEquals("A flower shop app. With delivery slots.", CaptureViewModel.leavingTabText(heard, TAB_UPLOAD))
+        assertEquals("only what this note hasn't used", "With delivery slots.", CaptureViewModel.leavingTabText(heard.copy(consumed = 1), TAB_UPLOAD))
     }
 
     @Test fun nothingToSaveForTheSameTabOrFromUpload() {
         val typed = State(tab = TAB_TYPE, typed = "words")
-        assertNull("tapping the tab already open", CaptureViewModel.leavingTabText(typed, 0, TAB_TYPE))
-        assertNull("Upload has no live text", CaptureViewModel.leavingTabText(State(tab = TAB_UPLOAD), 0, TAB_TYPE))
+        assertNull("tapping the tab already open", CaptureViewModel.leavingTabText(typed, TAB_TYPE))
+        assertNull("Upload has no live text", CaptureViewModel.leavingTabText(State(tab = TAB_UPLOAD), TAB_TYPE))
     }
 }

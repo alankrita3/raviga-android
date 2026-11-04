@@ -52,15 +52,14 @@ class SpeechAcrossPausesTest {
         var review = CaptureViewModel.spokenReview("", mic.state.committed, consumed)
         consumed = mic.state.committed.size
         assertEquals("A salon booking app with reminders", review)
-        // Edited on review, then "Record more" and two more sessions with a pause between.
-        review = "A salon booking app with text reminders"
-        mic.state = mic.state.copy(continuing = true, transcript = review)
+        // R-108: "Add more", Speak again: two more sessions with a pause between make the next part on their own.
+        mic.state = mic.state.copy(consumed = consumed, transcript = "")
         mic.partial("and a loyalty card"); mic.result("and a loyalty card")
-        // While speaking, what's saved is the reviewed text plus the new words (autosave).
-        assertEquals("A salon booking app with text reminders and a loyalty card", CaptureViewModel.liveText(mic.state, consumed))
+        // While speaking, what's saved is this part's words only (autosave).
+        assertEquals("and a loyalty card", CaptureViewModel.liveText(mic.state))
         mic.partial("for regulars"); mic.error()
-        review = CaptureViewModel.spokenReview(review, mic.state.committed, consumed)
-        assertEquals("A salon booking app with text reminders and a loyalty card for regulars", review)
+        review = CaptureViewModel.spokenReview("", mic.state.committed, consumed)
+        assertEquals("and a loyalty card for regulars", review)
     }
 
     @Test fun aSessionWithNoWordsAddsNothing() {
@@ -76,6 +75,6 @@ class SpeechAcrossPausesTest {
 
     @Test fun theReviewShowsWhatWasSpoken() {
         val s = State(phase = Phase.TRANSCRIPT, tab = CaptureViewModel.TAB_SPEAK, transcript = "One. Two.")
-        assertEquals("One. Two.", CaptureViewModel.liveText(s, 0))
+        assertEquals("One. Two.", CaptureViewModel.liveText(s))
     }
 }

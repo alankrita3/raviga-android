@@ -37,10 +37,10 @@ import kotlinx.coroutines.launch
  * keeps them; the draft shows on Home. Only their text goes to the AI to write
  * the brief.
  *
- * Each note is one way of describing: "Record more" and "Edit what I typed"
- * continue the same note in the same mode, and "Add more" on a document saves
- * it as its own note before the next part (as on iOS), so a file and a
- * recording never merge into one voice note.
+ * R-108 (her decision, 2026-11-04): each part is its own note. "Add more" on
+ * every review saves the part, then Speak, Type or Upload a document adds the
+ * next one at the end; switching tabs ends the part on screen. A file and a
+ * recording never merge into one note, and the order is the order made.
  */
 class CaptureViewModel(
     private val container: AppContainer,
@@ -101,16 +101,18 @@ class CaptureViewModel(
         val sensitive: String? = null,
         /** Bumped to ask the review editor for focus (after "Edit" on the sensitive sheet). */
         val focusEditor: Int = 0,
-        /** Continuing the note under review in the same mode; the tabs are hidden meanwhile. */
-        val continuing: Boolean = false,
-        /** Utterances already in [transcript] (from earlier takes); recording more shows only the ones after them. */
+        /** Utterances that belong to parts already finished (R-108); the Speak tab shows and saves only the ones after. */
         val consumed: Int = 0,
+        /** R-108: the draft's parts in order (with a brief: the ones not in it yet), shown on the review and choices. */
+        val parts: List<Part> = emptyList(),
+        /** The part on screen now (this tab's note), left out of the review's list above it. */
+        val currentPartId: String? = null,
         /** Notes saved so far in this visit (documents saved before adding more), shown on the choices. */
         val savedNotes: Int = 0,
         val lastSavedName: String? = null,
         val saving: Boolean = false,
     ) {
-        val hasSpeech get() = committed.isNotEmpty() || partial.isNotBlank()
+        val hasSpeech get() = committed.size > consumed || partial.isNotBlank()
     }
 
     /**
@@ -179,11 +181,9 @@ class CaptureViewModel(
     private var listenJob: Job? = null
     private var timerJob: Job? = null
     private var pendingAfterConsent: (() -> Unit)? = null
-    /** Utterances already moved into the transcript, so "Record more" adds only the new ones. */
-    private var consumedUtterances = 0
     /** Text the client chose to keep despite the sensitive-data warning. */
     private var acknowledgedText: String? = null
-    /** The sensitive-data sheet is open for "Add more" on a document: carry on saving, not writing. */
+    /** The sensitive-data sheet is open for "Add more": carry on saving, not writing. */
     private var addingMore = false
 
     init {
@@ -206,7 +206,18 @@ class CaptureViewModel(
                 else com.raviga.app.ui.credits.BriefPricing.line(free, config.credits, credits?.balance ?: me?.credits?.balance ?: 0.0)
             }.collect { line -> _state.update { it.copy(briefLine = line) } }
         }
+        // R-108: the parts of this description, in order, for the review and the choices.
+        viewModelScope.launch {
+            container.drafts.drafts.collect { drafts ->
+                val draft = draftId?.let { drafts[it] }
+                val parts = (if (isAppend) draft?.newInputs else draft?.inputs).orEmpty().map { it.toPart() }
+                _state.update { it.copy(parts = parts, currentPartId = notes.slots()[it.tab]) }
+            }
+        }
     }
+
+    /** The part on screen is this tab's note; after a save (which may have just made it) the screen leaves it out above. */
+    private fun syncCurrentPart() = _state.update { it.copy(currentPartId = notes.slots()[it.tab]) }
 
     init {
         checkSpeech()
@@ -235,18 +246,29 @@ class CaptureViewModel(
     }
 
     fun selectTab(index: Int) {
-        if (_state.value.continuing) return
         if (_state.value.listening) stopListening()
         // Second review 2026-11-03 (Android): the tab being left is saved now. The autosave runs up to half a second
         // later and saves whatever tab is on screen then; Upload has no text, so the last words typed or said before
         // the switch were never saved (Back from Upload, a document's review, or the app ended behind the picker
         // lost them). In the app's scope, as leaving is, so an immediate Back doesn't cancel it.
+        // R-108: leaving a tab ends its part, so coming back starts a new part at the end (the order is kept).
+        if (index != _state.value.tab) endPart()
+        _state.update { it.copy(tab = index, error = null, currentPartId = notes.slots()[index]) }
+    }
+
+    /**
+     * R-108: the part on screen is finished (a tab switch, or back to the choices): saved now, in the app's scope so an
+     * immediate Back doesn't cancel it, and its tab starts empty. Emptied text saves too: its note goes.
+     */
+    private fun endPart() {
         val leaving = _state.value
-        if (leavingTabText(leaving, consumedUtterances, index) != null) {
-            saveJob?.cancel()
-            container.appScope.launch(Dispatchers.IO) { persist(leaving) }
+        val text = liveText(leaving) ?: return
+        saveJob?.cancel()
+        container.appScope.launch(Dispatchers.IO) {
+            runCatching { notes.close(leaving.tab, kindOf(leaving.tab), text, metaOf(leaving)) }
+            syncCurrentPart()
         }
-        _state.update { it.copy(tab = index, error = null) }
+        _state.update { leftTab(it) }
     }
 
     fun setTyped(text: String) { _state.update { it.copy(typed = text) }; scheduleSave() }
@@ -416,57 +438,42 @@ class CaptureViewModel(
         val s = _state.value
         when (s.tab) {
             TAB_UPLOAD -> return
-            TAB_TYPE -> _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = s.typed.trim()) }
-            else -> {
-                val consumed = consumedUtterances
-                consumedUtterances = s.committed.size
-                _state.update {
-                    it.copy(phase = Phase.TRANSCRIPT, continuing = false, consumed = s.committed.size, transcript = spokenReview(it.transcript, it.committed, consumed))
-                }
+            TAB_TYPE -> _state.update { it.copy(phase = Phase.TRANSCRIPT, transcript = s.typed.trim()) }
+            else -> _state.update {
+                // This take's words only: the utterances of finished parts stay with them.
+                it.copy(phase = Phase.TRANSCRIPT, consumed = s.committed.size, transcript = spokenReview(it.transcript, it.committed, s.consumed))
             }
         }
         scheduleSave()
     }
 
     /**
-     * "Record more" / "Edit what I typed" on review: the note continues in the same mode (new
-     * speech joins the end; the typed editor gets the reviewed text, edits included). A
-     * document's review offers "Add more" instead ([addMore]); back leaves, everything saved.
+     * R-108 (her decision, 2026-11-04): "Add more" on every review, whichever way this part was made. The part is
+     * saved as its own note (the text as reviewed, edits included), then Speak, Type or Upload a document adds the
+     * next part as a new note at the end, the same way twice included. Back from the review leaves, everything saved.
      */
-    fun recordMore() {
-        _state.update {
-            when (it.tab) {
-                TAB_UPLOAD -> it.copy(phase = Phase.CAPTURE, error = null, file = null, transcript = "")
-                TAB_TYPE -> it.copy(phase = Phase.CAPTURE, error = null, typed = it.transcript, continuing = true)
-                else -> it.copy(phase = Phase.CAPTURE, error = null, continuing = true)
-            }
-        }
-    }
-
-    /** "Add more" on a document: save it as its own note, then offer all three ways for the next part. */
     fun addMore() {
         val s = _state.value
         val text = s.transcript.trim()
-        if (s.tab != TAB_UPLOAD || s.reading || s.saving || text.isBlank()) return
+        if (s.phase != Phase.TRANSCRIPT || s.reading || s.saving || text.isBlank()) return
+        overLimit(text, container.session.config.value.limits.textInputMaxChars)?.let { line ->
+            _state.update { it.copy(error = line) }
+            return
+        }
         addingMore = true
         if (flagged(text)) return
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             try {
-                saveNote(s, text)
+                saveJob?.cancel()
+                notes.close(s.tab, kindOf(s.tab), text, metaOf(s))
             } catch (e: Exception) {
                 _state.update { it.copy(saving = false, error = e.userLine()) }
                 return@launch
             }
-            // The next part is a new note.
-            notes.forget(TAB_UPLOAD)
             acknowledgedText = null
-            _state.update {
-                it.copy(
-                    phase = Phase.CHOOSE, saving = false, transcript = "", file = null,
-                    savedNotes = it.savedNotes + 1, lastSavedName = s.file?.fileName ?: it.lastSavedName,
-                )
-            }
+            _state.update { afterAddMore(it, s.file?.fileName) }
+            syncCurrentPart()
         }
     }
 
@@ -479,6 +486,7 @@ class CaptureViewModel(
     /** Back to the choices from a new part that hasn't been reviewed yet. */
     fun backToChoices() {
         if (_state.value.listening) stopListening()
+        endPart()
         _state.update { it.copy(phase = Phase.CHOOSE, error = null) }
     }
 
@@ -606,10 +614,11 @@ class CaptureViewModel(
 
     private suspend fun persist(s: State = _state.value) {
         firstUnsavedAt = 0L
-        val text = liveText(s, consumedUtterances) ?: return
+        val text = liveText(s) ?: return
         // A failed save must not stop the person typing; the next change or leaving tries again. A refusal (the
         // draft's note limit, QA F5) is shown, so nothing is dropped without a word.
         runCatching { notes.save(s.tab, kindOf(s.tab), text, metaOf(s)) }
+            .onSuccess { syncCurrentPart() }
             .onFailure { e ->
                 when {
                     (e as? ApiException)?.code == ApiException.INVALID_ARGUMENT -> _state.update { it.copy(error = e.userLine()) }
@@ -744,8 +753,7 @@ class CaptureViewModel(
         }
 
         /**
-         * "Done" while speaking: the utterances not yet under review ([consumed] were taken before) join the end of
-         * what's under review, so "Record more" adds to the note instead of replacing it.
+         * "Done" while speaking: this part's utterances ([consumed] belong to finished parts) go under review.
          */
         fun spokenReview(transcript: String, committed: List<String>, consumed: Int): String =
             joinText(transcript, committed.drop(consumed).joinToString(" "))
@@ -761,8 +769,22 @@ class CaptureViewModel(
         private fun joinText(a: String, b: String): String = listOf(a.trim(), b.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 
         /** What switching from [s]'s tab to [toTab] must save first (second review): the left tab's live text, if any. */
-        internal fun leavingTabText(s: State, consumedUtterances: Int, toTab: Int): String? =
-            if (toTab == s.tab) null else liveText(s, consumedUtterances)
+        internal fun leavingTabText(s: State, toTab: Int): String? =
+            if (toTab == s.tab) null else liveText(s)
+
+        /** R-108: the tab just left starts empty next time; what it held is a finished part now. */
+        internal fun leftTab(s: State): State = when (s.tab) {
+            TAB_TYPE -> s.copy(typed = "")
+            TAB_SPEAK -> s.copy(consumed = s.committed.size, partial = "", elapsedSec = 0)
+            else -> s
+        }
+
+        /** R-108: after "Add more" saved the part under review: the choices, with nothing carried into the next part. */
+        internal fun afterAddMore(s: State, fileName: String?): State = s.copy(
+            phase = Phase.CHOOSE, saving = false, error = null, transcript = "", file = null, typed = "",
+            consumed = s.committed.size, partial = "", elapsedSec = 0,
+            savedNotes = s.savedNotes + 1, lastSavedName = fileName ?: s.lastSavedName,
+        )
 
         /**
          * The text of the note being made, as it stands on screen: the typed text, the speech so far (joined to
@@ -770,26 +792,21 @@ class CaptureViewModel(
          * (a document still being read, the choices, writing).
          */
         /**
-         * What the Speak tab shows, as iOS (her bug on the iPhone 16, 11-04): when recording more, the reviewed text
-         * (her edits included) first, then only this take's words; never the earlier takes' raw words again.
-         * Returns the lines above (graphite) and the latest line (ink).
+         * What the Speak tab shows: only this part's words, never a finished part's again (her iPhone 16 bug, iOS
+         * de0be16; R-108). Returns the lines above (graphite) and the latest line (ink).
          */
         fun speakLines(s: State): Pair<List<String>, String?> {
-            val take = s.committed.drop(if (s.continuing) s.consumed else 0)
-            val reviewed = s.transcript.trim().takeIf { s.continuing && it.isNotEmpty() }
-            val earlier = listOfNotNull(reviewed) + take.dropLast(if (s.partial.isBlank()) 1 else 0)
+            val take = s.committed.drop(s.consumed)
+            val earlier = take.dropLast(if (s.partial.isBlank()) 1 else 0)
             val latest = s.partial.takeIf { it.isNotBlank() } ?: take.lastOrNull()
             return earlier to latest
         }
 
-        fun liveText(s: State, consumedUtterances: Int): String? = when (s.phase) {
+        fun liveText(s: State): String? = when (s.phase) {
             Phase.TRANSCRIPT -> if (s.reading) null else s.transcript
             Phase.CAPTURE -> when (s.tab) {
                 TAB_TYPE -> s.typed
-                TAB_SPEAK -> {
-                    val fresh = (s.committed.drop(consumedUtterances) + s.partial).filter { it.isNotBlank() }.joinToString(" ")
-                    listOf(if (s.continuing) s.transcript else "", fresh).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
-                }
+                TAB_SPEAK -> (s.committed.drop(s.consumed) + s.partial).filter { it.isNotBlank() }.joinToString(" ")
                 else -> null
             }
             else -> null

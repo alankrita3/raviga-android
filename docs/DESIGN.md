@@ -141,11 +141,13 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
 - Review titles and hints: voice "Here's what we heard" / "Tap to fix anything that was misheard.";
   typed "Here's your description" / "Tap to edit before we write the brief."; upload "Here's what we
   read" / "From <file>, N pages" / the server's `notice` / "Tap to fix anything before we write the brief."
-- One note per way of describing (as iOS, 0d5dabd). Review's second button: voice "Record more",
-  typed "Edit what I typed" (both continue the same note in the same mode; the tabs give way to
-  "Recording more" / "Adding more", and back returns to the review); document "Add more" (runs the
-  sensitive-data check, saves the document as its own note, then shows the three choices with
-  "Saved <file> to your draft." or "Saved N notes to your draft." and "Write the brief now").
+- R-108 (her decision, 2026-11-04): every part is its own note, added at the end in order. Review's second button
+  is "Add more" whichever way the part was made (runs the sensitive-data check, saves the part as reviewed, then
+  shows the three choices "Speak", "Type", "Upload a document" with "Write the brief now"); the same way twice
+  makes a new part. Switching tabs (or Back to the choices) ends the part on screen. The review lists the earlier
+  parts above the editor, and the choices list all of them under "Your description", each in a tile with
+  "Spoken" / "Typed" / "From <file>," and when (`PartTiles`, as the draft screen). The draft's "+" is a
+  labelled "Add more" button beside its primary action.
 - Saved as you go (contract v0.6 section 8; her bug report, 2026-11-02): each note is written to the local draft
   while it's made (`WorkingNotes`): typing and review edits half a second after the last change, each utterance,
   a document as soon as it's read, and at once when the app goes to the background or Capture closes. The draft

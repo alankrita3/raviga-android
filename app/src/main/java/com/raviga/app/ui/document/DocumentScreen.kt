@@ -80,10 +80,8 @@ import com.raviga.app.ui.components.SectionHint
 import com.raviga.app.ui.components.SpotIllustration
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.Hairline
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.BorderStroke
 import com.raviga.app.ui.capture.DescribeChooserSheet
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.status.StatusCopy
@@ -178,10 +176,10 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             "Get a quote",
                             enabled = state.busyMessage == null,
                             onClick = { nav.navigate(Routes.quote(draftId)) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1.3f),
                         )
                         Spacer(Modifier.width(12.dp))
-                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true })
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true }, modifier = Modifier.weight(1f))
                     }
                     // No brief yet: the same "+" adds voice, text or a document to the notes (her spec, 2026-11-02).
                     editable -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -189,10 +187,10 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                             "Write the brief",
                             enabled = state.busyMessage == null && draft?.inputs?.isNotEmpty() == true,
                             onClick = { vm.generate() },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1.3f),
                         )
                         Spacer(Modifier.width(12.dp))
-                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true })
+                        AddMoreButton(enabled = state.busyMessage == null, onClick = { if (vm.canAddNote()) chooser = true }, modifier = Modifier.weight(1f))
                     }
                     project != null -> PrimaryButton("View status", onClick = { nav.openProjectScreen(Routes.forProject(project.id, project.status)) })
                 }
@@ -394,18 +392,10 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     }
 }
 
-/** "Add more": a square plus beside the primary action. */
+/** "Add more" with its plus, beside the primary action (R-108: she missed the bare plus). */
 @Composable
-private fun AddMoreButton(enabled: Boolean, onClick: () -> Unit) {
-    OutlinedIconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.size(Ra.buttonHeight),
-        shape = RoundedCornerShape(Ra.buttonRadius),
-        border = BorderStroke(1.5.dp, Ink.ruleStrong),
-    ) {
-        Icon(Icons.Outlined.Add, contentDescription = "Add more", tint = Ink.ink)
-    }
+private fun AddMoreButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    SecondaryButton("Add more", onClick = onClick, enabled = enabled, icon = Icons.Outlined.Add, modifier = modifier)
 }
 
 /** "1 note not in the brief yet": opens the list of notes the written brief doesn't reflect yet. */
@@ -545,11 +535,8 @@ private fun RefusedBlock(reason: String?, supportEmail: String) {
     }
 }
 
-private fun inputSource(input: com.raviga.app.data.drafts.LocalInput): String = when (input.kind) {
-    "voice" -> "Spoken"
-    "file" -> "From ${input.fileName ?: "a document"}"
-    else -> "Typed"
-}.let { if (input.kind == "file") "$it," else it }
+private fun inputSource(input: com.raviga.app.data.drafts.LocalInput): String =
+    com.raviga.app.ui.capture.partSource(input.kind, input.fileName)
 
 @Composable
 private fun EditableTitle(title: String, editable: Boolean, onSave: (String) -> Unit) {

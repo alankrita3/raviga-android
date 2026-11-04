@@ -154,8 +154,8 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
     val captureBack = captureBack(vm, state)
     BackHandler(enabled = state.phase == CaptureViewModel.Phase.TRANSCRIPT || state.phase == CaptureViewModel.Phase.DRAFTING || captureBack != null) {
         when (state.phase) {
-            // The note under review is already saved on the phone, so back leaves (it used to bounce between
-            // review and editing). "Record more", "Edit what I typed" and "Add more" carry on instead.
+            // The part under review is already saved on the phone, so back leaves (it used to bounce between
+            // review and editing). "Add more" carries on instead (R-108).
             CaptureViewModel.Phase.TRANSCRIPT -> if (!state.reading && !state.saving) nav.popBackStack()
             CaptureViewModel.Phase.CAPTURE -> captureBack?.invoke()
             else -> Unit
@@ -182,12 +182,11 @@ fun CaptureScreen(nav: NavController, projectId: String, mode: String, tab: Stri
 }
 
 /**
- * Where back goes from capture when it shouldn't leave the screen: continuing a note returns to
- * its review; a new part after a saved document returns to the choices. Null leaves.
+ * Where back goes from capture when it shouldn't leave the screen: a new part after "Add more" returns to the
+ * choices. Null leaves.
  */
 private fun captureBack(vm: CaptureViewModel, state: CaptureViewModel.State): (() -> Unit)? = when {
     state.phase != CaptureViewModel.Phase.CAPTURE -> null
-    state.continuing -> { { if (state.listening) vm.stopListening(); vm.finishCapture() } }
     state.savedNotes > 0 -> { { vm.backToChoices() } }
     else -> null
 }
@@ -279,12 +278,8 @@ private fun CapturePhase(
             // QA R1 (as iOS): at the large text sizes the accent menu goes under the tabs, not beside them.
             val large = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             val tabs: @Composable () -> Unit = {
-                // Continuing a note stays in its mode, so the tabs make way for what is happening.
-                if (state.continuing) {
-                    Text(if (state.tab == CaptureViewModel.TAB_SPEAK) "Recording more" else "Adding more", style = RaType.bodyMedium, color = Ink.ink, modifier = Modifier.padding(vertical = 6.dp))
-                } else {
-                    Segmented(listOf("Speak", "Type", "Upload"), state.tab, onSelect = { vm.selectTab(it) })
-                }
+                // R-108: switching tabs ends the part on the tab left; the next words there are a new part.
+                Segmented(listOf("Speak", "Type", "Upload"), state.tab, onSelect = { vm.selectTab(it) })
             }
             if (large) {
                 tabs()
@@ -318,7 +313,7 @@ private fun CapturePhase(
                         val message = (speech as? CaptureViewModel.Speech.Unavailable)?.message ?: (speech as CaptureViewModel.Speech.NotYet).message
                         Text(message, style = RaType.dictationItalic, color = Ink.graphite)
                         Spacer(Modifier.height(16.dp))
-                        if (!state.continuing) Row {
+                        Row {
                             com.raviga.app.ui.components.InlineAction("Type instead", onClick = { vm.selectTab(CaptureViewModel.TAB_TYPE) })
                             com.raviga.app.ui.components.InlineAction("Upload a document", onClick = { vm.selectTab(CaptureViewModel.TAB_UPLOAD) })
                         }
@@ -355,7 +350,7 @@ private fun CapturePhase(
                 Spacer(Modifier.height(8.dp))
                 when {
                     canFinish && !state.listening -> TertiaryButton("Done, show me the text", onClick = { vm.finishCapture() })
-                    vm.offersSample && !state.listening && !state.continuing -> TertiaryButton("Use a sample description", onClick = { vm.useSample() }, color = Ink.graphite)
+                    vm.offersSample && !state.listening -> TertiaryButton("Use a sample description", onClick = { vm.useSample() }, color = Ink.graphite)
                     else -> Spacer(Modifier.height(Ra.buttonHeight))
                 }
                 Spacer(Modifier.height(16.dp))
@@ -423,16 +418,12 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
                     onClick = { vm.writeBrief() },
                 )
                 Spacer(Modifier.height(10.dp))
-                // A document is its own note: "Add more" saves it, then any way adds the next part.
-                // Back from a document picks another file instead.
+                // R-108 (her decision): every part is its own note. "Add more" saves this one as reviewed, then
+                // Speak, Type or Upload a document adds the next part at the end.
                 SecondaryButton(
-                    when (state.tab) {
-                        CaptureViewModel.TAB_SPEAK -> "Record more"
-                        CaptureViewModel.TAB_UPLOAD -> if (state.saving) "Saving" else "Add more"
-                        else -> "Edit what I typed"
-                    },
-                    enabled = !state.saving && (!fromFile || state.transcript.isNotBlank()),
-                    onClick = { if (fromFile) vm.addMore() else vm.recordMore() },
+                    if (state.saving) "Saving" else "Add more",
+                    enabled = !state.saving && state.transcript.isNotBlank(),
+                    onClick = { vm.addMore() },
                 )
             }
         },
@@ -459,6 +450,12 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
                 }
             }
             Spacer(Modifier.height(14.dp))
+            // R-108: the parts before this one, in order with their type; this part is the editor below them.
+            val earlier = state.parts.filter { it.id != state.currentPartId }
+            if (earlier.isNotEmpty()) {
+                PartTiles(earlier)
+                Spacer(Modifier.height(6.dp))
+            }
             BoxedEditor(
                 value = state.transcript,
                 onValueChange = { vm.setTranscript(it) },
@@ -514,8 +511,6 @@ private fun ChoosePhase(nav: NavController, vm: CaptureViewModel, state: Capture
             BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
                 SaveFailingNotice(state.saveFailing, state.error, Modifier.padding(bottom = 8.dp))
-                Text(savedLine(state), style = RaType.caption, color = Ink.graphite)
-                Spacer(Modifier.height(8.dp))
                 SecondaryButton(if (vm.isAppend) "Add it to the brief now" else "Write the brief now", onClick = { vm.writeSavedNotes() })
             }
         },
@@ -530,17 +525,13 @@ private fun ChoosePhase(nav: NavController, vm: CaptureViewModel, state: Capture
                 }
             },
             modifier = Modifier.padding(padding).verticalScroll(rememberScrollState()),
+            // R-108: the parts so far, in order with their type, above the ways to add the next one.
+            parts = state.parts.takeIf { it.isNotEmpty() }?.let { parts -> { PartTiles(parts) } },
         )
     }
 }
 
 /** "Saved brief.pdf to your draft." or, after several, "Saved 2 notes to your draft." */
-private fun savedLine(state: CaptureViewModel.State): String = when {
-    state.savedNotes > 1 -> "Saved ${state.savedNotes} notes to your draft."
-    state.lastSavedName != null -> "Saved ${state.lastSavedName} to your draft."
-    else -> "Saved to your draft."
-}
-
 @Composable
 private fun DraftingPhase(state: CaptureViewModel.State) {
     ScreenScaffold(topBar = { RaTopBar() }) { padding ->

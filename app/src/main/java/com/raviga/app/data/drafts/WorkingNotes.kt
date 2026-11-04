@@ -59,7 +59,11 @@ class WorkingNotes(
     private suspend fun draftLocked(): String = draftId ?: sink.create().also { draftId = it }
 
     /** Saves [text] as the note in [slot]: added the first time, edited after, removed when it's cleared. */
-    suspend fun save(slot: Int, kind: String, text: String, meta: Meta = Meta()) = withContext(NonCancellable) { lock.withLock {
+    suspend fun save(slot: Int, kind: String, text: String, meta: Meta = Meta()) = withContext(NonCancellable) {
+        lock.withLock { saveLocked(slot, kind, text, meta) }
+    }
+
+    private suspend fun saveLocked(slot: Int, kind: String, text: String, meta: Meta) {
         val clean = text.trim()
         val current = saved[slot]
         when {
@@ -76,9 +80,20 @@ class WorkingNotes(
                 saved[slot] = current.first to clean
             }
         }
-        Unit
-    } }
+    }
 
     /** The next save in [slot] starts a new note; the one saved so far stays in the draft. */
     suspend fun forget(slot: Int) = lock.withLock { saved.remove(slot); Unit }
+
+    /**
+     * R-108: saves [text] as [slot]'s note and ends it, in one step, so the next part in that slot is a new note at the
+     * end of the draft (no save can land in between and change the finished one).
+     */
+    suspend fun close(slot: Int, kind: String, text: String, meta: Meta = Meta()) = withContext(NonCancellable) {
+        lock.withLock {
+            saveLocked(slot, kind, text, meta)
+            saved.remove(slot)
+            Unit
+        }
+    }
 }

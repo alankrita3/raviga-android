@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import com.raviga.app.ui.components.Illustration
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.PrivacyNote
+import com.raviga.app.ui.components.SectionHeading
 import com.raviga.app.ui.components.tile
 import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
@@ -58,9 +59,9 @@ fun DescribeChooserSheet(projectTitle: String?, onPick: (String) -> Unit, onDism
     }
 }
 
-/** The three choices; also shown on Capture after a document is saved as a note. */
+/** The three choices; also shown on Capture after "Add more", with the [parts] so far above them (R-108). */
 @Composable
-fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: Modifier = Modifier, parts: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(horizontal = Ra.gutter)) {
         Text(
             if (projectTitle == null) "Describe your project" else "Add to ${projectTitle.ifBlank { "this project" }}",
@@ -74,6 +75,14 @@ fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: M
             color = Ink.graphite,
         )
         Spacer(Modifier.height(24.dp))
+        if (parts != null) {
+            SectionHeading("Your description")
+            Spacer(Modifier.height(12.dp))
+            parts()
+            Spacer(Modifier.height(12.dp))
+            SectionHeading("Add more")
+            Spacer(Modifier.height(12.dp))
+        }
         Choice(Picture.Speak, "Speak", "Talk it through. We write it up.") { onPick(DescribeWith.SPEAK) }
         Spacer(Modifier.height(Ra.tileGap))
         Choice(Picture.Type, "Type", "Write or paste a description.") { onPick(DescribeWith.TYPE) }

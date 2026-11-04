@@ -135,24 +135,20 @@ class WorkingNotesTest {
     // ----- What's on screen is what gets saved -----
 
     @Test fun liveTextFollowsTheScreen() {
-        val consumed = 1
         // Typing.
-        assertEquals("Half a sentence", CaptureViewModel.liveText(State(tab = CaptureViewModel.TAB_TYPE, typed = "Half a sentence"), 0))
-        // Speaking: only the utterances not yet under review, plus the one still being heard.
-        val speaking = State(tab = CaptureViewModel.TAB_SPEAK, committed = listOf("old", "new words"), partial = "and more")
-        assertEquals("new words and more", CaptureViewModel.liveText(speaking, consumed))
-        // Recording more after a review: joined to what was reviewed.
-        assertEquals(
-            "Reviewed text new words",
-            CaptureViewModel.liveText(speaking.copy(continuing = true, transcript = "Reviewed text", partial = ""), consumed),
-        )
+        assertEquals("Half a sentence", CaptureViewModel.liveText(State(tab = CaptureViewModel.TAB_TYPE, typed = "Half a sentence")))
+        // Speaking: only this part's utterances (an earlier part's are consumed), plus the one still being heard.
+        val speaking = State(tab = CaptureViewModel.TAB_SPEAK, committed = listOf("old", "new words"), partial = "and more", consumed = 1)
+        assertEquals("new words and more", CaptureViewModel.liveText(speaking))
+        // R-108: after "Add more" the next take is its own part, never joined to the one reviewed.
+        assertEquals("new words", CaptureViewModel.liveText(speaking.copy(transcript = "Reviewed text", partial = "")))
         // Review: the text being edited.
-        assertEquals("Edited on review", CaptureViewModel.liveText(State(phase = Phase.TRANSCRIPT, transcript = "Edited on review"), 0))
+        assertEquals("Edited on review", CaptureViewModel.liveText(State(phase = Phase.TRANSCRIPT, transcript = "Edited on review")))
         // Nothing to save: a document still being read, the upload picker, the choices, writing.
-        assertNull(CaptureViewModel.liveText(State(phase = Phase.TRANSCRIPT, tab = CaptureViewModel.TAB_UPLOAD, reading = true), 0))
-        assertNull(CaptureViewModel.liveText(State(tab = CaptureViewModel.TAB_UPLOAD), 0))
-        assertNull(CaptureViewModel.liveText(State(phase = Phase.CHOOSE), 0))
-        assertNull(CaptureViewModel.liveText(State(phase = Phase.DRAFTING, transcript = "x"), 0))
+        assertNull(CaptureViewModel.liveText(State(phase = Phase.TRANSCRIPT, tab = CaptureViewModel.TAB_UPLOAD, reading = true)))
+        assertNull(CaptureViewModel.liveText(State(tab = CaptureViewModel.TAB_UPLOAD)))
+        assertNull(CaptureViewModel.liveText(State(phase = Phase.CHOOSE)))
+        assertNull(CaptureViewModel.liveText(State(phase = Phase.DRAFTING, transcript = "x")))
     }
 
     /** QA D4: a note over limits.textInputMaxChars is refused at "write the brief" with iOS's words; not cut. */
