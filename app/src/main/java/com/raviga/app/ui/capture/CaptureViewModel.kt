@@ -107,6 +107,8 @@ class CaptureViewModel(
         val parts: List<Part> = emptyList(),
         /** The part on screen now (this tab's note), left out of the review's list above it. */
         val currentPartId: String? = null,
+        /** As iOS: the draft's notes have reached limits.inputsPerProject; the choices say so and can't add more. */
+        val noteLimitLine: String? = null,
         /** Notes saved so far in this visit (documents saved before adding more), shown on the choices. */
         val savedNotes: Int = 0,
         val lastSavedName: String? = null,
@@ -211,7 +213,10 @@ class CaptureViewModel(
             container.drafts.drafts.collect { drafts ->
                 val draft = draftId?.let { drafts[it] }
                 val parts = (if (isAppend) draft?.newInputs else draft?.inputs).orEmpty().map { it.toPart() }
-                _state.update { it.copy(parts = parts, currentPartId = notes.slots()[it.tab]) }
+                val limit = com.raviga.app.data.repo.DraftRepository.noteLimitProblem(
+                    draft?.inputs?.size ?: 0, container.session.config.value.limits.inputsPerProject,
+                )
+                _state.update { it.copy(parts = parts, currentPartId = notes.slots()[it.tab], noteLimitLine = limit) }
             }
         }
     }

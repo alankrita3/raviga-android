@@ -527,6 +527,7 @@ private fun ChoosePhase(nav: NavController, vm: CaptureViewModel, state: Capture
             modifier = Modifier.padding(padding).verticalScroll(rememberScrollState()),
             // R-108: the parts so far, in order with their type, above the ways to add the next one.
             parts = state.parts.takeIf { it.isNotEmpty() }?.let { parts -> { PartTiles(parts) } },
+            limitLine = state.noteLimitLine,
         )
     }
 }

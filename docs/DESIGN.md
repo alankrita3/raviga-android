@@ -146,8 +146,9 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   shows the three choices "Speak", "Type", "Upload a document" with "Write the brief now"); the same way twice
   makes a new part. Switching tabs (or Back to the choices) ends the part on screen. The review lists the earlier
   parts above the editor, and the choices list all of them under "Your description", each in a tile with
-  "Spoken" / "Typed" / "From <file>," and when (`PartTiles`, as the draft screen). The draft's "+" is a
-  labelled "Add more" button beside its primary action.
+  "Spoken" / "Typed" / "From <file>" (`PartTiles`; no time, as iOS; the draft screen adds when). At
+  limits.inputsPerProject the choices show the notes-limit line and can't be picked (as iOS). The draft's "+" is
+  a labelled "Add more" button beside its primary action.
 - Saved as you go (contract v0.6 section 8; her bug report, 2026-11-02): each note is written to the local draft
   while it's made (`WorkingNotes`): typing and review edits half a second after the last change, each utterance,
   a document as soon as it's read, and at once when the app goes to the background or Capture closes. The draft

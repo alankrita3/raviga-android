@@ -14,6 +14,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raviga.app.ui.LocalAppContainer
@@ -61,7 +62,14 @@ fun DescribeChooserSheet(projectTitle: String?, onPick: (String) -> Unit, onDism
 
 /** The three choices; also shown on Capture after "Add more", with the [parts] so far above them (R-108). */
 @Composable
-fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: Modifier = Modifier, parts: (@Composable () -> Unit)? = null) {
+fun DescribeChoices(
+    projectTitle: String?,
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    parts: (@Composable () -> Unit)? = null,
+    /** As iOS: the notes limit is reached; the line shows and the three choices can't be picked. */
+    limitLine: String? = null,
+) {
     Column(modifier.fillMaxWidth().padding(horizontal = Ra.gutter)) {
         Text(
             if (projectTitle == null) "Describe your project" else "Add to ${projectTitle.ifBlank { "this project" }}",
@@ -83,11 +91,16 @@ fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: M
             SectionHeading("Add more")
             Spacer(Modifier.height(12.dp))
         }
-        Choice(Picture.Speak, "Speak", "Talk it through. We write it up.") { onPick(DescribeWith.SPEAK) }
+        if (limitLine != null) {
+            Text(limitLine, style = RaType.secondary, color = Ink.amber)
+            Spacer(Modifier.height(12.dp))
+        }
+        val enabled = limitLine == null
+        Choice(Picture.Speak, "Speak", "Talk it through. We write it up.", enabled) { onPick(DescribeWith.SPEAK) }
         Spacer(Modifier.height(Ra.tileGap))
-        Choice(Picture.Type, "Type", "Write or paste a description.") { onPick(DescribeWith.TYPE) }
+        Choice(Picture.Type, "Type", "Write or paste a description.", enabled) { onPick(DescribeWith.TYPE) }
         Spacer(Modifier.height(Ra.tileGap))
-        Choice(Picture.Upload, "Upload a document", "A PDF, Word or text file you already have.") { onPick(DescribeWith.UPLOAD) }
+        Choice(Picture.Upload, "Upload a document", "A PDF, Word or text file you already have.", enabled) { onPick(DescribeWith.UPLOAD) }
         Spacer(Modifier.height(20.dp))
         PrivacyNote(
             "Your recordings and files never leave your phone. Drafts are kept only on this phone.",
@@ -98,8 +111,11 @@ fun DescribeChoices(projectTitle: String?, onPick: (String) -> Unit, modifier: M
 
 /** One way of describing: its picture, a heading and one line, in a tile. */
 @Composable
-private fun Choice(picture: Picture, title: String, detail: String, onClick: () -> Unit) {
-    Row(Modifier.tile(padding = 12.dp, onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
+private fun Choice(picture: Picture, title: String, detail: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(
+        Modifier.tile(padding = 12.dp, onClick = onClick.takeIf { enabled }).alpha(if (enabled) 1f else 0.45f),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Illustration(picture, modifier = Modifier.size(84.dp), height = 84.dp, radius = 18.dp)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
