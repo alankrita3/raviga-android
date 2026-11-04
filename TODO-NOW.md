@@ -17,9 +17,7 @@ The PM reads this file if the session has closed. Updated 2026-11-04 16:15.
   - Play product **credits_quarter** active (US$2.49, ₹209, 174 regions; ce48c51). RevenueCat: all five Play products
     imported and attached to the "default" offering. The app takes packs only from /config (no built-in list), so
     prod (v0.9.9 until the launch deploy, ignores quarter purchases) never shows it.
-  - **Waiting:** iOS's App Store text with R-099 sentence O ("Your first brief is free; each new brief after that
-    uses 1/12 credit (about US$0.83).") so Play's listing takes it word for word. Then `tools/play_release.py` listing
-    and a read-back.
+  - Play listing has R-099 sentence O, word for word as App Store Connect (2,033 characters, read back; 1395cf0).
   - Next upload is versionCode 9 (R-103, R-100, R-105, R-106, R-099), only with her yes; prod release only after the
     launch deploy.
 
