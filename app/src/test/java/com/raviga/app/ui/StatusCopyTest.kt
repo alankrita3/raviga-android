@@ -91,7 +91,7 @@ class StatusCopyTest {
     @Test fun everyContractErrorHasItsOwnLine() {
         val codes = listOf(
             "unauthenticated", "permission_denied", "consent_required", "not_found", "invalid_argument",
-            "github_user_not_found", "invalid_state", "quote_stale", "insufficient_credits",
+            "invalid_state", "aws_required", "quote_stale", "insufficient_credits",
             "active_projects", "aws_role_not_ready", "link_code_invalid", "otp_invalid", "upgrade_required",
             "rate_limited", "content_rejected", "account_restricted", "ai_unavailable", "conflict", "internal",
         )
@@ -106,7 +106,6 @@ class StatusCopyTest {
     /** R-097 (the PM's copy, as iOS): next steps for four errors. */
     @Test fun fourErrorsSayWhatToDoNext() {
         assertEquals("This brief is submitted and locked. Open the project to follow it.", StatusCopy.errorLine("document_locked", null))
-        assertEquals("That GitHub username doesn't exist. Check the spelling and try again.", StatusCopy.errorLine("github_user_not_found", null))
         assertEquals(
             "That step isn't available any more. The project has been refreshed.",
             com.raviga.app.data.api.ApiException("invalid_state", 409, "Only a submitted project can be cancelled").userLine(),

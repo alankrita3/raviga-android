@@ -217,25 +217,20 @@ class SessionRepository(
 
     // ----- Delivery targets (section 12) -----
 
-    suspend fun setDeliveryTargets(githubUsername: String?, awsAccountId: String?): DeliveryTargets {
+    suspend fun setDeliveryTargets(awsAccountId: String?): DeliveryTargets {
         ensureAccount()
-        val targets = apiCall(json) {
-            api.putDeliveryTargets(DeliveryTargetsRequest(githubUsername = githubUsername, awsAccountId = awsAccountId))
-        }
-        prefs.setDeliveryTargets(targets.githubUsername, targets.aws?.accountId ?: "")
+        val targets = apiCall(json) { api.putDeliveryTargets(DeliveryTargetsRequest(awsAccountId = awsAccountId)) }
+        prefs.setDeliveryTargets(targets.aws?.accountId ?: "")
         updateMe { it.copy(deliveryTargets = targets) }
         return targets
     }
 
     /** Clears a target: the contract wants an explicit null for that. */
-    suspend fun clearDeliveryTarget(github: Boolean = false, aws: Boolean = false): DeliveryTargets {
+    suspend fun clearAwsTarget(): DeliveryTargets {
         ensureAccount()
-        val body = kotlinx.serialization.json.buildJsonObject {
-            if (github) put("githubUsername", kotlinx.serialization.json.JsonNull)
-            if (aws) put("awsAccountId", kotlinx.serialization.json.JsonNull)
-        }
+        val body = kotlinx.serialization.json.buildJsonObject { put("awsAccountId", kotlinx.serialization.json.JsonNull) }
         val targets = apiCall(json) { api.putDeliveryTargetsRaw(body) }
-        prefs.setDeliveryTargets(targets.githubUsername, targets.aws?.accountId ?: "")
+        prefs.setDeliveryTargets(targets.aws?.accountId ?: "")
         updateMe { it.copy(deliveryTargets = targets) }
         return targets
     }

@@ -14,14 +14,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * R-097 #4 (review 2): a held retry sends the body it first sent, so neither the current brief's length nor a blank
- * GitHub field stops it; without a held send both still do.
+ * R-097 #4 (review 2): a held retry sends the body it first sent, so the current brief's length doesn't stop it;
+ * without a held send it still does. (v0.11.0: no GitHub field any more.)
  */
 class HeldRetryTest {
     private val limits = LimitsConfig(textInputMaxChars = 20, documentMaxChars = 40)
     private fun doc(v: Int, body: String) = Document(version = v, title = "Bakery site", sections = listOf(Section("summary", "Summary", body)))
     private val sent = SubmitProjectRequest(
-        com.raviga.app.data.api.DocumentBody(title = "Bakery site", sections = emptyList()), "tok", githubUsername = "old-name",
+        com.raviga.app.data.api.DocumentBody(title = "Bakery site", sections = emptyList()), "tok",
     )
     private val tooLong = "An edit made after the send that runs well past every limit."
     private val draft = LocalDraft(
@@ -31,18 +31,15 @@ class HeldRetryTest {
         sentSubmit = SentSubmit("tok", 1, submit = sent),
     )
 
-    @Test fun aHeldRetryIsNeverStoppedByTheCurrentBriefOrField() {
-        val s = QuoteViewModel.State(draft = draft, github = "")
-        assertNull(QuoteViewModel.submitProblem(s, limits))
-        assertEquals("the field shows the name that goes", "old-name", s.heldName)
+    @Test fun aHeldRetryIsNeverStoppedByTheCurrentBrief() {
+        assertNull(QuoteViewModel.submitProblem(QuoteViewModel.State(draft = draft), limits))
     }
 
-    @Test fun withoutAHeldSendBothChecksStand() {
+    @Test fun withoutAHeldSendTheLimitsStand() {
         val fresh = draft.copy(sentSubmit = null)
-        assertEquals(true, QuoteViewModel.submitProblem(QuoteViewModel.State(draft = fresh, github = "octocat"), limits)?.contains("character limit"))
+        assertEquals(true, QuoteViewModel.submitProblem(QuoteViewModel.State(draft = fresh), limits)?.contains("character limit"))
         val short = fresh.copy(versions = listOf(LocalVersion(1, doc(1, "Short."), "a", "draft")))
-        assertEquals(QuoteViewModel.NO_GITHUB, QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short, github = " "), limits))
-        assertNull(QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short, github = "octocat"), limits))
+        assertNull("no GitHub name needed any more", QuoteViewModel.submitProblem(QuoteViewModel.State(draft = short), limits))
     }
 
     /** R-097 #5, R-098 (the PM's final words): while held, the quote screen says what goes. */
@@ -52,7 +49,6 @@ class HeldRetryTest {
             QuoteViewModel.State(draft = draft).heldLine,
         )
         assertNull("nothing held: no line", QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldLine)
-        assertNull(QuoteViewModel.State(draft = draft.copy(sentSubmit = null)).heldName)
     }
 
     /** R-098 P3-4: while held the brief is read-only; it opens again once the answer is seen. */

@@ -553,7 +553,6 @@ data class PayRequest(val quoteToken: String? = null)
 @Serializable
 data class Submission(
     val submittedAt: String? = null,
-    val githubUsername: String? = null,
     val awsAccountId: String? = null,
     val creditsCharged: Int = 0,
 )
@@ -573,34 +572,24 @@ data class Milestone(
     val state: String = "upcoming", // done | current | upcoming
 )
 
+/**
+ * Contract v0.11.0 (R-106, her decision): no GitHub. The deliverable is the source (a git bundle, a zip and
+ * HANDOVER.md) in a private bucket in the client's own AWS account, plus the running app there. [sourceUrl] is the AWS
+ * console link to that bucket, [handoverUrl] the console link to HANDOVER.md; both open after signing in to AWS. An older
+ * delivery shows its repository link as [sourceUrl].
+ */
 @Serializable
 data class Delivery(
-    val repoUrl: String? = null,
-    /** v0.7: the handover (KT) doc. Null only on projects delivered before v0.7; see [handover]. */
+    val sourceUrl: String? = null,
     val handoverUrl: String? = null,
     val deliveredAt: String? = null,
     val note: String? = null,
-    val transfer: Transfer? = null,
     val aws: AwsDelivery? = null,
     val acceptBy: String? = null,
 ) {
-    /** The handover doc, or where it usually is in the repository for projects delivered before v0.7. */
-    val handover: String?
-        get() = handoverUrl?.takeIf { it.isNotBlank() }
-            ?: repoUrl?.takeIf { it.isNotBlank() }?.let { "${it.trimEnd('/')}/blob/HEAD/HANDOVER.md" }
+    val handover: String? get() = handoverUrl?.takeIf { it.isNotBlank() }
+    val source: String? get() = sourceUrl?.takeIf { it.isNotBlank() }
 }
-
-@Serializable
-data class Transfer(
-    val status: String = "pending", // awaiting_target | pending | initiated | accepted | failed
-    val initiatedAt: String? = null,
-    val error: String? = null,
-    /**
-     * Contract v0.9.7 (R-096): the GitHub account the transfer was sent to, kept when the target changes later;
-     * null while awaiting_target and on projects delivered before v0.9.7. For pending, the last try's name.
-     */
-    val githubUsername: String? = null,
-)
 
 @Serializable
 data class AwsDelivery(
@@ -668,7 +657,6 @@ data class QuoteResult(val quote: Quote, val quoteToken: String)
 data class SubmitProjectRequest(
     val document: DocumentBody,
     val quoteToken: String,
-    val githubUsername: String? = null,
     val awsAccountId: String? = null,
 )
 
@@ -676,7 +664,6 @@ data class SubmitProjectRequest(
 
 @Serializable
 data class DeliveryTargets(
-    val githubUsername: String = "",
     val aws: AwsTarget? = null,
 )
 
@@ -693,7 +680,6 @@ data class AwsTarget(
 
 @Serializable
 data class DeliveryTargetsRequest(
-    val githubUsername: String? = null,
     val awsAccountId: String? = null,
 )
 

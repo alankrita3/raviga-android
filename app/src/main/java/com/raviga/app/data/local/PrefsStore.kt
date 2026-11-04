@@ -29,7 +29,6 @@ data class Prefs(
     val aiVersionAccepted: String? = null,
     val aiProcessingAllowed: Boolean = false,
     val notificationsAsked: Boolean = false,
-    val githubUsername: String = "",
     val awsAccountId: String = "",
     /** The Firebase Installation ID FCM registered with (contract v0.8.2). */
     val pushFid: String? = null,
@@ -53,7 +52,6 @@ class PrefsStore(private val context: Context) {
             aiVersionAccepted = p[AI_VERSION],
             aiProcessingAllowed = p[AI_ALLOWED] ?: false,
             notificationsAsked = p[NOTIFICATIONS_ASKED] ?: false,
-            githubUsername = p[GITHUB] ?: "",
             awsAccountId = p[AWS] ?: "",
             pushFid = p[PUSH_FID],
             pushFidSynced = p[PUSH_SYNCED] ?: false,
@@ -79,8 +77,9 @@ class PrefsStore(private val context: Context) {
     }
     suspend fun setAiProcessingAllowed(allowed: Boolean) = context.dataStore.edit { it[AI_ALLOWED] = allowed }
     suspend fun setNotificationsAsked() = context.dataStore.edit { it[NOTIFICATIONS_ASKED] = true }
-    suspend fun setDeliveryTargets(github: String?, aws: String?) = context.dataStore.edit {
-        if (github != null) it[GITHUB] = github
+    suspend fun setDeliveryTargets(aws: String?) = context.dataStore.edit {
+        // v0.11.0 (R-106): no GitHub; a name kept by an older build goes.
+        it.remove(GITHUB)
         if (aws != null) it[AWS] = aws
     }
     suspend fun setPushFid(fid: String, synced: Boolean) = context.dataStore.edit {
@@ -117,6 +116,7 @@ class PrefsStore(private val context: Context) {
         val AI_VERSION = stringPreferencesKey("ai_version_accepted")
         val AI_ALLOWED = booleanPreferencesKey("ai_processing_allowed")
         val NOTIFICATIONS_ASKED = booleanPreferencesKey("notifications_asked")
+        /** Only removed now (v0.11.0, R-106: no GitHub); older builds kept a name here. */
         val GITHUB = stringPreferencesKey("github_username")
         val AWS = stringPreferencesKey("aws_account_id")
         val PUSH_FID = stringPreferencesKey("push_fid")

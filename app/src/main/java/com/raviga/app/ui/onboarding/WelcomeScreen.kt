@@ -70,7 +70,7 @@ private data class Step(val title: String, val body: String, val picture: Pictur
  */
 private val steps = listOf(
     Step(
-        "Describe it your way",
+        "Describe it your way.",
         "Say it, type it, or upload a document you already have. We turn it into a clear brief you can edit.",
         Picture.Describe,
     ),
@@ -218,7 +218,7 @@ private fun IntroWords() {
         // Two fixed rows in the founder's order; on a narrow phone the text shrinks a little instead of wrapping.
         ChipRows(
             listOf(
-                listOf(ChipSpec("You approve the quote", dot = Ink.marigold), ChipSpec("Super fast delivery", icon = Icons.Outlined.Bolt)),
+                listOf(ChipSpec("Pay only when it's a go", dot = Ink.marigold), ChipSpec("Super fast delivery", icon = Icons.Outlined.Bolt)),
                 listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Code handed to you", dot = Ink.blue)),
             ),
         )

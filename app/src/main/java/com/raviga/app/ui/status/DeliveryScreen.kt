@@ -149,15 +149,15 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    if (delivery?.repoUrl != null) {
+                    // R-106 (contract v0.11.0; PM-approved copy as iOS): the code and the guide are in the client's AWS.
+                    delivery?.source?.let { source ->
                         LinkTile(
-                            title = repoName(delivery.repoUrl),
-                            detail = delivery.repoUrl.removePrefix("https://"),
+                            title = "Your code",
+                            detail = "In your AWS account, with a zip and the handover guide",
                             icon = Icons.Outlined.Code,
                             dark = true,
                             trailing = Icons.Outlined.ArrowOutward,
-                            description = "Open ${repoName(delivery.repoUrl)} on GitHub",
-                            onClick = { openLink(context, delivery.repoUrl) },
+                            onClick = { openLink(context, source) },
                         )
                     }
                     delivery?.handover?.let { guide ->
@@ -169,6 +169,10 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                             onClick = { openLink(context, guide) },
                         )
                     }
+                    if (delivery?.source != null || delivery?.handover != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Sign in to your AWS account to open them.", style = RaType.caption, color = Ink.graphite)
+                    }
                     if (delivery != null) {
                         Spacer(Modifier.height(10.dp))
                         LinkTile(
@@ -179,26 +183,6 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                         )
                     }
 
-                    val transfer = delivery?.transfer
-                    // R-092 #28: the transfer goes to the current delivery target; the name given at submit only if none.
-                    val github = me?.deliveryTargets?.githubUsername?.ifBlank { null } ?: project.submission?.githubUsername?.ifBlank { null }
-                    // Pending is queued, not sent; its error (if any) is internal and never shown.
-                    val transferLine = transfer?.let { GoLiveLogic.transferLine(if (it.status == "pending") it.copy(error = null) else it, github) }
-                    if (transferLine != null) {
-                        Labelled("Repository") {
-                            Text(transferLine, style = RaType.body, color = if (transfer.status == "failed") Ink.brick else Ink.ink)
-                            if (transfer.status == "awaiting_target") {
-                                InlineAction("Set GitHub username", onClick = { nav.navigate(Routes.DELIVERY_TARGETS) }, modifier = Modifier.offset(x = (-8).dp))
-                            }
-                            if (transfer.status == "failed" && StatusCopy.supportEmail.isNotBlank()) {
-                                InlineAction(
-                                    StatusCopy.supportEmail,
-                                    onClick = { com.raviga.app.ui.emailLink(context, StatusCopy.supportEmail, "Repository transfer for ${project.ref}") },
-                                    modifier = Modifier.offset(x = (-8).dp),
-                                )
-                            }
-                        }
-                    }
                     delivery?.aws?.let { aws ->
                         Labelled("Backend") {
                             Text(GoLiveLogic.awsLine(aws), style = RaType.body, color = if (aws.status == "deployed") Ink.moss else Ink.ink)
@@ -333,7 +317,7 @@ private fun CategoryRow(label: String, selected: Boolean, enabled: Boolean, onCl
     }
 }
 
-/** A caption label over its content, as on iOS ("Repository", "Backend"). */
+/** A caption label over its content, as on iOS ("Backend"). */
 @Composable
 private fun Labelled(label: String, content: @Composable () -> Unit) {
     Spacer(Modifier.height(16.dp))
@@ -375,6 +359,3 @@ private fun LinkTile(
         Icon(trailing, contentDescription = null, tint = Ink.ash, modifier = Modifier.size(18.dp))
     }
 }
-
-/** "raviga-builds/tiffin-app" from the repository URL. */
-private fun repoName(url: String): String = url.trimEnd('/').split('/').takeLast(2).joinToString("/")

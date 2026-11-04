@@ -258,7 +258,7 @@ class DtoDecodingTest {
             "recoveryEmail":null,"deliveryTargets":{"githubUsername":"","aws":null},"deviceCount":2,"deletion":null}""")
         assertEquals(25, me.credits.balance)
         assertEquals(false, me.consent.aiGranted)
-        assertEquals("", me.deliveryTargets.githubUsername)
+        assertEquals("an older server's githubUsername is ignored (v0.11.0)", null, me.deliveryTargets.aws)
     }
 
     /** Contract v0.10.0 (R-103): statusLine, payment, reports, the new milestones; no comments, revisions or notes. */

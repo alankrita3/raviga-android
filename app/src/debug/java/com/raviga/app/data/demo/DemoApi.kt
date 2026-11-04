@@ -212,15 +212,14 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             ProjectStatus.BUILDING -> if (elapsed > 40_000) {
                 val slug = p.title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "project" }
                 val now = Time.nowIso()
-                val hasGithub = p.submission?.githubUsername?.isNotBlank() == true || s.deliveryTargets.githubUsername.isNotBlank()
                 val hasAws = p.submission?.awsAccountId != null || s.deliveryTargets.aws != null
                 p = p.copy(
                     delivery = Delivery(
-                        repoUrl = "https://github.com/raviga-builds/$slug",
-                        handoverUrl = "https://github.com/raviga-builds/$slug/blob/HEAD/HANDOVER.md",
+                        // v0.11.0 (R-106): the source and the guide in a private bucket in the client's AWS (console links).
+                        sourceUrl = "https://s3.console.aws.amazon.com/s3/buckets/raviga-delivery-$slug?region=ap-south-1",
+                        handoverUrl = "https://s3.console.aws.amazon.com/s3/object/raviga-delivery-$slug?region=ap-south-1&prefix=HANDOVER.md",
                         deliveredAt = now,
-                        note = "Repo transferred. " + if (hasAws) "Backend deployed to your AWS account: one API Gateway, three Lambda functions, one DynamoDB table and one S3 bucket. The README lists every resource." else "Backend deployment instructions are in the README.",
-                        transfer = Transfer(status = if (hasGithub) "initiated" else "awaiting_target", initiatedAt = if (hasGithub) now else null),
+                        note = "",
                         aws = if (hasAws) AwsDelivery(
                             status = "deployed", statusLine = "Running in your AWS account.",
                             consoleUrl = "https://ap-south-1.console.aws.amazon.com/console/home?region=ap-south-1",
@@ -538,8 +537,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         s.submits[idempotencyKey]?.let { id -> return@mutate s to requireProject(s, id) }
         requireConsent(s)
         var next = s
-        if (body.githubUsername != null || body.awsAccountId != null) {
-            next = applyTargets(next, DeliveryTargetsRequest(body.githubUsername, body.awsAccountId)).first
+        if (body.awsAccountId != null) {
+            next = applyTargets(next, DeliveryTargetsRequest(body.awsAccountId)).first
         }
         val q = requireToken(next, body.quoteToken, body.document)
         val quote = q.quote
@@ -555,7 +554,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             updatedAt = now,
             document = held(body.document, 1),
             quote = quote.copy(status = "used"),
-            submission = Submission(submittedAt = now, githubUsername = next.deliveryTargets.githubUsername.ifBlank { null }, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
+            submission = Submission(submittedAt = now, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
             timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
             history = emptyList(),
         )
@@ -612,7 +611,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     override suspend fun accept(id: String, body: Empty): Project = mutate { s ->
         val p = requireProject(s, id)
         if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Nothing to accept yet.")
-        val project = p.copy(delivery = p.delivery?.copy(transfer = p.delivery.transfer?.copy(status = "accepted")))
+        val project = p
         transition(s, project, ProjectStatus.ACCEPTED, "client")
     }
 
@@ -633,11 +632,6 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     private fun applyTargets(s: State, body: DeliveryTargetsRequest): Pair<State, DeliveryTargets> {
         var targets = s.deliveryTargets
-        body.githubUsername?.let { name ->
-            val trimmed = name.trim()
-            if (trimmed.isNotBlank() && !GITHUB.matches(trimmed)) throw ApiException(ApiException.GITHUB_USER_NOT_FOUND, 400, "No GitHub user with that name.")
-            targets = targets.copy(githubUsername = trimmed)
-        }
         body.awsAccountId?.let { acct ->
             val digits = acct.filter { it.isDigit() }
             if (acct.isBlank()) targets = targets.copy(aws = null)
@@ -661,11 +655,6 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun putDeliveryTargetsRaw(body: kotlinx.serialization.json.JsonObject): DeliveryTargets = mutate { s ->
         var targets = s.deliveryTargets
-        if (body.containsKey("githubUsername")) {
-            val v = body["githubUsername"]
-            targets = if (v == null || v is kotlinx.serialization.json.JsonNull) targets.copy(githubUsername = "")
-            else applyTargets(s.copy(deliveryTargets = targets), DeliveryTargetsRequest(githubUsername = (v as kotlinx.serialization.json.JsonPrimitive).content)).second
-        }
         if (body.containsKey("awsAccountId")) {
             val v = body["awsAccountId"]
             targets = if (v == null || v is kotlinx.serialization.json.JsonNull) targets.copy(aws = null)
@@ -763,7 +752,6 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         private const val STATE = "demo_state"
         /** Demo exports have no server part; [com.raviga.app.data.files.ExportBuilder] adds only the drafts. */
         const val DEMO_EXPORT_URL = "demo:export"
-        private val GITHUB = Regex("^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$")
 
         fun demoConfig() = AppConfig(
             minAppVersion = mapOf("ios" to "1.0.0", "android" to "1.0.0"),

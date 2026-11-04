@@ -30,7 +30,7 @@ class QuoteAfterFailureTest {
         versions = listOf(LocalVersion(1, doc, "a", "draft")),
         quote = expired, quoteToken = "tok", quotedVersion = 1,
     )
-    private val held = draft.copy(sentSubmit = SentSubmit("tok", 1, submit = SubmitProjectRequest(doc.body(), "tok", "octocat", null)))
+    private val held = draft.copy(sentSubmit = SentSubmit("tok", 1, submit = SubmitProjectRequest(doc.body(), "tok", null)))
     private val now = System.currentTimeMillis()
 
     private val namedProject = ApiException(

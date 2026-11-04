@@ -29,7 +29,6 @@ class SettingsViewModel(
         val exportUrl: String? = null,
         val exportMessage: String? = null,
         val deleted: Boolean = false,
-        val github: String = "",
     )
 
     private val _state = MutableStateFlow(State(exportUrl = saved.get<String>(KEY_EXPORT_URL)))
@@ -40,26 +39,13 @@ class SettingsViewModel(
     val pushConfigured: Boolean get() = container.push.isFirebaseConfigured
 
     init {
-        viewModelScope.launch { container.session.me.collect { me -> _state.update { it.copy(me = me, github = if (it.github.isBlank()) me?.deliveryTargets?.githubUsername.orEmpty() else it.github) } } }
+        viewModelScope.launch { container.session.me.collect { me -> _state.update { it.copy(me = me) } } }
         viewModelScope.launch { container.session.config.collect { c -> _state.update { it.copy(config = c) } } }
         // No account yet (before Agree, or agreed on the way to Restore): nothing to refresh.
         if (container.session.isRegistered) viewModelScope.launch { runCatching { container.session.refreshMe() } }
     }
 
     fun clearMessages() = _state.update { it.copy(error = null, notice = null) }
-
-    // ----- delivery targets -----
-    fun setGithub(v: String) = _state.update { it.copy(github = v, error = null, notice = null) }
-    fun saveGithub() = run {
-        val name = _state.value.github.trim()
-        viewModelScope.launch {
-            _state.update { it.copy(busy = true, error = null, notice = null) }
-            runCatching { if (name.isBlank()) container.session.clearDeliveryTarget(github = true) else container.session.setDeliveryTargets(name, null) }
-                .onSuccess { _state.update { it.copy(notice = if (name.isBlank()) "GitHub username cleared." else "Saved. Repositories will be transferred to @$name.") } }
-                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busy = false) }
-        }
-    }
 
     // ----- AI consent -----
     fun setAiProcessing(granted: Boolean) = run {

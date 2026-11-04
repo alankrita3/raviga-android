@@ -53,7 +53,6 @@ fun SettingsScreen(nav: NavController) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val legal = state.config.legal
-    val github = state.me?.deliveryTargets?.githubUsername.orEmpty()
     val aws = state.me?.deliveryTargets?.aws
     var notificationsOn by remember { mutableStateOf(Notifications.canPost(context)) }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { notificationsOn = Notifications.canPost(context) }
@@ -61,11 +60,13 @@ fun SettingsScreen(nav: NavController) {
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             Text("Settings", style = RaType.title, color = Ink.ink, modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 8.dp, bottom = 20.dp))
+            // R-106 (PM-approved copy as iOS): no GitHub; the AWS account is where the project is built, delivered and run.
             RaRow(
-                title = "Delivery targets",
-                subtitle = buildString {
-                    append(if (github.isBlank()) "No GitHub username yet" else "GitHub @$github")
-                    if (aws != null) append(", AWS ${if (aws.verified) "connected" else "not verified"}")
+                title = "AWS account",
+                subtitle = when {
+                    aws == null -> "Not connected yet"
+                    aws.verified -> "Connected"
+                    else -> "Not verified"
                 },
                 onClick = { nav.navigate(Routes.DELIVERY_TARGETS) },
             )

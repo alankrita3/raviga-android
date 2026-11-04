@@ -228,21 +228,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             Spacer(Modifier.height(20.dp))
             Text("Where to deliver", style = RaType.bodyMedium, color = Ink.ink)
             Spacer(Modifier.height(14.dp))
-            Text("GitHub username", style = RaType.secondary, color = Ink.graphite)
-            Spacer(Modifier.height(6.dp))
-            RaTextField(
-                // While a send is held, the name it carries, not editable (as iOS): that is what goes.
-                value = state.heldName ?: state.github,
-                onValueChange = { vm.setGithub(it) },
-                enabled = state.heldName == null,
-                placeholder = "octocat",
-                label = "GitHub username",
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text("We transfer the finished repository to this account.", style = RaType.caption, color = Ink.graphite)
-            Spacer(Modifier.height(16.dp))
+            // R-106 (contract v0.11.0): no GitHub; the AWS account is asked at Pay (R-105).
             val aws = state.me?.deliveryTargets?.aws
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -349,7 +335,7 @@ internal fun nextSteps(): List<String> = listOf(
     "We check your brief against what we build.",
     "Once it's accepted, you pay the quoted credits and we start building.",
     "We build and test it. This screen shows each step.",
-    "You get the code with a handover guide and steps to make it live. Approve it, or tell us what's wrong and we fix it.",
+    "Your code and handover guide arrive in your AWS account, with the app running there. Approve it, or tell us what's wrong and we fix it.",
 )
 
 /**

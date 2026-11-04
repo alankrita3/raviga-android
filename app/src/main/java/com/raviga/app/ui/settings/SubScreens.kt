@@ -101,35 +101,13 @@ fun DeliveryTargetsScreen(nav: NavController) {
     val state by vm.state.collectAsStateWithLifecycle()
     val aws = state.me?.deliveryTargets?.aws
 
-    ScreenScaffold(
-        topBar = { RaTopBar(title = "Delivery targets", onBack = { nav.popBackStack() }) },
-        bottomBar = {
-            BottomBar {
-                InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                InlineNotice(state.notice, Modifier.padding(bottom = 8.dp), color = Ink.moss)
-                PrimaryButton("Save", loading = state.busy, onClick = { vm.saveGithub() })
-            }
-        },
-    ) { padding ->
+    // R-106 (contract v0.11.0; PM-approved copy as iOS): no GitHub. The client's AWS account is the only target.
+    ScreenScaffold(topBar = { RaTopBar(title = "AWS account", onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
-            Column(Modifier.padding(horizontal = Ra.gutter)) {
-                Spacer(Modifier.height(8.dp))
-                Text("Where finished projects go.", style = RaType.body, color = Ink.graphite)
-                Spacer(Modifier.height(24.dp))
-                Text("GitHub username", style = RaType.secondary, color = Ink.graphite)
-                Spacer(Modifier.height(6.dp))
-                RaTextField(
-                    value = state.github,
-                    onValueChange = { vm.setGithub(it) },
-                    placeholder = "octocat",
-                    label = "GitHub username",
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
-                )
-                Spacer(Modifier.height(6.dp))
-                Text("We transfer each finished repository to this account. GitHub emails you to accept it.", style = RaType.caption, color = Ink.graphite)
-                Spacer(Modifier.height(24.dp))
-            }
+            Text(
+                "Your project is built, delivered and run here.", style = RaType.body, color = Ink.graphite,
+                modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 8.dp, bottom = 16.dp),
+            )
             Hairline(Modifier.padding(horizontal = Ra.gutter))
             RaRow(
                 title = "AWS account",

@@ -76,8 +76,6 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                 val steps = GoLiveLogic.steps(
                     delivery = delivery,
                     status = project.status,
-                    githubUsername = me?.deliveryTargets?.githubUsername?.ifBlank { null }
-                        ?: project.submission?.githubUsername?.ifBlank { null },
                     platforms = GoLiveLogic.platforms(brief?.section(SectionIds.PLATFORMS)?.body.orEmpty()),
                     hasPaidServices = brief?.section(SectionIds.INTEGRATIONS)?.body.orEmpty().isNotBlank(),
                 )
@@ -130,6 +128,9 @@ private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, on
             Spacer(Modifier.height(6.dp))
             Text(step.detail, style = RaType.secondary, color = Ink.graphite)
             when (step.action) {
+                GoLiveLogic.Action.OpenSource -> delivery.source?.let { url ->
+                    InlineAction("Open in AWS", onClick = { onLink(url) }, modifier = Modifier.offset(x = (-8).dp))
+                }
                 GoLiveLogic.Action.OpenGuide -> delivery.handover?.let { url ->
                     InlineAction("Open the guide", onClick = { onLink(url) }, modifier = Modifier.offset(x = (-8).dp))
                 }

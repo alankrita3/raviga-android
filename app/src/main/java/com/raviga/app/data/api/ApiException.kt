@@ -42,7 +42,6 @@ open class ApiException(
         const val CONSENT_REQUIRED = "consent_required"
         const val NOT_FOUND = "not_found"
         const val INVALID_ARGUMENT = "invalid_argument"
-        const val GITHUB_USER_NOT_FOUND = "github_user_not_found"
         const val INVALID_STATE = "invalid_state"
         const val DOCUMENT_LOCKED = "document_locked"
         const val VERSION_CONFLICT = "version_conflict"

@@ -85,7 +85,7 @@ class AlreadySubmittedTest {
             ),
         )
         try {
-            drafts.submit("ld_1", "octocat", null, "key-1")
+            drafts.submit("ld_1", null, "key-1")
             fail("expected quote_stale")
         } catch (e: ApiException) {
             assertEquals(ApiException.QUOTE_STALE, e.code)

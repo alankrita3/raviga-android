@@ -4,16 +4,15 @@ import com.raviga.app.data.api.ReportCategory
 import com.raviga.app.data.api.AwsDelivery
 import com.raviga.app.data.api.Delivery
 import com.raviga.app.data.api.ProjectStatus
-import com.raviga.app.data.api.Transfer
 
 /**
- * "Make it live": the steps between a delivered repository and customers using the product, worked
+ * "Make it live": the steps between a delivery and customers using the product, worked
  * out from the delivery's state and what the brief says about platforms and paid services. A port of
  * iOS GoLiveLogic (docs/DESIGN.md, 14b); the wording is shared.
  */
 object GoLiveLogic {
 
-    enum class Action { OpenGuide, OpenConsole }
+    enum class Action { OpenSource, OpenGuide, OpenConsole }
 
     data class Step(
         val id: String,
@@ -36,12 +35,17 @@ object GoLiveLogic {
     fun steps(
         delivery: Delivery,
         status: String,
-        githubUsername: String?,
         platforms: Platforms,
         hasPaidServices: Boolean,
     ): List<Step> = buildList {
-        val transfer = delivery.transfer ?: Transfer()
-        add(Step("github", "Accept the code on GitHub", transferLine(transfer, githubUsername), done = transfer.status == "accepted"))
+        // R-106 (contract v0.11.0, her decision; PM-approved copy as iOS): no GitHub; the code arrives in the client's AWS.
+        add(
+            Step(
+                "source", "Your code and handover guide are in your AWS account",
+                "Sign in to your AWS console to open them. The guide shows how to put the code on GitHub or GitLab if you want it there.",
+                action = if (delivery.source != null) Action.OpenSource else null,
+            ),
+        )
         add(
             Step(
                 "guide", "Read the handover guide",
@@ -94,25 +98,6 @@ object GoLiveLogic {
     /** A report's category in config's words; an id this build doesn't know shows as "Something else". */
     fun reportLabel(id: String, categories: List<ReportCategory>): String =
         categories.firstOrNull { it.id == id }?.label ?: categories.firstOrNull { it.id == "other" }?.label ?: "Something else"
-
-    /** Where the repository transfer stands (same wording as iOS). Pending is queued on our side; only initiated reached GitHub. */
-    /**
-     * [currentTarget] is this account's GitHub username now. R-094 P2-11 (iOS review 2, contract v0.9.7): a transfer
-     * names the account it was sent to, which a later change of target doesn't move; older projects fall back.
-     */
-    fun transferLine(transfer: Transfer, currentTarget: String?): String {
-        val sentTo = transfer.githubUsername?.takeIf { it.isNotBlank() } ?: currentTarget
-        val name = sentTo?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "your GitHub account"
-        return when (transfer.status) {
-            "awaiting_target" -> "Add your GitHub username to receive the repository."
-            "pending" -> "We're sending the repository to $name. GitHub will email you to accept it."
-            "initiated" -> "Transfer sent to $name. Accept it from the email GitHub sent you."
-            "accepted" -> "Transferred to $name."
-            // R-092 #29 (PM, her R-038): the server can't restart a failed transfer yet, so no "Try again": support sorts it.
-            "failed" -> "The transfer didn't go through. Write to support and we'll sort it out."
-            else -> "We're sending the repository to $name."
-        }
-    }
 
     /**
      * Where the app runs (R-105, iOS's copy): in the client's own AWS. No team text (R-103), so the delivery's AWS note

@@ -83,7 +83,7 @@ class ConnectAwsViewModel(private val container: AppContainer) : ViewModel() {
         if (id.length != 12) { _state.update { it.copy(error = "An AWS account ID is 12 digits.") }; return }
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null, notice = null) }
-            runCatching { container.session.setDeliveryTargets(null, id) }
+            runCatching { container.session.setDeliveryTargets(id) }
                 .onSuccess { t -> _state.update { it.copy(target = t.aws) }; loadInfo() }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }
@@ -114,7 +114,7 @@ class ConnectAwsViewModel(private val container: AppContainer) : ViewModel() {
     fun disconnect() {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
-            runCatching { container.session.clearDeliveryTarget(aws = true) }
+            runCatching { container.session.clearAwsTarget() }
                 .onSuccess { _state.update { it.copy(disconnected = true) } }
                 .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
             _state.update { it.copy(busy = false) }

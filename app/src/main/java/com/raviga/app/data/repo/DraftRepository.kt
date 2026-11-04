@@ -342,15 +342,15 @@ class DraftRepository(
         finishQuote(id, result, current.version)
     }
 
-    /** Creates the server project, charged. The brief stays here as the client's own copy. */
-    suspend fun submit(id: String, githubUsername: String?, awsAccountId: String?, idempotencyKey: String): Project = guarded(id) {
+    /** Creates the server project (free since v0.10.0). The brief stays here as the client's own copy. */
+    suspend fun submit(id: String, awsAccountId: String?, idempotencyKey: String): Project = guarded(id) {
         val draft = require(id)
         // R-094 P2-6: a send already out with this token goes again exactly as it was.
         val held = draft.sentSubmit?.takeIf { draft.holdsSentSubmit }?.let { s -> s.submit?.let { it to s.version } }
         val (request, version) = held ?: run {
             val current = draft.current ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
             val token = draft.quoteToken?.takeIf { draft.quoteIsCurrent } ?: throw ApiException(ApiException.QUOTE_STALE, message = "Get a new quote first.")
-            val request = SubmitProjectRequest(current.document.body(), token, githubUsername?.ifBlank { null }, awsAccountId?.ifBlank { null })
+            val request = SubmitProjectRequest(current.document.body(), token, awsAccountId?.ifBlank { null })
             touch(id) { it.copy(sentSubmit = SentSubmit(token, current.version, submit = request)) }
             request to current.version
         }

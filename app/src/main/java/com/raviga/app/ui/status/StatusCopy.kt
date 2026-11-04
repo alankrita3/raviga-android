@@ -149,7 +149,6 @@ object StatusCopy {
         "quote_stale" -> fallback ?: "The brief changed since this quote. Get a new quote."
         // R-097 (the PM's copy, as iOS): each with its next step.
         "document_locked" -> "This brief is submitted and locked. Open the project to follow it."
-        "github_user_not_found" -> "That GitHub username doesn't exist. Check the spelling and try again."
         "invalid_argument" -> fallback ?: "Something in the form isn't right."
         // R-097: the server's invalid_state (the screens that can meet it reload the project on it); the app's own
         // invalid_state lines (httpStatus 0, "Write the brief first.") keep their words.

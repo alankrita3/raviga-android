@@ -48,8 +48,6 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val quoting: Boolean = false,
         val progressMessage: String? = null,
         val progress: Float? = null,
-        val github: String = "",
-        val githubTouched: Boolean = false,
         val submitting: Boolean = false,
         val error: String? = null,
         /** AI processing isn't allowed yet: the screen shows "Before we send this to AI", then the action runs. */
@@ -95,8 +93,6 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val submitted get() = submittedProjectId != null
         /** R-094 P2-6: a send with this quote is out and unanswered; a retry sends it as it was. */
         val held get() = draft?.holdsSentSubmit == true
-        /** The GitHub name the held send carries (shown in the field, as iOS shows it). */
-        val heldName: String? get() = draft?.sentSubmit?.takeIf { held }?.submit?.githubUsername
         /** R-097 #5 (the PM's words): what a held retry sends, said while it's held. */
         val heldLine: String? get() = if (held) HELD_LINE else null
     }
@@ -187,7 +183,6 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                     s.copy(
                         me = me,
                         balance = container.credits.credits.value?.balance ?: me?.credits?.balance ?: s.balance,
-                        github = if (!s.githubTouched && s.github.isBlank()) me?.deliveryTargets?.githubUsername.orEmpty() else s.github,
                     )
                 }
             }
@@ -237,7 +232,6 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
     }
 
-    fun setGithub(value: String) = _state.update { it.copy(github = value, githubTouched = true, error = null) }
 
     fun requestQuote() {
         if (briefTooLong()) return
@@ -288,14 +282,13 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     private fun submitNow() = withAiConsent {
         val s = _state.value
         val draft = s.draft ?: return@withAiConsent
-        val github = s.github.trim()
         if (cantSubmit()) return@withAiConsent
         // Set before the coroutine starts, so a second tap already sees it.
         _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
             runCatching {
                 // Contract v0.10.0: free; the project comes back submitted, or approved at once by the policy check.
-                container.drafts.submit(draft.id, github, null, keyFor(draft.quoteToken.orEmpty()))
+                container.drafts.submit(draft.id, null, keyFor(draft.quoteToken.orEmpty()))
             }.onSuccess { project ->
                 submitKey = null
                 afterSubmit(project, draft)
@@ -328,18 +321,17 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     companion object {
-        const val NO_GITHUB = "Enter your GitHub username so we can hand over the code."
         /** R-098 (the PM's final copy; it replaces R-097's "later edits" line). */
         const val HELD_LINE = "This sends the brief as you first submitted it. Editing opens again once that's confirmed."
 
         /**
-         * R-097 #4 (review 2): a brief past the limits, or a blank GitHub name, stops a submit. A held retry is never
+         * R-097 #4 (review 2): a brief past the limits stops a submit (v0.11.0: no GitHub name any more). A held retry is never
          * stopped by either: it sends the body it first sent, not the current brief or field.
          */
         internal fun submitProblem(s: State, limits: com.raviga.app.data.api.LimitsConfig): String? {
             if (s.held) return null
             s.draft?.document?.let { doc -> BriefLimits.problem(doc, limits.textInputMaxChars, limits.documentMaxChars)?.let { return it } }
-            return if (s.github.isBlank()) NO_GITHUB else null
+            return null
         }
 
         /**

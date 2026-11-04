@@ -156,7 +156,6 @@ data class SentSubmit(
         /** Submit and resubmit refusals that come after check 1a (quote_stale naming a project is check 1a itself). */
         private val AFTER_USED_TOKEN_CHECK = setOf(
             com.raviga.app.data.api.ApiException.INVALID_ARGUMENT,
-            com.raviga.app.data.api.ApiException.GITHUB_USER_NOT_FOUND,
             com.raviga.app.data.api.ApiException.QUOTE_STALE,
             com.raviga.app.data.api.ApiException.CONTENT_REJECTED,
             com.raviga.app.data.api.ApiException.INSUFFICIENT_CREDITS,

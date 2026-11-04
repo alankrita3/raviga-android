@@ -89,7 +89,7 @@ class SubmitRetryTest {
         val (drafts, store) = setUpDraft()
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
         try {
-            drafts.submit("ld_1", "old-name", null, "key-1")
+            drafts.submit("ld_1", "111111111111", "key-1")
             fail("expected the connection to drop")
         } catch (e: ApiException) {
             assertEquals(ApiException.NETWORK, e.code)
@@ -102,11 +102,11 @@ class SubmitRetryTest {
         store.update("ld_1") { it.copy(versions = it.versions + LocalVersion(2, doc(2, "Edited after."), "b", "edit")) }
 
         server.enqueue(MockResponse().setResponseCode(201).setBody(fixture("project-submitted.json")))
-        drafts.submit("ld_1", "new-name", null, "key-1")
+        drafts.submit("ld_1", "222222222222", "key-1")
         val retry = server.takeRequest(1, TimeUnit.SECONDS)
         assertEquals("the same bytes as the first send", first, retry?.body?.readUtf8())
         assertEquals("key-1", retry?.getHeader("Idempotency-Key"))
-        assertTrue(first.contains("old-name") && !first.contains("Edited after"))
+        assertTrue(first.contains("111111111111") && !first.contains("Edited after"))
 
         val after = drafts.get("ld_1")
         assertNull("answer seen: nothing held", after?.sentSubmit)
@@ -116,7 +116,7 @@ class SubmitRetryTest {
     @Test fun anExpiredQuoteWithASendOutIsRetriedNotRequoted() = runBlocking {
         val (drafts, _) = setUpDraft()
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
-        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        runCatching { drafts.submit("ld_1", "111111111111", "key-1") }
         val held = drafts.get("ld_1")
         val afterExpiry = System.currentTimeMillis()   // the quote expired at 00:00 today
         assertFalse("held: Submit stays, no new quote", QuoteViewModel.State(draft = held, clock = afterExpiry).needsNewQuote)
@@ -130,7 +130,7 @@ class SubmitRetryTest {
     @Test fun aRefusalBeforeTheUsedTokenCheckKeepsTheHold() = runBlocking {
         val (drafts, _) = setUpDraft()
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
-        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        runCatching { drafts.submit("ld_1", "111111111111", "key-1") }
         server.takeRequest(1, TimeUnit.SECONDS)
         val first = json.encodeToString(com.raviga.app.data.api.SubmitProjectRequest.serializer(), drafts.get("ld_1")?.sentSubmit?.submit!!)
 
@@ -139,7 +139,7 @@ class SubmitRetryTest {
                 .setBody("""{"error":{"code":"consent_required","message":"Please accept the current terms","details":{"missing":["terms"]}}}"""),
         )
         try {
-            drafts.submit("ld_1", "new-name", null, "key-1")
+            drafts.submit("ld_1", "222222222222", "key-1")
             fail("expected consent_required")
         } catch (e: ApiException) {
             assertEquals(ApiException.CONSENT_REQUIRED, e.code)
@@ -150,7 +150,7 @@ class SubmitRetryTest {
         assertFalse("no new quote offered", QuoteViewModel.State(draft = held, clock = System.currentTimeMillis()).needsNewQuote)
 
         server.enqueue(MockResponse().setResponseCode(201).setBody(fixture("project-submitted.json")))
-        drafts.submit("ld_1", "new-name", null, "key-1")
+        drafts.submit("ld_1", "222222222222", "key-1")
         assertEquals("after agreeing: the same bytes", first, server.takeRequest(1, TimeUnit.SECONDS)?.body?.readUtf8())
     }
 
@@ -167,7 +167,7 @@ class SubmitRetryTest {
         )
         before.forEach { assertFalse("${it.code} ${it.httpStatus} keeps the hold", com.raviga.app.data.drafts.SentSubmit.refusedForGood(it)) }
         val after = listOf(
-            e(ApiException.INSUFFICIENT_CREDITS, 402), e(ApiException.INVALID_ARGUMENT, 400), e(ApiException.GITHUB_USER_NOT_FOUND, 400),
+            e(ApiException.INSUFFICIENT_CREDITS, 402), e(ApiException.INVALID_ARGUMENT, 400),
             e(ApiException.CONTENT_REJECTED, 422), e(ApiException.QUOTE_STALE, 409), e(ApiException.INVALID_STATE, 409),
         )
         after.forEach { assertTrue("${it.code} ${it.httpStatus} lets it go", com.raviga.app.data.drafts.SentSubmit.refusedForGood(it)) }
@@ -176,19 +176,19 @@ class SubmitRetryTest {
     @Test fun aRefusalTheServerAnsweredLetsTheBodyChange() = runBlocking {
         val (drafts, _) = setUpDraft()
         server.enqueue(MockResponse().setResponseCode(402).setBody("""{"error":{"code":"insufficient_credits","message":"Not enough credits."}}"""))
-        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        runCatching { drafts.submit("ld_1", "111111111111", "key-1") }
         assertNull("the server didn't take it: nothing held", drafts.get("ld_1")?.sentSubmit)
         server.takeRequest(1, TimeUnit.SECONDS)
         server.enqueue(MockResponse().setResponseCode(201).setBody(fixture("project-submitted.json")))
-        drafts.submit("ld_1", "new-name", null, "key-1")
-        assertTrue(server.takeRequest(1, TimeUnit.SECONDS)?.body?.readUtf8().orEmpty().contains("new-name"))
+        drafts.submit("ld_1", "222222222222", "key-1")
+        assertTrue(server.takeRequest(1, TimeUnit.SECONDS)?.body?.readUtf8().orEmpty().contains("222222222222"))
     }
 
     /** R-098 P3-4: while a send is held, no note, section, title, version or quote change is taken. */
     @Test fun whileHeldEditsAreRefused() = runBlocking {
         val (drafts, _) = setUpDraft()
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
-        runCatching { drafts.submit("ld_1", "old-name", null, "key-1") }
+        runCatching { drafts.submit("ld_1", "111111111111", "key-1") }
         val tries = listOf<suspend () -> Unit>(
             { drafts.rename("ld_1", "New name") },
             { drafts.addInput("ld_1", "text", "One more thing about the bakery app.") },
