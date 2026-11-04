@@ -58,9 +58,10 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   The first set (RA-AYVR3V) is in `superseded-RA-AYVR3V/`; its account went with an uninstall.
   - Her review fixes, pushed: f4b8f94 (the quote's lock line on one line, centred with an inline lock; 13 to 12sp,
     then balanced wrap) and 0838142 ("This price holds until 17 Nov.", the PM's wording; iOS 605c803 added the same).
-- **R-105 (her decision): every project is built in the client's own AWS; Connect AWS required before Pay.** Waiting
-  on backend's contract (409 aws_required) and iOS's PM-approved copy. Then: Pay → "Connect AWS to start" until
-  verified, aws_required handling, a short no-AWS guide, Make it live rewritten, DemoApi, tests, live dev check.
+- **R-105 done on main (7e1814f; contract v0.10.2, dev): Connect AWS before Pay**, iOS's copy; Make it live and the
+  Backend line from delivery.aws (consoleUrl, statusLine). Live on dev (RA-STT9ES). Play listing sentence 7e02f8a
+  (read-back equal, 1,957). QA on dev: `team.py fault aws_verified --client <id>` then Check connection, before any pay.
+  **Next:** iOS's new K/L on the OnePlus, on the PM's word.
 - **Store screenshots parked until the product is final (her call, 2026-11-04).** No captures for design meanwhile.
 - **R-103 merged into main (1a13412) for versionCode 9 only; prod stays v0.9.9 until the PM says.** Do not build a
   prod release from main before that. Follow-ups on main: PM parity calls (18cbbfc: step 1 "We check your brief
