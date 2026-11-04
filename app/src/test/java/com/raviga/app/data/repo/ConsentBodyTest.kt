@@ -37,5 +37,12 @@ class ConsentBodyTest {
             "By continuing you agree to the Terms of Use and Privacy Policy, and allow AI processing as described above.",
             ConsentCopy.CAPTION,
         )
+        // Her static text, verbatim as iOS (not /config.ai.providers).
+        assertEquals("AI processing", ConsentCopy.AI_TITLE)
+        assertEquals(listOf("What is sent.", "Who processes it.", "What we keep.", "Your choice."), ConsentCopy.AI_LINES.map { it.first })
+        assertEquals(
+            "Raviga can't work without it. You can withdraw your permission at any time by deleting your account in Settings.",
+            ConsentCopy.AI_LINES.last().second,
+        )
     }
 }

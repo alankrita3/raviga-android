@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.LegalLinks
 import com.raviga.app.ui.components.Picture
@@ -113,7 +116,10 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
                     style = RaType.caption, color = Ink.ash,
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
-                if (nav.previousBackStackEntry != null) TertiaryButton("Not now", enabled = !busy, onClick = { nav.popBackStack() })
+                // On the first sheet and the AI-call re-ask; the updated-terms screen at launch has none (as iOS).
+                if ((next != null || aiReask) && nav.previousBackStackEntry != null) {
+                    TertiaryButton("Not now", enabled = !busy, onClick = { nav.popBackStack() })
+                }
             }
         },
     ) { padding ->
@@ -148,8 +154,8 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
                 "Your rights",
                 "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance.",
             )
-            // R-107: AI processing at the bottom, before the optional analytics switch.
-            Block(ConsentCopy.AI_TITLE, ConsentCopy.aiBody(config.ai.providers))
+            // R-107: AI processing at the bottom, before the optional analytics switch; her words, no switch.
+            AiSection()
             // Contract v0.9, wording shared with iOS: its own block, the switch off until the client turns it on.
             Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
             Spacer(Modifier.height(6.dp))
@@ -179,6 +185,25 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
                 Modifier.padding(top = 4.dp),
             )
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+/** R-107: "AI processing" and its four lines, each with an ink lead-in (as iOS's aiLine). */
+@Composable
+private fun AiSection() {
+    Column(Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+        Text(ConsentCopy.AI_TITLE, style = RaType.bodyMedium, color = Ink.ink)
+        ConsentCopy.AI_LINES.forEach { (lead, body) ->
+            Spacer(Modifier.height(10.dp))
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = RaType.secondaryMedium.fontWeight, color = Ink.ink)) { append(lead) }
+                    append(" ")
+                    append(body)
+                },
+                style = RaType.secondary, color = Ink.graphite,
+            )
         }
     }
 }
