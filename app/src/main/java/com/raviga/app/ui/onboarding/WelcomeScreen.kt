@@ -244,7 +244,7 @@ private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
         Text(step.body, style = RaType.body, color = Ink.graphite)
         step.small?.let {
             Spacer(Modifier.height(10.dp))
-            Text(it, style = RaType.caption, color = Ink.graphite)
+            Text(it, style = RaType.secondary, color = Ink.ash)   // as iOS: Figtree secondary, ash, 10 under the body
         }
     }
 }
