@@ -123,7 +123,7 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   `StatusCopy.LOCAL_FIRST_PROMISE` ("… its text is sent to an AI service, used once, and not stored by us. …", the
   same words as iOS's `Retention.promise`; the AI consent screen's "How long it is kept" uses it too). "Your
   rights": "You can download or delete everything from Settings at any time, withdraw consent, and raise a
-  grievance." Footer links `LegalLinks`: "Privacy policy · Terms of service · Your rights" on one line where it
+  grievance." Footer links `LegalLinks`: "Privacy policy · Terms of Use · Your rights" on one line where it
   fits, stacked without dots where it doesn't; Privacy and data has "Privacy policy · Your rights". "Your
   rights" opens `config.legal.rightsUrl` (v0.9.3) and is left out if a server doesn't send it.
 - Capture hint: "Tell us what it does, who it is for, and anything it must connect to. Ramble is fine."

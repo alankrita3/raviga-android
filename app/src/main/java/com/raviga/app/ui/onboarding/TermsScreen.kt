@@ -177,7 +177,7 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
             LegalLinks(
                 listOfNotNull(
                     "Privacy policy" to { openLink(context, legal.privacyUrl) },
-                    "Terms of service" to { openLink(context, legal.termsUrl) },
+                    "Terms of Use" to { openLink(context, legal.termsUrl) },
                     // R-066 / contract v0.9.3: withdrawing consent, download and delete, the grievance route, the Board.
                     // A server without the key (older than v0.9.3) gets no link, as on iOS.
                     legal.rightsUrl.takeIf { it.isNotBlank() }?.let { url -> "Your rights" to { openLink(context, url) } },

@@ -167,7 +167,7 @@ fun InlineAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
 }
 
 /**
- * Link-blue actions separated by dots ("Privacy policy · Terms of service · Your rights") on one line where they fit;
+ * Link-blue actions separated by dots ("Privacy policy · Terms of Use · Your rights") on one line where they fit;
  * a narrow phone or large text stacks them instead (as on iOS), so a line never starts with a dot.
  */
 @Composable
