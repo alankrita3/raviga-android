@@ -170,7 +170,6 @@ fun PrivacyScreen(nav: NavController) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val legal = state.config.legal
-    val aiOn = state.me?.consent?.aiGranted == true
     val analyticsOn = state.me?.consent?.analyticsGranted == true
     var confirmDelete by remember { mutableStateOf(false) }
     val saveExport = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -187,21 +186,7 @@ fun PrivacyScreen(nav: NavController) {
                 Text("Privacy and data", style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(8.dp))
             }
-            Row(
-                Modifier.fillMaxWidth().switchRow(aiOn, enabled = !state.busy) { vm.setAiProcessing(it) }
-                    .padding(horizontal = Ra.gutter, vertical = Ra.rowPadding),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("AI processing", style = RaType.bodyMedium, color = Ink.ink)
-                    Text(
-                        if (aiOn) "On. Only the text of your notes and brief is sent, to write and price it: ${state.config.ai.providers.joinToString("; ").ifBlank { "our AI provider" }}." else "Off. Raviga cannot write briefs until this is on.",
-                        style = RaType.secondary, color = Ink.graphite,
-                    )
-                }
-                Switch(checked = aiOn, enabled = !state.busy, onCheckedChange = null, colors = switchColors())
-            }
-            Hairline(Modifier.padding(horizontal = Ra.gutter))
+            // R-107 (her decision): no AI switch here; AI consent is given on the first sheet and withdrawn by deleting.
             Row(
                 Modifier.fillMaxWidth().switchRow(analyticsOn, enabled = !state.busy) { vm.setAnalytics(it) }
                     .padding(horizontal = Ra.gutter, vertical = Ra.rowPadding),

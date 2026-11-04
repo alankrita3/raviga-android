@@ -34,7 +34,6 @@ import com.raviga.app.ui.document.VersionPreviewScreen
 import com.raviga.app.ui.document.VersionsScreen
 import com.raviga.app.ui.home.HomeScreen
 import com.raviga.app.ui.nav.Routes
-import com.raviga.app.ui.onboarding.AiConsentScreen
 import com.raviga.app.ui.onboarding.TermsScreen
 import com.raviga.app.ui.onboarding.NotificationPromptScreen
 import com.raviga.app.ui.onboarding.WelcomeScreen
@@ -116,7 +115,8 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
             TermsScreen(nav, next = entry.arguments?.getString("next"))
         }
         composable(Routes.HOME) { HomeScreen(nav) }
-        composable(Routes.AI_CONSENT) { AiConsentScreen(nav) }
+        // R-107: no separate AI sheet; an account without AI consent sees "Before you start" again (one tap, both).
+        composable(Routes.AI_CONSENT) { TermsScreen(nav, aiReask = true) }
         composable(
             Routes.CAPTURE,
             arguments = listOf(

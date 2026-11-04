@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import com.raviga.app.ui.components.switchRow
 import com.raviga.app.ui.components.LegalLinks
 import com.raviga.app.ui.components.Picture
@@ -36,6 +39,8 @@ import com.raviga.app.ui.LocalAppContainer
 import com.raviga.app.ui.components.BottomBar
 import com.raviga.app.ui.components.InlineNotice
 import com.raviga.app.ui.components.PrimaryButton
+import com.raviga.app.ui.components.TertiaryButton
+import com.raviga.app.ui.nav.rememberIsOnTop
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.nav.Routes
 import com.raviga.app.ui.openLink
@@ -45,9 +50,13 @@ import com.raviga.app.ui.theme.Ink
 import com.raviga.app.ui.userLine
 import kotlinx.coroutines.launch
 
-/** [next]: set for the first consent (R-056), the action the client tapped; Agree carries on there. */
+/**
+ * "Before you start" (R-107, her decision): the terms and AI processing in one sheet and one tap.
+ * [next]: set for the first consent (R-056), the action the client tapped; the tap carries on there.
+ * [aiReask]: an account without AI consent (agreed before R-107) on its way to an AI action; the caller runs it after.
+ */
 @Composable
-fun TermsScreen(nav: NavController, next: String? = null) {
+fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = false) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -56,8 +65,10 @@ fun TermsScreen(nav: NavController, next: String? = null) {
     var error by remember { mutableStateOf<String?>(null) }
     val legal = config.legal
     val me by container.session.me.collectAsStateWithLifecycle()
-    // Agreed to an older version before: this is an update, and afterwards the client goes back to what they were doing.
+    // Agreed before: this is the re-ask (a newer version, or no AI consent yet); afterwards the client goes back.
     val updating = me?.consent?.terms != null
+    val termsChanged = updating && container.session.needsLegal(me, config)
+    val onTop = nav.rememberIsOnTop()
     // Contract v0.9: usage analytics is its own choice, off until the client turns it on.
     val analyticsGranted = me?.consent?.analyticsGranted == true
     var analyticsOn by remember(analyticsGranted) { mutableStateOf(analyticsGranted) }
@@ -66,13 +77,13 @@ fun TermsScreen(nav: NavController, next: String? = null) {
         bottomBar = {
             BottomBar {
                 InlineNotice(error, Modifier.padding(bottom = 8.dp))
-                PrimaryButton(if (busy) "One moment" else "Agree and continue", enabled = !busy, onClick = {
+                PrimaryButton(if (busy) "One moment" else ConsentCopy.BUTTON, enabled = !busy, onClick = {
                     busy = true; error = null
                     scope.launch {
                         runCatching {
                             if (updating) {
-                                container.session.acceptLegal()
-                                if (analyticsOn != analyticsGranted) container.session.setAnalytics(analyticsOn)
+                                // v0.11.4: the same one PUT as the first tap, analytics only when the switch changed it.
+                                container.session.acceptLegal(analytics = analyticsOn.takeIf { it != analyticsGranted })
                             } else {
                                 // R-056: register (or, for Restore, let recover() do it), then the consent.
                                 container.session.agree(analytics = analyticsOn, restoring = next == Routes.RECOVERY)
@@ -86,6 +97,11 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                             .onSuccess {
                                 when {
                                     next != null -> nav.navigate(next) { popUpTo(Routes.CONSENT_FIRST) { inclusive = true } }
+                                    // The caller runs the AI action it was on; if Back already left, don't pop the one under.
+                                    aiReask -> if (onTop()) {
+                                        nav.previousBackStackEntry?.savedStateHandle?.set("ai_consent_granted", true)
+                                        nav.popBackStack()
+                                    }
                                     nav.previousBackStackEntry != null -> nav.popBackStack()
                                     else -> nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
                                 }
@@ -96,15 +112,19 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                 })
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "You agree to the terms of service and the privacy policy.",
+                    ConsentCopy.CAPTION,
                     style = RaType.caption, color = Ink.ash,
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
+                // On the first sheet and the AI-call re-ask; the updated-terms screen at launch has none (as iOS).
+                if ((next != null || aiReask) && nav.previousBackStackEntry != null) {
+                    TertiaryButton("Not now", enabled = !busy, onClick = { nav.popBackStack() })
+                }
             }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
-            if (updating) {
+            if (termsChanged) {
                 Spacer(Modifier.height(24.dp))
                 Text("We've updated our terms", style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(10.dp))
@@ -134,6 +154,8 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                 "Your rights",
                 "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance.",
             )
+            // R-107: AI processing at the bottom, before the optional analytics switch; her words, no switch.
+            AiSection()
             // Contract v0.9, wording shared with iOS: its own block, the switch off until the client turns it on.
             Text("Usage analytics", style = RaType.bodyMedium, color = Ink.ink)
             Spacer(Modifier.height(6.dp))
@@ -163,6 +185,25 @@ fun TermsScreen(nav: NavController, next: String? = null) {
                 Modifier.padding(top = 4.dp),
             )
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+/** R-107: "AI processing" and its four lines, each with an ink lead-in (as iOS's aiLine). */
+@Composable
+private fun AiSection() {
+    Column(Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+        Text(ConsentCopy.AI_TITLE, style = RaType.bodyMedium, color = Ink.ink)
+        ConsentCopy.AI_LINES.forEach { (lead, body) ->
+            Spacer(Modifier.height(10.dp))
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = RaType.secondaryMedium.fontWeight, color = Ink.ink)) { append(lead) }
+                    append(" ")
+                    append(body)
+                },
+                style = RaType.secondary, color = Ink.graphite,
+            )
         }
     }
 }

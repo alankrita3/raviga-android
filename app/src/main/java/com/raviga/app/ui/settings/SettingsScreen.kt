@@ -92,7 +92,7 @@ fun SettingsScreen(nav: NavController) {
             }
             RaRow(
                 title = "Privacy and data",
-                subtitle = "AI processing, download or delete your data, questions or complaints",
+                subtitle = "Download or delete your data, questions or complaints",
                 onClick = { nav.navigate(Routes.PRIVACY) },
             )
             RaRow(title = "Privacy policy", onClick = { openLink(context, legal.privacyUrl) }, chevron = false)

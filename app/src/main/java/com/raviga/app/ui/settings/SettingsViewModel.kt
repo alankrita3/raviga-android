@@ -47,15 +47,7 @@ class SettingsViewModel(
 
     fun clearMessages() = _state.update { it.copy(error = null, notice = null) }
 
-    // ----- AI consent -----
-    fun setAiProcessing(granted: Boolean) = run {
-        viewModelScope.launch {
-            _state.update { it.copy(busy = true, error = null) }
-            runCatching { container.session.setAiProcessing(granted) }
-                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busy = false) }
-        }
-    }
+    // R-107: no AI switch; AI consent is part of the first sheet, and withdrawing it is deleting the account.
 
     // ----- Usage analytics (contract v0.9) -----
     fun setAnalytics(granted: Boolean) = run {
