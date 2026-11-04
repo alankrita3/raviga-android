@@ -250,7 +250,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     Spacer(Modifier.height(3.dp))
                     Text(
                         when {
-                            aws == null -> "Not connected"
+                            aws == null -> "Not connected yet"
                             aws.verified -> "Connected, ${aws.accountId}"
                             else -> "${aws.accountId}, not verified yet"
                         },
@@ -261,7 +261,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 InlineAction(if (aws == null) "Connect AWS" else "Manage", onClick = { nav.navigate(Routes.CONNECT_AWS) })
             }
             Spacer(Modifier.height(6.dp))
-            Text("Only needed if you want us to deploy the backend into your own AWS account.", style = RaType.caption, color = Ink.graphite)
+            Text(AWS_CAPTION, style = RaType.caption, color = Ink.graphite)
             Spacer(Modifier.height(20.dp))
             PrivacyPromise()
             // R-100: the price's date, small and grey, at the end of the quote (as iOS a5f8fc9).
@@ -395,3 +395,6 @@ private fun LockedCaption(text: String) {
         )
     }
 }
+
+/** R-105 (iOS's copy): under the AWS row on the quote and in Delivery targets. */
+internal const val AWS_CAPTION = "Your project is built and runs in your AWS account. You connect it before paying."

@@ -221,7 +221,10 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                         deliveredAt = now,
                         note = "Repo transferred. " + if (hasAws) "Backend deployed to your AWS account: one API Gateway, three Lambda functions, one DynamoDB table and one S3 bucket. The README lists every resource." else "Backend deployment instructions are in the README.",
                         transfer = Transfer(status = if (hasGithub) "initiated" else "awaiting_target", initiatedAt = if (hasGithub) now else null),
-                        aws = AwsDelivery(status = if (hasAws) "deployed" else "not_requested", note = if (hasAws) "Deployed with RavigaDeployRole" else ""),
+                        aws = if (hasAws) AwsDelivery(
+                            status = "deployed", statusLine = "Running in your AWS account.",
+                            consoleUrl = "https://ap-south-1.console.aws.amazon.com/console/home?region=ap-south-1",
+                        ) else AwsDelivery(status = "not_requested"),
                         acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
                     ),
                 )
@@ -566,6 +569,11 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val p = requireProject(s, id)
         if (p.status != ProjectStatus.APPROVED || p.payment != null) throw ApiException(ApiException.INVALID_STATE, 409, "This project can't be paid now.", details = buildJsonObject { put("status", p.status) })
         requireConsent(s)
+        // v0.10.2 (R-105): built in the client's own AWS; paying needs a verified role (the demo verifies on "Check connection").
+        if (config.delivery.awsRequiredToPay && s.deliveryTargets.aws?.verified != true) throw ApiException(
+            ApiException.AWS_REQUIRED, 409, "Connect your AWS account to start the build.",
+            details = buildJsonObject { put("accountId", s.deliveryTargets.aws?.accountId) },
+        )
         var next = s
         var quote = p.quote ?: throw ApiException(ApiException.INVALID_STATE, 409, "No price on this project.")
         val token = body.quoteToken
@@ -794,7 +802,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
                 retentionMonths = 2,
             ),
-            delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1"),
+            delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1", awsRequiredToPay = true),
             legal = LegalConfig(
                 companyName = "Raviga Apps Private Limited",
                 // The legal site on Raviga's domain (dev /config since backend 5fe84e0); demo mode opens the same pages.

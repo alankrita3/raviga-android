@@ -134,12 +134,16 @@ fun DeliveryTargetsScreen(nav: NavController) {
             RaRow(
                 title = "AWS account",
                 subtitle = when {
-                    aws == null -> "Optional. Connect it and we deploy there too."
+                    aws == null -> "Not connected yet"
                     aws.verified -> "Connected, ${aws.accountId}"
                     else -> "${aws.accountId}, not verified yet"
                 },
                 subtitleColor = if (aws?.verified == true) Ink.moss else Ink.graphite,
                 onClick = { nav.navigate(Routes.CONNECT_AWS) },
+            )
+            Text(
+                com.raviga.app.ui.quote.AWS_CAPTION, style = RaType.caption, color = Ink.graphite,
+                modifier = Modifier.padding(horizontal = Ra.gutter).padding(bottom = 16.dp),
             )
         }
     }

@@ -42,6 +42,10 @@ class StatusViewModel(
         /** The server said the price expired (409 quote_stale, expired) before the phone's clock did. */
         val expiredByServer: Boolean = false,
         val clock: Long = System.currentTimeMillis(),
+        /** The account's AWS role is verified (GET /me). */
+        val awsVerified: Boolean = false,
+        /** The server said 409 aws_required before the phone knew. */
+        val awsRequiredByServer: Boolean = false,
     ) {
         /** Accepted and not paid yet: the client pays here. */
         val awaitingPayment: Boolean get() = project?.status == ProjectStatus.APPROVED && project.payment == null
@@ -51,8 +55,14 @@ class StatusViewModel(
         val priceExpired: Boolean
             get() = newQuote == null && (expiredByServer ||
                 project?.quote?.expiresAt?.let { Time.parse(it)?.toEpochMilli() }?.let { it <= clock } == true)
+        /**
+         * v0.10.2 (R-105, her decision): every project is built in the client's own AWS, so paying waits for a verified
+         * role: "Connect AWS to start" until then (iOS's copy).
+         */
+        val needsAws: Boolean
+            get() = awaitingPayment && (awsRequiredByServer || (config.delivery.awsRequiredToPay && !awsVerified))
         /** Credits short of the price (iOS's line: "You have 10 credits. You need 20 more."). */
-        val shortBy: Int get() = if (!awaitingPayment || priceExpired) 0 else (price - balance).coerceAtLeast(0)
+        val shortBy: Int get() = if (!awaitingPayment || priceExpired || needsAws) 0 else (price - balance).coerceAtLeast(0)
     }
 
     private val _state = MutableStateFlow(State())
@@ -65,7 +75,17 @@ class StatusViewModel(
             container.credits.credits.collect { c -> if (c != null) _state.update { it.copy(balance = c.balance) } }
         }
         viewModelScope.launch {
-            container.session.me.collect { me -> if (container.credits.credits.value == null && me != null) _state.update { it.copy(balance = me.credits.balance) } }
+            container.session.me.collect { me ->
+                val verified = me?.deliveryTargets?.aws?.verified == true
+                _state.update {
+                    it.copy(
+                        awsVerified = verified,
+                        // Verified since the server said no: try again.
+                        awsRequiredByServer = it.awsRequiredByServer && !verified,
+                        balance = if (container.credits.credits.value == null && me != null) me.credits.balance else it.balance,
+                    )
+                }
+            }
         }
         viewModelScope.launch {
             container.events.collect { if (visible && it is AppEvent.ProjectUpdated && it.projectId == projectId) refresh() }
@@ -83,8 +103,9 @@ class StatusViewModel(
     fun onVisible() {
         visible = true
         refresh()
-        // Back from Credits after buying: the balance decides "Pay" or "Buy credits".
+        // Back from Credits after buying, or from Connect AWS: the balance and the AWS role decide the button.
         viewModelScope.launch { runCatching { container.credits.refresh(force = false) } }
+        viewModelScope.launch { runCatching { container.session.refreshMe() } }
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
             while (isActive) {
@@ -135,7 +156,7 @@ class StatusViewModel(
     /** Pay the accepted project: its own price, or the new quote's after the old one expired (contract 11). */
     fun pay() {
         val s = _state.value
-        if (s.busy || !s.awaitingPayment || s.priceExpired) return
+        if (s.busy || !s.awaitingPayment || s.priceExpired || s.needsAws) return
         val token = s.newQuote?.quoteToken
         _state.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
@@ -186,6 +207,7 @@ class StatusViewModel(
          * What the screen shows after a payment didn't go through.
          * - 402 insufficient_credits: no error line; the balance line and "Buy credits" say it (iOS).
          * - 409 quote_stale, expired: the price ran out; "Get a new quote" takes over.
+         * - 409 aws_required (R-105): the server's message, and "Connect AWS to start" takes over (iOS).
          */
         internal fun afterFailedPay(s: State, e: Throwable): State {
             val api = e as? ApiException
@@ -194,6 +216,7 @@ class StatusViewModel(
                     s.copy(error = null, balance = api.detailInt("balance") ?: s.balance)
                 api?.code == ApiException.QUOTE_STALE && (api.detailBoolean("expired") == true || s.newQuote == null) ->
                     s.copy(error = null, newQuote = null, expiredByServer = true)
+                api?.code == ApiException.AWS_REQUIRED -> s.copy(error = e.userLine(), awsRequiredByServer = true)
                 else -> s.copy(error = e.userLine())
             }
         }

@@ -297,6 +297,8 @@ data class DeliveryConfig(
     val awsTrustedAccountId: String = "",
     val awsRoleName: String = "RavigaDeployRole",
     val awsRegion: String = "ap-south-1",
+    /** v0.10.2 (R-105, her decision): every project is built in the client's AWS; /pay needs a verified role. */
+    val awsRequiredToPay: Boolean = false,
 )
 
 // Contract v0.9.2 (R-055, founder, 2026-10-29): no person's name and no address in the app. The server still sends
@@ -601,7 +603,14 @@ data class Transfer(
 )
 
 @Serializable
-data class AwsDelivery(val status: String = "not_requested", val note: String = "")
+data class AwsDelivery(
+    val status: String = "not_requested",
+    val note: String = "",
+    /** v0.10.2 (R-105): the fixed line ("Setting up in your AWS account." / "Running in your AWS account."); null when not requested. */
+    val statusLine: String? = null,
+    /** v0.10.2: the AWS console link; null until deployed. */
+    val consoleUrl: String? = null,
+)
 
 // ---------- Stateless AI, quotes, submit (contract v0.6) ----------
 

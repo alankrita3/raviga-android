@@ -41,7 +41,9 @@ class GoLiveLogicTest {
         assertEquals(listOf("github", "guide", "aws", "keys", "stores", "accept"), steps.map { it.id })
         assertFalse(steps[0].done)
         assertEquals("Transfer sent to @octocat. Accept it from the email GitHub sent you.", steps[0].detail)
-        assertEquals(GoLiveLogic.Action.ConnectAws, steps[2].action)
+        // R-105: the app runs in the client's own AWS from the start; the step opens the console.
+        assertEquals("Your app is running in your AWS account", steps[2].title)
+        assertEquals("no console link before it's deployed", null, steps[2].action)
         // R-103: no rounds; approve it or report what's wrong.
         assertEquals("Approve the delivery", steps.last().title)
         assertEquals("Or tell us what's wrong and we'll fix it and deliver again.", steps.last().detail)
@@ -52,7 +54,15 @@ class GoLiveLogicTest {
         )
         assertEquals(listOf("github", "guide", "aws", "domain", "accept"), steps.map { it.id })
         assertTrue(steps[0].done && steps[2].done && steps.last().done)
-        assertNull(steps[2].action)
+        // The delivered screen's Backend line: the server's statusLine as sent (v0.10.2); no team note.
+        assertEquals("Running in your AWS account.", GoLiveLogic.awsLine(com.raviga.app.data.api.AwsDelivery("deployed", "Deployed with RavigaDeployRole", statusLine = "Running in your AWS account.")))
+        assertEquals("Setting up in your AWS account.", GoLiveLogic.awsLine(com.raviga.app.data.api.AwsDelivery("pending")))
+        val live = GoLiveLogic.steps(
+            delivery(transfer = "accepted", aws = "deployed").let { it.copy(aws = it.aws?.copy(consoleUrl = "https://console.example/x")) },
+            ProjectStatus.DELIVERED, null, GoLiveLogic.Platforms(mobile = false, web = true), hasPaidServices = false,
+        )
+        assertEquals("Open it in the AWS console.", live[2].detail)
+        assertEquals(GoLiveLogic.Action.OpenConsole, live[2].action)
         assertEquals("Transferred to your GitHub account.", steps[0].detail)
     }
 

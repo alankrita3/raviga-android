@@ -32,6 +32,8 @@ import com.raviga.app.ui.components.DestructiveButton
 import com.raviga.app.ui.components.RaTextField
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.InlineAction
+import com.raviga.app.ui.components.tile
+import androidx.compose.foundation.layout.offset
 import com.raviga.app.ui.components.InlineNotice
 import com.raviga.app.ui.components.KeyValueRow
 import com.raviga.app.ui.components.NumberedSteps
@@ -149,10 +151,21 @@ fun ConnectAwsScreen(nav: NavController) {
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
             Spacer(Modifier.height(8.dp))
+            // R-105 (iOS's copy, PM-approved): the project is built and runs in the client's AWS.
             Text(
-                "We create one role in your AWS account, named ${config.delivery.awsRoleName}, that lets the Raviga team deploy your project there. It trusts only Raviga's account and only with the external ID below. Delete the stack any time to revoke it.",
+                "We build and run your project in your own AWS account, so everything is yours from day one. Connecting adds one role that only Raviga can use, and you can remove it any time.",
                 style = RaType.body, color = Ink.ink,
             )
+            if (!state.saved) {
+                Spacer(Modifier.height(20.dp))
+                Column(Modifier.fillMaxWidth().tile(padding = 16.dp)) {
+                    Text("No AWS account yet?", style = RaType.bodyMedium, color = Ink.ink)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Create one at aws.amazon.com, then come back here to connect it.", style = RaType.secondary, color = Ink.graphite)
+                    Spacer(Modifier.height(4.dp))
+                    InlineAction("Create a free AWS account", onClick = { openLink(context, AWS_SIGN_UP) }, modifier = Modifier.offset(x = (-8).dp))
+                }
+            }
             Spacer(Modifier.height(24.dp))
             Text("AWS account ID", style = RaType.secondary, color = Ink.graphite)
             Spacer(Modifier.height(6.dp))
@@ -167,7 +180,7 @@ fun ConnectAwsScreen(nav: NavController) {
                 trailing = if (state.saved) ({ InlineAction("Change", onClick = { vm.setAccountId("") }) }) else null,
             )
             Spacer(Modifier.height(6.dp))
-            Text("Find it in the AWS console under your account name, top right.", style = RaType.caption, color = Ink.graphite)
+            Text("The 12-digit account id where we build and run your project. Find it in the AWS console under your account name, top right.", style = RaType.caption, color = Ink.graphite)
 
             val target = state.target
             if (state.saved && target != null) {
@@ -207,3 +220,6 @@ fun ConnectAwsScreen(nav: NavController) {
         }
     }
 }
+
+/** R-105: "Create a free AWS account" (iOS opens the same page). */
+internal const val AWS_SIGN_UP = "https://aws.amazon.com/"

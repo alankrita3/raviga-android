@@ -202,9 +202,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     delivery?.aws?.let { aws ->
                         Labelled("Backend") {
                             Text(GoLiveLogic.awsLine(aws), style = RaType.body, color = if (aws.status == "deployed") Ink.moss else Ink.ink)
-                            if (aws.status == "not_requested") {
-                                InlineAction("Connect AWS", onClick = { nav.navigate(Routes.CONNECT_AWS) }, modifier = Modifier.offset(x = (-8).dp))
-                            }
+                            // R-105: no Connect AWS here; it's connected before paying.
                         }
                     }
                     // R-103 (her rule, PM 11-04): no team text reaches the client; the delivered statusLine says it.

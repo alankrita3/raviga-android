@@ -80,6 +80,15 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     ProjectStatus.APPROVED -> {
                         when {
                             !state.awaitingPayment -> Unit
+                            // R-105 (iOS's copy): built in the client's own AWS; connect it before paying.
+                            state.needsAws -> {
+                                Text(
+                                    AWS_BEFORE_PAY, style = RaType.caption, color = Ink.graphite,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                                )
+                                PrimaryButton("Connect AWS to start", onClick = { nav.navigate(Routes.CONNECT_AWS) })
+                            }
                             state.priceExpired -> PrimaryButton("Get a new quote", loading = state.quoting, enabled = !state.busy, onClick = { vm.requestNewQuote() })
                             state.shortBy > 0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
                             else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { vm.pay() })
@@ -195,3 +204,5 @@ private fun headerCaption(project: com.raviga.app.data.api.Project): String = li
     project.submission?.creditsCharged?.takeIf { it > 0 }?.let { Money.credits(it) },
 ).joinToString(", ")
 
+/** R-105: above "Connect AWS to start" (PM-approved, as iOS). */
+internal const val AWS_BEFORE_PAY = "We build your project in your own AWS account. Connect it once, then pay to start building."

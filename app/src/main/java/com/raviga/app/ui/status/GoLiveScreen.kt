@@ -87,13 +87,13 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
                 Text("Make it live", style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Your project already works on our servers. These steps move it to accounts you own and put it in front of customers.",
+                    "Your project is running in your AWS account. These steps hand you the code and put it in front of customers.",
                     style = RaType.secondary,
                     color = Ink.graphite,
                 )
                 Spacer(Modifier.height(22.dp))
                 steps.forEachIndexed { index, step ->
-                    StepTile(index + 1, step, delivery, onGuide = { url -> openLink(context, url) }, onConnectAws = { nav.navigate(Routes.CONNECT_AWS) })
+                    StepTile(index + 1, step, delivery, onLink = { url -> openLink(context, url) })
                     Spacer(Modifier.height(10.dp))
                 }
                 Spacer(Modifier.height(10.dp))
@@ -110,7 +110,7 @@ fun GoLiveScreen(nav: NavController, projectId: String) {
 }
 
 @Composable
-private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, onGuide: (String) -> Unit, onConnectAws: () -> Unit) {
+private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, onLink: (String) -> Unit) {
     Row(
         Modifier
             .tile(padding = 16.dp)
@@ -131,9 +131,11 @@ private fun StepTile(number: Int, step: GoLiveLogic.Step, delivery: Delivery, on
             Text(step.detail, style = RaType.secondary, color = Ink.graphite)
             when (step.action) {
                 GoLiveLogic.Action.OpenGuide -> delivery.handover?.let { url ->
-                    InlineAction("Open the guide", onClick = { onGuide(url) }, modifier = Modifier.offset(x = (-8).dp))
+                    InlineAction("Open the guide", onClick = { onLink(url) }, modifier = Modifier.offset(x = (-8).dp))
                 }
-                GoLiveLogic.Action.ConnectAws -> InlineAction("Connect AWS", onClick = onConnectAws, modifier = Modifier.offset(x = (-8).dp))
+                GoLiveLogic.Action.OpenConsole -> delivery.aws?.consoleUrl?.let { url ->
+                    InlineAction("Open the AWS console", onClick = { onLink(url) }, modifier = Modifier.offset(x = (-8).dp))
+                }
                 null -> Unit
             }
         }

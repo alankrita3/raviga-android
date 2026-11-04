@@ -156,6 +156,8 @@ object StatusCopy {
         "invalid_state" -> fallback ?: "That step isn't available any more. The project has been refreshed."
         "active_projects" -> "Finish or cancel your active projects before deleting your data."
         "aws_role_not_ready" -> "AWS hasn't finished creating the role yet. Give it a minute and check again."
+        // v0.10.2 (R-105): the server's line ("Connect your AWS account to start the build."), as iOS.
+        "aws_required" -> fallback ?: "Connect your AWS account to start the build."
         "otp_invalid" -> "That recovery key doesn't match. Check it and try again."
         "link_code_invalid" -> "That link code is wrong or has expired."
         "upgrade_required" -> "Update Raviga from Google Play to continue."

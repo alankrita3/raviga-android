@@ -55,6 +55,27 @@ class PayStateTest {
         assertFalse("hardening: paid goes by payment, not status alone", state(accepted.copy(payment = Payment(30, "x"))).awaitingPayment)
     }
 
+    /** R-105 (her decision; iOS's copy): built in the client's own AWS, so paying waits for a verified role. */
+    @Test fun anUnverifiedAwsAccountConnectsBeforePaying() {
+        val required = com.raviga.app.data.api.AppConfig(delivery = com.raviga.app.data.api.DeliveryConfig(awsRequiredToPay = true))
+        val s = state().copy(config = required)
+        assertTrue(s.needsAws)
+        assertEquals("no shortfall line while AWS isn't connected", 0, s.copy(balance = 10).shortBy)
+        assertFalse(s.copy(awsVerified = true).needsAws)
+        assertFalse("only an accepted, unpaid project", s.copy(project = accepted.copy(status = ProjectStatus.BUILDING)).needsAws)
+        assertFalse("a server without the rule", state().needsAws)
+        assertEquals(
+            "We build your project in your own AWS account. Connect it once, then pay to start building.",
+            com.raviga.app.ui.status.AWS_BEFORE_PAY,
+        )
+        val refused = StatusViewModel.afterFailedPay(state(), ApiException(
+            ApiException.AWS_REQUIRED, 409, "Connect your AWS account to start the build.",
+            details = buildJsonObject { put("accountId", "123456789012") },
+        ))
+        assertTrue("the server decides too", refused.needsAws)
+        assertEquals("Connect your AWS account to start the build.", refused.error)
+    }
+
     @Test fun aFailedPaymentShowsTheNextStep() {
         val short = StatusViewModel.afterFailedPay(state(balance = 50), ApiException(
             ApiException.INSUFFICIENT_CREDITS, 402, "You need 20 more credits.",

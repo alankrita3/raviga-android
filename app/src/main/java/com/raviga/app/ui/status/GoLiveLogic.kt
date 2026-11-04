@@ -13,7 +13,7 @@ import com.raviga.app.data.api.Transfer
  */
 object GoLiveLogic {
 
-    enum class Action { OpenGuide, ConnectAws }
+    enum class Action { OpenGuide, OpenConsole }
 
     data class Step(
         val id: String,
@@ -49,13 +49,15 @@ object GoLiveLogic {
                 action = Action.OpenGuide,
             ),
         )
-        val aws = delivery.aws?.status ?: "not_requested"
+        // R-105 (her decision; iOS's copy): the project is built and runs in the client's own AWS from the start.
+        // The console link arrives with the deployment (delivery.aws.consoleUrl, null until then).
+        val console = delivery.aws?.consoleUrl?.takeIf { it.isNotBlank() }
         add(
             Step(
-                "aws", "Move the backend to your AWS",
-                awsLine(delivery.aws) + if (aws == "not_requested") " Connect your account and we move it for you." else "",
-                done = aws == "deployed",
-                action = if (aws == "not_requested") Action.ConnectAws else null,
+                "aws", "Your app is running in your AWS account",
+                if (console != null) "Open it in the AWS console." else awsLine(delivery.aws),
+                done = delivery.aws?.status == "deployed",
+                action = if (console != null) Action.OpenConsole else null,
             ),
         )
         if (hasPaidServices) {
@@ -112,10 +114,13 @@ object GoLiveLogic {
         }
     }
 
-    /** Where the backend runs (same wording as iOS). */
-    fun awsLine(aws: AwsDelivery?): String = when (aws?.status ?: "not_requested") {
-        "not_requested" -> "The backend runs on our AWS until you connect yours."
-        "deployed" -> aws?.note?.trim().orEmpty().let { if (it.isEmpty()) "Deployed to your AWS account." else "Deployed to your AWS account. $it" }
-        else -> "Deploying to your AWS account."
+    /**
+     * Where the app runs (R-105, iOS's copy): in the client's own AWS. No team text (R-103), so the delivery's AWS note
+     * is not shown. A project delivered before R-105 that never had a verified role keeps its own honest line.
+     */
+    fun awsLine(aws: AwsDelivery?): String = aws?.statusLine?.takeIf { it.isNotBlank() } ?: when (aws?.status ?: "not_requested") {
+        "deployed" -> "Running in your AWS account."
+        "pending" -> "Setting up in your AWS account."
+        else -> "The backend runs on our AWS until you connect yours."
     }
 }
