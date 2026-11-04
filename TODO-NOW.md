@@ -1,9 +1,27 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
+The PM reads this file if the session has closed. Updated 2026-11-04 16:15.
 
 ## In flight
+
+- **2026-11-04, her walkthrough decisions (via the PM), all on main:**
+  - Welcome: four pages, AI not named (0593263, a8cb447); chip 1 "Pay only when it's a go".
+  - R-106 (contract v0.11.0): no GitHub; the code and the handover guide are delivered in the client's AWS
+    (82370ba). Play listing equals iOS's App Store text (1,947 characters, read back).
+  - **R-099 (contract v0.11.1-2): brief pricing, 3a879f3.** First brief free, then 1/12 credit; line above "Looks
+    right, write the brief" (iOS's rule: free only when /me's freeBriefsLeft isn't 0 and the phone has no other brief
+    or submitted project; no line on a server without brief pricing); 402 sheet with the smallest pack; credits_quarter
+    row; ledger "Brief written" / "−1/12 credit". Checked live on the OnePlus against dev (QA account
+    cl_01m6ehvcsp: 203 → 202.9167; screenshots r099-* in the session scratchpad). Unit tests debug 240, release 213.
+  - Play product **credits_quarter** active (US$2.49, ₹209, 174 regions; ce48c51). RevenueCat: all five Play products
+    imported and attached to the "default" offering. The app takes packs only from /config (no built-in list), so
+    prod (v0.9.9 until the launch deploy, ignores quarter purchases) never shows it.
+  - **Waiting:** iOS's App Store text with R-099 sentence O ("Your first brief is free; each new brief after that
+    uses 1/12 credit (about US$0.83).") so Play's listing takes it word for word. Then `tools/play_release.py` listing
+    and a read-back.
+  - Next upload is versionCode 9 (R-103, R-100, R-105, R-106, R-099), only with her yes; prod release only after the
+    launch deploy.
 
 - **Android is code-complete for build 8 (the PM, 2026-11-03).** Gate file
   `~/Documents/Raviga PM/qa/results/2026-11-02-android-gate.md`: 23 signed, 7 open, all hers.
@@ -91,7 +109,7 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
   v0.10.0 or be built from the last v0.9.9 commit (d02c71b + R-100 fixes) on the PM's call.
 - **Next step (mine):** the sandbox purchase once both waits clear. Then fix whatever her pass on the Play build
   turns up. The next upload is versionCode 9 (+1 per upload).
-- **Unit tests** debug 231, release 207; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
+- **Unit tests** debug 240, release 213; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
 - **The OnePlus:** `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, `give` after. Free now.
 - **Emulator:** started only with load under 20. It was shut down from outside this session twice today (08:0x, 09:1x).
