@@ -1,9 +1,25 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-04 16:15.
+The PM reads this file if the session has closed. Updated 2026-11-04 16:50.
 
 ## In flight
+
+- **R-107 (her decision, via the PM, 2026-11-04 ~16:30): AI consent merged into "Before you start"; branch r-107
+  (aac02dc), not merged.** One PUT {termsVersion, privacyVersion, aiProcessing:true, analytics:true only if on}
+  (backend v0.11.4), also for the re-ask; the separate AI sheet and the Settings AI switch are gone; the AI_CONSENT
+  route shows the merged sheet. Button "Allow AI and continue", the caption, "Not now". **Waiting on iOS** for the AI
+  section text, "Your rights", the Settings line that replaces the switch, the row subtitle, the re-ask heading and
+  the consent_required line (asked 16:4x). Then: device check, merge, report to the PM.
+- **Contract v0.11.3 on main (c6ff760):** "Brief refunded" ledger line (+1/12 credit, as iOS 507af2e); Capture
+  refreshes credits after a draft fails with ai_unavailable/internal. Not checked on the phone (adb below).
+- **adb can't reach the OnePlus since ~16:30 (my doing).** I restarted the adb server to clear an "offline" state; the
+  new daemon gets "No route to host" while the port answers (macOS Local Network permission: the old daemon had it,
+  one started from this session doesn't). Fix: she runs `adb kill-server; adb connect 192.168.1.4:5555` once from
+  her own Terminal. The phone lock is free. mirakee-android shares the phone and lost its connection too.
+- **Post-launch backlog (the PM's call, via backend):** install fingerprint so the free brief can't be farmed: the
+  per-app ANDROID_ID, hashed, sent at register and recover; backend sends a short contract when picked up. Data safety
+  would then declare a device ID.
 
 - **2026-11-04, her walkthrough decisions (via the PM), all on main:**
   - Welcome: four pages, AI not named (0593263, a8cb447); chip 1 "Pay only when it's a go".
