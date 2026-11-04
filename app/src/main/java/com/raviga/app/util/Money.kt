@@ -25,6 +25,13 @@ object Money {
      */
     fun credits(n: Double): String = "${creditsNumber(n)} ${if (Math.abs(n - 1) < 0.0001) "credit" else "credits"}"
 
+    /** What is still owed, rounded up ("6.17" for 6.1667), so buying that much is always enough (as iOS's creditAmountOwed). */
+    fun creditsOwed(n: Double): String {
+        val whole = Math.rint(n)
+        if (Math.abs(n - whole) < 0.0001) return whole.toLong().toString()
+        return String.format(java.util.Locale.US, "%.2f", Math.ceil(n * 100 - 0.0001) / 100)
+    }
+
     /** "30", "2.75", "0.08": the number alone, two decimals rounded down when it isn't whole (as iOS's Format.creditAmount). */
     fun creditsNumber(n: Double): String {
         val whole = Math.rint(n)

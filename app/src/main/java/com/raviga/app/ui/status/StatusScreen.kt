@@ -143,7 +143,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 }
                 if (state.shortBy > 0.0) {
                     Spacer(Modifier.height(12.dp))
-                    Text("You have ${Money.credits(state.balance)}. You need ${Money.creditsNumber(state.shortBy)} more.", style = RaType.body, color = Ink.ink)
+                    Text("You have ${Money.credits(state.balance)}. You need ${Money.creditsOwed(state.shortBy)} more.", style = RaType.body, color = Ink.ink)
                 }
 
                 project.timeline?.takeIf { it.milestones.isNotEmpty() }?.let { tl ->

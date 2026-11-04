@@ -103,6 +103,8 @@ class CaptureViewModel(
         val focusEditor: Int = 0,
         /** Continuing the note under review in the same mode; the tabs are hidden meanwhile. */
         val continuing: Boolean = false,
+        /** Utterances already in [transcript] (from earlier takes); recording more shows only the ones after them. */
+        val consumed: Int = 0,
         /** Notes saved so far in this visit (documents saved before adding more), shown on the choices. */
         val savedNotes: Int = 0,
         val lastSavedName: String? = null,
@@ -418,7 +420,9 @@ class CaptureViewModel(
             else -> {
                 val consumed = consumedUtterances
                 consumedUtterances = s.committed.size
-                _state.update { it.copy(phase = Phase.TRANSCRIPT, continuing = false, transcript = spokenReview(it.transcript, it.committed, consumed)) }
+                _state.update {
+                    it.copy(phase = Phase.TRANSCRIPT, continuing = false, consumed = s.committed.size, transcript = spokenReview(it.transcript, it.committed, consumed))
+                }
             }
         }
         scheduleSave()
@@ -765,6 +769,19 @@ class CaptureViewModel(
          * what's under review when recording more), or the text under review. Null when there's nothing to save
          * (a document still being read, the choices, writing).
          */
+        /**
+         * What the Speak tab shows, as iOS (her bug on the iPhone 16, 11-04): when recording more, the reviewed text
+         * (her edits included) first, then only this take's words; never the earlier takes' raw words again.
+         * Returns the lines above (graphite) and the latest line (ink).
+         */
+        fun speakLines(s: State): Pair<List<String>, String?> {
+            val take = s.committed.drop(if (s.continuing) s.consumed else 0)
+            val reviewed = s.transcript.trim().takeIf { s.continuing && it.isNotEmpty() }
+            val earlier = listOfNotNull(reviewed) + take.dropLast(if (s.partial.isBlank()) 1 else 0)
+            val latest = s.partial.takeIf { it.isNotBlank() } ?: take.lastOrNull()
+            return earlier to latest
+        }
+
         fun liveText(s: State, consumedUtterances: Int): String? = when (s.phase) {
             Phase.TRANSCRIPT -> if (s.reading) null else s.transcript
             Phase.CAPTURE -> when (s.tab) {

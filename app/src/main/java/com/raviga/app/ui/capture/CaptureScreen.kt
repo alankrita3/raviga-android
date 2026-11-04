@@ -327,11 +327,12 @@ private fun CapturePhase(
                         Spacer(Modifier.height(12.dp))
                         Text("Your voice is turned into text on this phone. No recording is kept or sent.", style = RaType.caption, color = Ink.graphite)
                     } else {
-                        state.committed.dropLast(if (state.partial.isBlank()) 1 else 0).forEach {
+                        // Recording more: the reviewed text, then only this take's words (CaptureViewModel.speakLines).
+                        val (earlier, latest) = CaptureViewModel.speakLines(state)
+                        earlier.forEach {
                             Text(it, style = RaType.dictation, color = Ink.graphite)
                             Spacer(Modifier.height(8.dp))
                         }
-                        val latest = if (state.partial.isNotBlank()) state.partial else state.committed.lastOrNull()
                         if (latest != null) Text(latest, style = RaType.dictation, color = Ink.ink)
                     }
                 }
