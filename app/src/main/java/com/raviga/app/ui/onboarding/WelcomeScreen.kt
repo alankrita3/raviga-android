@@ -61,35 +61,36 @@ import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 import kotlinx.coroutines.launch
 
-/** One step of the flow on Welcome: its picture, a title and one line. */
-private data class Step(val title: String, val body: String, val picture: Picture)
+/** One step of the flow on Welcome: its picture, a title, one line, and an optional small line under it. */
+private data class Step(val title: String, val body: String, val picture: Picture, val small: String? = null)
 
+/**
+ * Her walkthrough decisions (2026-11-04, via the PM): four pages in all, no mention of AI; "Built by AI, quality
+ * checked" and "Ready before you know it" are gone. Her words; don't edit them without her approval.
+ */
 private val steps = listOf(
     Step(
         "Describe it your way",
         "Say it, type it, or upload a document you already have. We turn it into a clear brief you can edit.",
         Picture.Describe,
     ),
-    // R-103: submitting is free; the price is paid once the project is accepted (wording follows the quote's line).
-    Step("See the price first", "You get a quote and a timeline before anything starts. You pay only once we accept it.", Picture.Quote),
-    // Her wording, on attorney advice (2026-11-04, via the PM): no promise of human review of every project.
-    // Don't edit it without her approval.
     Step(
-        "Built by AI, quality checked",
-        "AI builds your project at speed, with automated quality checks and developer oversight when needed.",
-        Picture.AIBuild,
+        "See the price first.",
+        "You pay for the build only once your project is accepted.",
+        Picture.Quote,
+        small = "Your first brief is free. After that, each new brief costs a little.",
     ),
     Step(
-        "Ready before you know it",
-        // R-073, her approved wording (2026-11-02); also shown by Settings > How Raviga works.
-        "A working project, ready for your review, with the code and a handover guide. Go live in a few simple steps, or we'll do it for you.",
+        "Yours from day one.",
+        "Built and running in your own cloud account.",
         Picture.Delivered,
+        small = "We set it up in your AWS account. You own all of it.",
     ),
 )
 
 /**
- * First launch. Page one says what Raviga does; four more show the flow with its pictures (describe,
- * see the price, built by AI and quality checked, ready), as on iOS. Who-builds copy exists only here,
+ * First launch. Page one says what Raviga does; three more show the flow with its pictures (describe, see the
+ * price, yours from day one), as on iOS. Who-builds copy exists only here,
  * in the founder's approved words.
  *
  * R-066 (founder, 2026-10-30): "Get started" goes to step 1; steps 1 to 3 have "Next" and a small "Skip";
@@ -154,11 +155,12 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
                     onClick = { if (page == last) finish() else scope.launch { pager.animateScrollToPage(page + 1) } },
                 )
                 Spacer(Modifier.height(4.dp))
-                // One fixed-height line under the button, so the pages never shift: "Skip" wherever there is a "Next".
+                // One fixed-height line under the button, so the pages never shift: "Skip" wherever there is a "Next";
+                // the company line only on the last page (her walkthrough, 2026-11-04).
                 Box(Modifier.fillMaxWidth().height(36.dp), contentAlignment = Alignment.Center) {
                     if (page in 1 until last) {
                         InlineAction("Skip", onClick = finish, color = Ink.graphite)
-                    } else {
+                    } else if (page == last) {
                         Text(
                             "By ${config.legal.companyName}",
                             style = RaType.caption,
@@ -240,6 +242,10 @@ private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
         Text(step.title, style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(12.dp))
         Text(step.body, style = RaType.body, color = Ink.graphite)
+        step.small?.let {
+            Spacer(Modifier.height(10.dp))
+            Text(it, style = RaType.caption, color = Ink.graphite)
+        }
     }
 }
 
