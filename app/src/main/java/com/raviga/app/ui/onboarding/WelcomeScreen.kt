@@ -72,10 +72,11 @@ private val steps = listOf(
     ),
     // R-103: submitting is free; the price is paid once the project is accepted (wording follows the quote's line).
     Step("See the price first", "You get a quote and a timeline before anything starts. You pay only once we accept it.", Picture.Quote),
-    // The founder's exact wording (iOS 489412c); don't edit it without her approval.
+    // Her wording, on attorney advice (2026-11-04, via the PM): no promise of human review of every project.
+    // Don't edit it without her approval.
     Step(
-        "Built by AI, checked by experts",
-        "AI builds your project at speed. Experts recommend the right tech stack, or use yours, and review the work before it reaches you.",
+        "Built by AI, quality checked",
+        "AI builds your project at speed, with automated quality checks and developer oversight when needed.",
         Picture.AIBuild,
     ),
     Step(
@@ -88,7 +89,7 @@ private val steps = listOf(
 
 /**
  * First launch. Page one says what Raviga does; four more show the flow with its pictures (describe,
- * see the price, built by AI and checked by experts, ready), as on iOS. Who-builds copy exists only here,
+ * see the price, built by AI and quality checked, ready), as on iOS. Who-builds copy exists only here,
  * in the founder's approved words.
  *
  * R-066 (founder, 2026-10-30): "Get started" goes to step 1; steps 1 to 3 have "Next" and a small "Skip";

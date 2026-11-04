@@ -787,8 +787,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             retention = RetentionConfig(deletionGraceDays = 7, exportLinkHours = 24, jobHours = 24, aiResultMinutes = 15),
             limits = LimitsConfig(),
             ai = AiConfig(
-                // Contract v0.9.8: one provider, the Claude API (the approved store wording).
-                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and builds submitted projects, which experts review; deleted within 30 days, longer only if flagged for abuse; never trains on it)"),
+                // One provider, the Claude API; no promise of human review of every project (her attorney, 2026-11-04).
+                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and builds submitted projects with automated quality checks and developer oversight when needed; deleted within 30 days, longer only if flagged for abuse; never trains on it)"),
             ),
             analytics = AnalyticsConfig(
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),

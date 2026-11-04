@@ -11,6 +11,43 @@ Python `len()`, which is how Play counts.
 
 **Raviga** (6)
 
+## Full description as in Play since 2026-11-04 (1,921)
+
+Her decisions that day, PM-approved wording, the same as App Store Connect word for word (iOS 99f5978,
+`Raviga iOS/docs/store/listing.md`, "As in App Store Connect since 2026-11-04"): on attorney advice, no promise of human
+review of every project ("Built by AI, quality checked"; "automated quality checks and developer oversight when needed");
+R-103, no messaging and pay after acceptance. Set by API in one edit; the read-back equals the iOS text. (An earlier
+edit the same evening carried the PM's first list for a few minutes.) The full-description blocks further down are history.
+
+```text
+Raviga turns your idea into working software. Describe it in your own words, approve the quote, and get the code and a handover guide. Go live in a few simple steps, or we'll do it for you. AI does the building, with automated quality checks and developer oversight when needed.
+
+Describe it your way
+Speak, type, or upload a PDF, Word or text file. Speech is turned into text on your phone, and recordings and files never leave it.
+
+A written brief you control
+AI writes a clear project brief from your notes. Edit any section, regenerate it, and go back to earlier versions. Drafts are kept only on your phone.
+
+See the price first
+Get a quote in credits, with a breakdown of the work and a delivery estimate. A typical project is ready in 1 to 2 weeks after payment. Free to submit: you pay only once we accept it.
+
+Built by AI, quality checked
+AI builds your project at speed, with automated quality checks and developer oversight when needed. Follow each step in the app.
+
+Code handed to you
+Your project arrives as a GitHub repository transferred to your account, with a handover guide. Go live in a few simple steps, or we'll do it for you. If something isn't right, tell us in the app and we fix it.
+
+Credits
+Projects are priced in credits (1 credit is US$10), bought in the app in packs of 10, 25 (plus 2 bonus), 50 (plus 6) and 100 (plus 15). Credits don't expire while your account exists. Nothing is charged until we accept your brief, and if we decline it after you paid, the credits come back.
+
+Private by design
+No sign-up and no password. Your drafts stay on your phone. The brief you submit is kept only to build your project, and deleted from our servers when you accept the delivery. Usage analytics runs only if you turn it on.
+
+You need to be 18 or older, and a GitHub account to receive your code.
+Terms: https://legal.ravigaapps.com/terms-of-use
+Privacy: https://legal.ravigaapps.com/privacy-policy
+```
+
 ## Short description (80 max)
 
 Final: B, which pairs with the iOS subtitle she chose, "Custom software, built with AI". Both stores lead with the
