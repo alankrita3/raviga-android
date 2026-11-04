@@ -1,15 +1,15 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-04 17:30.
+The PM reads this file if the session has closed. Updated 2026-11-04 18:15.
 
 ## In flight
 
-- **Nine add-more combinations (her ask via the PM, 2026-11-04): reported, no code until the PM confirms her
-  design.** Within Capture, the review screen adds only the same way after Speak or Type (Upload's "Add more" offers
-  all three); the draft's "+" makes all nine work. Two problems: going back to a tab already used edits its earlier
-  note instead of adding one at the end (order lost), and chains stop at two parts. Proposal (~half a day + device
-  pass): "Add more" on every review screen, leaving a tab ends its note, and the choices screen lists the parts so far.
+- **R-108 on main (57251c0; her decisions via the PM): "Add more" on every review**, Speak / Type / Upload a
+  document; each part its own note at the end (same way twice = new part); tab switch or Back to the choices ends
+  the part; review and choices list the parts in order with type; the draft's "+" reads "Add more". Nine orders +
+  chains tested (debug 251, release 224). **Device pass pending (adb)**, with the scripted dictation for Speak. The
+  QA suite's three "Record more" / "Edit what I typed" rows need the PM's update.
 - **Record more / owed (78885ea):** Record more shows the reviewed text, then only the new take (as iOS de0be16);
   "You need X more" rounds up. "Terms of Use" everywhere (65c09f4).
 
