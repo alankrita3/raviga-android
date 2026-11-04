@@ -636,6 +636,10 @@ class CaptureViewModel(
 
     private suspend fun onWriteFailed(id: String, e: Exception, back: Phase = Phase.TRANSCRIPT) {
         val api = e as? ApiException
+        // v0.11.3: a draft that failed on the server's side gave back its twelfth (or the free brief); show the new count.
+        if (api?.code == ApiException.AI_UNAVAILABLE || api?.code == ApiException.INTERNAL) {
+            container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
+        }
         val legal = api?.detailStrings("missing")?.any { it == "terms" || it == "privacy" } == true
         when {
             // Terms out of date: the app shows them (ConsentInterceptor). AI consent is asked here.

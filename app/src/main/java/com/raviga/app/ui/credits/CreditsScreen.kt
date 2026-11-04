@@ -312,6 +312,8 @@ private fun LedgerRow(entry: LedgerEntry) {
         "bonus" -> "Pack bonus"
         // R-099 (as iOS): the brief's title stays on the phone, so the server's line ("New brief") can't name it.
         "brief" -> "Brief written"
+        // v0.11.3: a draft that failed on the server's side gives its twelfth back.
+        "brief_refund" -> "Brief refunded"
         "charge" -> entry.note.ifBlank { "Project submitted" }
         "refund_project" -> entry.note.ifBlank { "Project refund" }
         "refund_store" -> "Store refund"
@@ -321,6 +323,7 @@ private fun LedgerRow(entry: LedgerEntry) {
     val signed = when {
         // A real minus sign, never a hyphen (as iOS's LedgerFormat).
         entry.type == "brief" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
+        entry.type == "brief_refund" -> "+" + BriefPricing.briefPrice(entry.credits)
         entry.credits > 0.0 -> "+${Money.creditsNumber(entry.credits)}"
         else -> "\u2212${Money.creditsNumber(-entry.credits)}"
     }
