@@ -787,8 +787,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             retention = RetentionConfig(deletionGraceDays = 7, exportLinkHours = 24, jobHours = 24, aiResultMinutes = 15),
             limits = LimitsConfig(),
             ai = AiConfig(
-                // Contract v0.9.4 (R-068): one provider, the Claude API.
-                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and our team builds submitted projects with it; deleted within 30 days, longer only if flagged for abuse; never trains on it)"),
+                // Contract v0.9.8: one provider, the Claude API (the approved store wording).
+                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and builds submitted projects, which experts review; deleted within 30 days, longer only if flagged for abuse; never trains on it)"),
             ),
             analytics = AnalyticsConfig(
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
@@ -799,9 +799,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 companyName = "Raviga Apps Private Limited",
                 // The legal site on Raviga's domain (dev /config since backend 5fe84e0); demo mode opens the same pages.
                 termsUrl = "https://legal.ravigaapps.com/terms-of-use",
-                termsVersion = "2026-10-31",
+                termsVersion = "2026-11-04",
                 privacyUrl = "https://legal.ravigaapps.com/privacy-policy",
-                privacyVersion = "2026-10-31",
+                privacyVersion = "2026-11-04",
                 // One public address (her yes, backend a934b4c, 2026-11-04).
                 grievance = Grievance("support@ravigaapps.com", 15),
                 supportEmail = "support@ravigaapps.com",

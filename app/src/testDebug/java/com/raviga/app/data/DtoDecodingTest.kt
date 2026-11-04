@@ -161,14 +161,22 @@ class DtoDecodingTest {
         assertFalse(config.ai.providers.single().contains("OpenAI"))
         assertEquals("2026-10-31", config.legal.termsVersion)
         assertEquals("2026-10-31", config.legal.privacyVersion)
+    }
+
+    /** Contract v0.10.1 (dev /config 2026-11-04): the demo mirrors dev's current config, one public address included. */
+    @Test
+    fun `the demo matches dev's current config`() {
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v0101.json")!!)
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.ai.providers, demo.ai.providers)
-        assertEquals(config.legal.rightsUrl, demo.legal.rightsUrl)
-        assertEquals(config.legal.termsUrl, demo.legal.termsUrl)
-        assertEquals(config.legal.privacyUrl, demo.legal.privacyUrl)
+        // The URLs differ on purpose: dev serves its draft pages from its own site; the demo opens the public legal domain.
         assertEquals(config.legal.termsVersion, demo.legal.termsVersion)
         assertEquals(config.legal.privacyVersion, demo.legal.privacyVersion)
         assertEquals(config.legal.grievance, demo.legal.grievance)
+        assertEquals(config.legal.supportEmail, demo.legal.supportEmail)
+        assertEquals(config.report, demo.report)
+        assertEquals(config.payment, demo.payment)
+        assertEquals(config.quote.validDays, demo.quote.validDays)
     }
 
     /** R-060 (10-30): Play sells India at the plan prices and the 100 pack at India's cap; dev's /config hints match (backend c5f333b). */
@@ -193,7 +201,7 @@ class DtoDecodingTest {
         }
         assertEquals(null, com.raviga.app.ui.status.StatusCopy.grievanceLine(com.raviga.app.data.api.Grievance(email = "", responseDays = 15)))
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig().legal
-        assertEquals("Questions or complaints: write to membersupport@miraquill.com. We reply within 15 days.",
+        assertEquals("Questions or complaints: write to support@ravigaapps.com. We reply within 15 days.",
             com.raviga.app.ui.status.StatusCopy.grievanceLine(demo.grievance))
     }
 
