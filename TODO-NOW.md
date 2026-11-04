@@ -61,7 +61,8 @@ The PM reads this file if the session has closed. Updated 2026-11-03 19:36.
 - **R-105 done on main (7e1814f; contract v0.10.2, dev): Connect AWS before Pay**, iOS's copy; Make it live and the
   Backend line from delivery.aws (consoleUrl, statusLine). Live on dev (RA-STT9ES). Play listing sentence 7e02f8a
   (read-back equal, 1,957). QA on dev: `team.py fault aws_verified --client <id>` then Check connection, before any pay.
-  **Next:** iOS's new K/L on the OnePlus, on the PM's word.
+  iOS's K/L tables run on the OnePlus (Raviga PM c3e17a6): K 5 pass + 3 not run (K2 server email, K4 server path,
+  K8 airplane mode over wireless adb), L 8/8, I9 pass; 0 fail. **Next:** her screen-by-screen review decisions via the PM.
 - **Store screenshots parked until the product is final (her call, 2026-11-04).** No captures for design meanwhile.
 - **R-103 merged into main (1a13412) for versionCode 9 only; prod stays v0.9.9 until the PM says.** Do not build a
   prod release from main before that. Follow-ups on main: PM parity calls (18cbbfc: step 1 "We check your brief
