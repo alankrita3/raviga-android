@@ -39,6 +39,15 @@ import kotlinx.serialization.json.Json
  * Who this device is (clientId + token), what the backend says about them
  * ([me]) and the server-driven [config]. Registration is lazy and idempotent.
  */
+/**
+ * R-107 (contract v0.11.4): what the sheet's one tap sends: the versions in /config.legal and AI processing, plus
+ * analytics only when the switch changed it. No AI switch any more; withdrawing AI consent is deleting the account.
+ */
+internal fun consentBody(legal: com.raviga.app.data.api.LegalConfig, ai: Boolean, analytics: Boolean?) = ConsentRequest(
+    termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion,
+    aiProcessing = true.takeIf { ai }, analytics = analytics,
+)
+
 class SessionRepository(
     private val api: RavigaApi,
     private val json: Json,
@@ -159,6 +168,8 @@ class SessionRepository(
         if (_config.value.legal.termsVersion.isBlank()) refreshConfig()
         val legal = _config.value.legal
         prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
+        // R-107: the same tap allows AI processing.
+        prefs.setAiAccepted(legal.privacyVersion, allowed = true)
         pendingAnalytics = analytics
         guard.agreed = true
         if (!restoring) completeConsent(ensureRegistered())
@@ -171,10 +182,14 @@ class SessionRepository(
     suspend fun completeConsent(me: Me): Me {
         val legal = _config.value.legal
         val p = prefs.current()
-        if (needsLegal(me, _config.value) && p.agreedTermsVersion == legal.termsVersion && p.agreedPrivacyVersion == legal.privacyVersion) {
-            val consent = apiCall(json) {
-                api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion))
-            }
+        val agreedHere = p.agreedTermsVersion == legal.termsVersion && p.agreedPrivacyVersion == legal.privacyVersion
+        // R-107: AI goes up only when this phone's tap allowed it (never inferred from an older agreement).
+        val aiMissing = p.aiProcessingAllowed && !me.consent.aiGranted
+        if (agreedHere && (needsLegal(me, _config.value) || aiMissing)) {
+            // One PUT, as the sheet's one tap: terms, privacy and AI; analytics only when it changes (v0.11.4).
+            val wanted = pendingAnalytics?.takeIf { it != me.consent.analyticsGranted }
+            val consent = apiCall(json) { api.putConsent(consentBody(ai = p.aiProcessingAllowed, analytics = wanted)) }
+            if (wanted != null) pendingAnalytics = null
             prefs.setTermsAccepted(legal.termsVersion)
             setMe(me.copy(consent = consent))
         }
@@ -186,15 +201,18 @@ class SessionRepository(
         return _me.value ?: me
     }
 
-    suspend fun acceptLegal() {
+    /**
+     * R-107 (contract v0.11.4): the sheet again, after a terms or privacy version bump or on an account without AI
+     * consent. The same body as the first tap: terms, privacy and AI, plus analytics when the switch changed it.
+     */
+    suspend fun acceptLegal(analytics: Boolean? = null) {
         // After a deletion the device starts over without an identity.
         if (!sessionStore.isRegistered) ensureRegistered()
         val legal = _config.value.legal
-        val consent = apiCall(json) {
-            api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion))
-        }
+        val consent = apiCall(json) { api.putConsent(consentBody(ai = true, analytics = analytics)) }
         prefs.setTermsAccepted(legal.termsVersion)
         prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
+        prefs.setAiAccepted(legal.privacyVersion, allowed = true)
         guard.agreed = true
         updateMe { it.copy(consent = consent) }
     }
@@ -207,13 +225,7 @@ class SessionRepository(
         return consent
     }
 
-    suspend fun setAiProcessing(granted: Boolean): ConsentState {
-        ensureAccount()
-        val consent = apiCall(json) { api.putConsent(ConsentRequest(aiProcessing = granted)) }
-        prefs.setAiAccepted(_config.value.legal.privacyVersion, allowed = granted)
-        updateMe { it.copy(consent = consent) }
-        return consent
-    }
+    private fun consentBody(ai: Boolean, analytics: Boolean?) = consentBody(_config.value.legal, ai, analytics)
 
     // ----- Delivery targets (section 12) -----
 

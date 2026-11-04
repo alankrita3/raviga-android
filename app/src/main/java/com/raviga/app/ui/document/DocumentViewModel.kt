@@ -33,7 +33,7 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         val project: Project? = null,
         val loading: Boolean = true,
         val error: String? = null,
-        /** AI processing isn't allowed yet: the screen shows "Before we send this to AI", then the action runs. */
+        /** AI processing isn't allowed yet: the screen shows "Before you start" (R-107), then the action runs. */
         val needsAiConsent: Boolean = false,
         val busyMessage: String? = null,
         val busyProgress: Float? = null,
@@ -222,7 +222,7 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
 
     private var pendingAi: (() -> Unit)? = null
 
-    /** Runs [action] now, or after "Before we send this to AI" when AI processing isn't allowed yet. */
+    /** Runs [action] now, or after "Before you start" (R-107) when AI processing isn't allowed yet. */
     private fun withAiConsent(action: () -> Unit) {
         if (container.session.needsAiConsent(container.session.me.value)) {
             pendingAi = action

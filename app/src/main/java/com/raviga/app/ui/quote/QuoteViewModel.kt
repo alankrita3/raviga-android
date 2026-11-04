@@ -50,7 +50,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         val progress: Float? = null,
         val submitting: Boolean = false,
         val error: String? = null,
-        /** AI processing isn't allowed yet: the screen shows "Before we send this to AI", then the action runs. */
+        /** AI processing isn't allowed yet: the screen shows "Before you start" (R-107), then the action runs. */
         val needsAiConsent: Boolean = false,
         /** Server id of the project once submit landed. */
         val submittedProjectId: String? = null,
@@ -132,7 +132,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
 
     private var pendingAi: (() -> Unit)? = null
 
-    /** Runs [action] now, or after "Before we send this to AI" when AI processing isn't allowed yet. */
+    /** Runs [action] now, or after "Before you start" (R-107) when AI processing isn't allowed yet. */
     private fun withAiConsent(action: () -> Unit) {
         if (container.session.needsAiConsent(container.session.me.value)) {
             pendingAi = action
