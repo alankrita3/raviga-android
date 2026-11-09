@@ -1,23 +1,19 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-09 09:30.
+The PM reads this file if the session has closed. Updated 2026-11-09 14:00.
 
 ## In flight
 
-- **R-109, the new delivery model (her go 2026-11-09, via the PM; `~/Documents/Raviga PM/DELIVERY-MODEL.md`).
-  Waiting on backend's contract v0.12.0 (dev is v0.11.4) and iOS's copy (PM-approved, mirrored verbatim).** No
-  source, no GitHub, no AWS before pay. Plan (estimate ~2 days of code and tests once both land, then a device pass):
-  - Dtos + DemoApi: `project.hasBackend`, `delivery.demo`, `delivery.changes[]`, `handover`, /config.statusLines,
-    the two store emails; remove aws_required at pay and the source delivery.
-  - Pay: no AWS gate (undo R-105's gate); after payment the building line; collect the Apple ID and Google emails
-    (editable later in the project).
-  - Status: Building and QA → "Demo ready" with TestFlight / Play buttons → approve, "Something's wrong" (existing
-    report) or "Request a change" (new: description ≤1000 → change brief + quote → pay → building again).
-  - Make it live rewrite (GoLiveLogic/Screen, DeliveryScreen): store accounts, invite Raviga (copyable user email),
-    AWS only with a backend, we publish (per store), live. No "Your code" tiles.
-  - Welcome page 4, Settings "AWS account" row only for backend projects, Play listing paragraph (iOS drafts).
-  - Tests: GoLiveLogicTest rewrite, pay/status states, change-request flow, DTO fixtures from dev.
+- **R-109, the new delivery model: built on branch r-109 (c3d4bbe), pushed, not merged.** Contract v0.12.0 shapes
+  (backend d1d52eb; dev lands in ~1.5 days) and the PM-approved copy (iOS docs/R-109-copy.md A to H, her final
+  Welcome page 4). No AWS before pay; invite emails after paying; Demo ready (TestFlight / Play); change requests
+  (price, pay, rebuild); Make it live rewritten (store accounts, invite Raviga, AWS only with a backend, we publish,
+  live); status `live`. DemoApi mirrors it. Tests debug 262, release 233; lint clean.
+  - **Next:** when backend says dev is on v0.12.0: a live check on dev (device pass when adb is back), then merge
+    to main. Play listing H: after iOS records its App Store text, word for word.
+  - **Asked the PM:** "accept the delivery" stays in three lines (her R-066 promise, the status footer, the quote's
+    privacy promise) until she says "approve your app"; small additions not in the copy are listed in the report.
 
 - **R-108 on main (57251c0; her decisions via the PM): "Add more" on every review**, Speak / Type / Upload a
   document; each part its own note at the end (same way twice = new part); tab switch or Back to the choices ends
