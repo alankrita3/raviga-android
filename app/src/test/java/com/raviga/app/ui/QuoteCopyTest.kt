@@ -27,8 +27,14 @@ class QuoteCopyTest {
     @Test fun submitIsFreeAndSaysSo() {
         assertEquals("Free to submit. You pay only once we accept it.", com.raviga.app.ui.quote.FREE_TO_SUBMIT)
         val steps = com.raviga.app.ui.quote.nextSteps()
-        assertEquals(4, steps.size)
-        org.junit.Assert.assertTrue(steps.none { "revision" in it || "comments" in it })
+        // R-109 (B, PM-approved as iOS): the demo on the phone, then we publish it; no code, no AWS before paying.
+        assertEquals(5, steps.size)
+        assertEquals(
+            "You get the app on your phone to try, through TestFlight and Google Play. Approve it, tell us what's wrong, or ask for a change.",
+            steps[3],
+        )
+        assertEquals("Once you approve it, we publish it to your own App Store and Google Play accounts.", steps[4])
+        org.junit.Assert.assertTrue(steps.none { "revision" in it || "comments" in it || "code" in it || "AWS" in it })
     }
 
     @Test fun timelineReadsNaturally() {

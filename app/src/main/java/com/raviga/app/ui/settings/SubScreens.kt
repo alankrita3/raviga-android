@@ -101,11 +101,11 @@ fun DeliveryTargetsScreen(nav: NavController) {
     val state by vm.state.collectAsStateWithLifecycle()
     val aws = state.me?.deliveryTargets?.aws
 
-    // R-106 (contract v0.11.0; PM-approved copy as iOS): no GitHub. The client's AWS account is the only target.
+    // R-109 (her delivery model): only a project with a backend runs in the client's AWS, after approval.
     ScreenScaffold(topBar = { RaTopBar(title = "AWS account", onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             Text(
-                "Your project is built, delivered and run here.", style = RaType.body, color = Ink.graphite,
+                com.raviga.app.ui.status.DeliveryCopy.AWS_LINE, style = RaType.body, color = Ink.graphite,
                 modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 8.dp, bottom = 16.dp),
             )
             Hairline(Modifier.padding(horizontal = Ra.gutter))
@@ -118,10 +118,6 @@ fun DeliveryTargetsScreen(nav: NavController) {
                 },
                 subtitleColor = if (aws?.verified == true) Ink.moss else Ink.graphite,
                 onClick = { nav.navigate(Routes.CONNECT_AWS) },
-            )
-            Text(
-                com.raviga.app.ui.quote.AWS_CAPTION, style = RaType.caption, color = Ink.graphite,
-                modifier = Modifier.padding(horizontal = Ra.gutter).padding(bottom = 16.dp),
             )
         }
     }

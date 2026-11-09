@@ -80,17 +80,18 @@ private val steps = listOf(
         Picture.Quote,
         small = "Your first brief is free. After that, each new brief costs a little.",
     ),
+    // R-109 (her final page 4, via the PM 2026-11-09): no Apple or Google names on the Welcome pages.
     Step(
-        "Yours from day one.",
-        "Built and running in your own cloud account.",
+        "We make it live.",
+        "You try the real app on your phone. When you're happy, we publish it under your name.",
         Picture.Delivered,
-        small = "We set it up in your AWS account. You own all of it.",
+        small = "Your app, in your own store accounts.",
     ),
 )
 
 /**
  * First launch. Page one says what Raviga does; three more show the flow with its pictures (describe, see the
- * price, yours from day one), as on iOS. Who-builds copy exists only here,
+ * price, we make it live), as on iOS. Who-builds copy exists only here,
  * in the founder's approved words.
  *
  * R-066 (founder, 2026-10-30): "Get started" goes to step 1; steps 1 to 3 have "Next" and a small "Skip";
@@ -219,7 +220,7 @@ private fun IntroWords() {
         ChipRows(
             listOf(
                 listOf(ChipSpec("Pay only when it's a go", dot = Ink.marigold), ChipSpec("Super fast delivery", icon = Icons.Outlined.Bolt)),
-                listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Code handed to you", dot = Ink.blue)),
+                listOf(ChipSpec("Working project delivered", icon = Icons.Outlined.Check), ChipSpec("Published for you", dot = Ink.blue)),
             ),
         )
     }

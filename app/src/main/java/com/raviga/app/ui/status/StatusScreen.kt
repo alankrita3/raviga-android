@@ -78,17 +78,9 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     ProjectStatus.SUBMITTED -> DestructiveButton("Cancel project", enabled = !state.busy, onClick = { confirmCancel = true })
                     // R-103 (contract 11, iOS's labels): pay; a new quote first when the price expired; Buy credits when short.
                     ProjectStatus.APPROVED -> {
+                        // R-109 (contract v0.12.0): no AWS before paying; Raviga builds on its own side.
                         when {
                             !state.awaitingPayment -> Unit
-                            // R-105 (iOS's copy): built in the client's own AWS; connect it before paying.
-                            state.needsAws -> {
-                                Text(
-                                    AWS_BEFORE_PAY, style = RaType.caption, color = Ink.graphite,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                                )
-                                PrimaryButton("Connect AWS to start", onClick = { nav.navigate(Routes.CONNECT_AWS) })
-                            }
                             state.priceExpired -> PrimaryButton("Get a new quote", loading = state.quoting, enabled = !state.busy, onClick = { vm.requestNewQuote() })
                             state.shortBy > 0.0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
                             else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { vm.pay() })
@@ -96,7 +88,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                         Spacer(Modifier.height(4.dp))
                         DestructiveButton("Cancel project", enabled = !state.busy && !state.quoting, onClick = { confirmCancel = true })
                     }
-                    ProjectStatus.DELIVERED, ProjectStatus.REVISION_REQUESTED, ProjectStatus.ACCEPTED ->
+                    ProjectStatus.DELIVERED, ProjectStatus.REVISION_REQUESTED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE ->
                         PrimaryButton("View delivery", onClick = { nav.openProjectScreen(Routes.delivery(projectId)) })
                     else -> Spacer(Modifier.height(0.dp))
                 }
@@ -116,7 +108,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 Text(StatusCopy.projectTitle(project, container.drafts.get(project.id)?.displayTitle), style = RaType.title, color = Ink.ink)
                 Spacer(Modifier.height(12.dp))
                 // QA R1 (as iOS fc9c380): at the large text sizes the chip and the ref stack, nothing cut or broken mid-word.
-                val done = project.status == ProjectStatus.DELIVERED || project.status == ProjectStatus.ACCEPTED
+                val done = project.status in setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE)
                 val chip: @Composable () -> Unit = {
                     Chip(StatusCopy.detailTitle(project.status), tone = if (done) ChipTone.Blue else ChipTone.Plain, dot = StatusCopy.markColor(project.status))
                 }
@@ -144,6 +136,18 @@ fun StatusScreen(nav: NavController, projectId: String) {
                 if (state.shortBy > 0.0) {
                     Spacer(Modifier.height(12.dp))
                     Text("You have ${Money.credits(state.balance)}. You need ${Money.creditsOwed(state.shortBy)} more.", style = RaType.body, color = Ink.ink)
+                }
+                // R-109 (C, E): after paying, what happens next; then where the test invites go, until they're out.
+                if (project.status == ProjectStatus.BUILDING) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        if (state.openChange?.status == com.raviga.app.data.api.Change.PAID) DeliveryCopy.CHANGE_BUILDING else DeliveryCopy.BUILDING_LINE,
+                        style = RaType.secondary, color = Ink.graphite,
+                    )
+                }
+                if (state.invitesEditable) {
+                    Spacer(Modifier.height(Ra.sectionGap))
+                    InviteEmails(state, onSave = { apple, google -> vm.saveStoreEmails(apple, google) })
                 }
 
                 project.timeline?.takeIf { it.milestones.isNotEmpty() }?.let { tl ->
@@ -193,7 +197,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
 /** Building while the team works on it, the parcel once it's delivered; no picture for the rest. */
 private fun headerPicture(status: String): Picture? = when (status) {
     ProjectStatus.SUBMITTED, ProjectStatus.APPROVED, ProjectStatus.BUILDING, ProjectStatus.REVISION_REQUESTED -> Picture.Building
-    ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED -> Picture.Delivered
+    ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE -> Picture.Delivered
     else -> null
 }
 
@@ -204,5 +208,46 @@ private fun headerCaption(project: com.raviga.app.data.api.Project): String = li
     project.submission?.creditsCharged?.takeIf { it > 0 }?.let { Money.credits(it) },
 ).joinToString(", ")
 
-/** R-105: above "Connect AWS to start" (PM-approved, as iOS). */
-internal const val AWS_BEFORE_PAY = "We build your project in your own AWS account. Connect it once, then pay to start building."
+/**
+ * R-109 (C): "Where to send your test invites": the Apple ID for TestFlight and the Google account for the Play test,
+ * only for the apps the project builds. Editable until the invites go out.
+ */
+@Composable
+private fun InviteEmails(state: StatusViewModel.State, onSave: (String?, String?) -> Unit) {
+    var apple by androidx.compose.runtime.saveable.rememberSaveable(state.storeEmails.apple) { mutableStateOf(state.storeEmails.apple.orEmpty()) }
+    var google by androidx.compose.runtime.saveable.rememberSaveable(state.storeEmails.google) { mutableStateOf(state.storeEmails.google.orEmpty()) }
+    var appleError by remember { mutableStateOf<String?>(null) }
+    var googleError by remember { mutableStateOf<String?>(null) }
+    val email = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
+    com.raviga.app.ui.components.SectionHeading(DeliveryCopy.INVITES_HEADING)
+    Spacer(Modifier.height(12.dp))
+    if (state.wantsApple) {
+        com.raviga.app.ui.components.RaTextField(
+            value = apple, onValueChange = { apple = it; appleError = null }, label = DeliveryCopy.APPLE_EMAIL,
+            singleLine = true, keyboardOptions = email, isError = appleError != null, enabled = !state.busy,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(appleError ?: DeliveryCopy.APPLE_EMAIL_HINT, style = RaType.caption, color = if (appleError != null) Ink.brick else Ink.graphite)
+        Spacer(Modifier.height(12.dp))
+    }
+    if (state.wantsGoogle) {
+        com.raviga.app.ui.components.RaTextField(
+            value = google, onValueChange = { google = it; googleError = null }, label = DeliveryCopy.GOOGLE_EMAIL,
+            singleLine = true, keyboardOptions = email, isError = googleError != null, enabled = !state.busy,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(googleError ?: DeliveryCopy.GOOGLE_EMAIL_HINT, style = RaType.caption, color = if (googleError != null) Ink.brick else Ink.graphite)
+        Spacer(Modifier.height(12.dp))
+    }
+    com.raviga.app.ui.components.SecondaryButton(DeliveryCopy.SAVE, enabled = !state.busy, onClick = {
+        appleError = if (state.wantsApple) DeliveryCopy.emailProblem(apple) else null
+        googleError = if (state.wantsGoogle) DeliveryCopy.emailProblem(google) else null
+        if (appleError == null && googleError == null) {
+            onSave(apple.trim().takeIf { state.wantsApple }, google.trim().takeIf { state.wantsGoogle })
+        }
+    })
+    if (state.emailsSaved) {
+        Spacer(Modifier.height(8.dp))
+        Text(DeliveryCopy.SAVED, style = RaType.caption, color = Ink.moss)
+    }
+}

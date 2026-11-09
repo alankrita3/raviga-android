@@ -14,7 +14,7 @@ object StatusCopy {
         ProjectStatus.DRAFT, ProjectStatus.CANCELLED -> Ink.ash
         ProjectStatus.SUBMITTED, ProjectStatus.REVISION_REQUESTED -> Ink.amber
         ProjectStatus.APPROVED, ProjectStatus.BUILDING -> Ink.blue
-        ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED -> Ink.moss
+        ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE -> Ink.moss
         ProjectStatus.REJECTED -> Ink.brick
         else -> Ink.ash
     }
@@ -25,9 +25,11 @@ object StatusCopy {
         ProjectStatus.SUBMITTED -> "In review"
         ProjectStatus.APPROVED -> "Accepted"
         ProjectStatus.BUILDING -> "In build"
-        ProjectStatus.DELIVERED -> "Delivered"
+        // v0.12.0 (R-109): the contract's milestone words; a demo, not a delivery of code.
+        ProjectStatus.DELIVERED -> "Demo ready"
         ProjectStatus.REVISION_REQUESTED -> "Being fixed"
         ProjectStatus.ACCEPTED -> "Approved by you"
+        ProjectStatus.LIVE -> "Live"
         ProjectStatus.REJECTED -> "Not accepted"
         ProjectStatus.CANCELLED -> "Cancelled"
         else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
@@ -54,7 +56,9 @@ object StatusCopy {
     fun pushLine(status: String): String = when (status) {
         ProjectStatus.APPROVED -> "Accepted. Pay to start building."
         ProjectStatus.BUILDING -> "Paid. We're building it."
-        ProjectStatus.DELIVERED -> "Delivered. Check it, then approve it or tell us what's wrong."
+        // The server's own lines (v0.12.0), for a push that came without a body.
+        ProjectStatus.DELIVERED -> "Demo ready: check your invites"
+        ProjectStatus.LIVE -> "Live in your stores."
         ProjectStatus.REVISION_REQUESTED -> "We're fixing what you reported."
         ProjectStatus.REJECTED -> "Not accepted."
         ProjectStatus.CANCELLED -> "Cancelled."

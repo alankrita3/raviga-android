@@ -224,31 +224,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             NumberedSteps(nextSteps())
             Spacer(Modifier.height(20.dp))
 
-            Hairline()
-            Spacer(Modifier.height(20.dp))
-            Text("Where to deliver", style = RaType.bodyMedium, color = Ink.ink)
-            Spacer(Modifier.height(14.dp))
-            // R-106 (contract v0.11.0): no GitHub; the AWS account is asked at Pay (R-105).
-            val aws = state.me?.deliveryTargets?.aws
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("AWS account", style = RaType.secondary, color = Ink.graphite)
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        when {
-                            aws == null -> "Not connected yet"
-                            aws.verified -> "Connected, ${aws.accountId}"
-                            else -> "${aws.accountId}, not verified yet"
-                        },
-                        style = RaType.body,
-                        color = if (aws?.verified == true) Ink.moss else Ink.ink,
-                    )
-                }
-                InlineAction(if (aws == null) "Connect AWS" else "Manage", onClick = { nav.navigate(Routes.CONNECT_AWS) })
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(AWS_CAPTION, style = RaType.caption, color = Ink.graphite)
-            Spacer(Modifier.height(20.dp))
+            // R-109 (B): nothing is asked before paying; "Where to deliver" is gone.
             PrivacyPromise()
             // R-100: the price's date, small and grey, at the end of the quote (as iOS a5f8fc9).
             state.priceLine?.let {
@@ -330,12 +306,13 @@ internal fun timelineText(minWeeks: Int, maxWeeks: Int, workingDays: Int): Strin
 /** R-103: above Submit (the PM's final copy, as iOS). */
 internal const val FREE_TO_SUBMIT = "Free to submit. You pay only once we accept it."
 
-/** "What happens next", contract v0.10.0 (R-103): submit free, pay after acceptance, report instead of revisions. */
+/** "What happens next", contract v0.12.0 (R-109, B): the demo on the phone, then we publish it to the client's stores. */
 internal fun nextSteps(): List<String> = listOf(
     "We check your brief against what we build.",
     "Once it's accepted, you pay the quoted credits and we start building.",
     "We build and test it. This screen shows each step.",
-    "Your code and handover guide arrive in your AWS account, with the app running there. Approve it, or tell us what's wrong and we fix it.",
+    "You get the app on your phone to try, through TestFlight and Google Play. Approve it, tell us what's wrong, or ask for a change.",
+    "Once you approve it, we publish it to your own App Store and Google Play accounts.",
 )
 
 /**
@@ -382,5 +359,3 @@ private fun LockedCaption(text: String) {
     }
 }
 
-/** R-105 (iOS's copy): under the AWS row on the quote and in Delivery targets. */
-internal const val AWS_CAPTION = "Your project is built and runs in your AWS account. You connect it before paying."

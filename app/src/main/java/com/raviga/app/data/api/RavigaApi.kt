@@ -113,6 +113,29 @@ interface RavigaApi {
     @POST("projects/{id}/report")
     suspend fun report(@Path("id") id: String, @Body body: ReportRequest): Project
 
+    /** v0.12.0 (R-109): a change request; the AI briefs and prices it as a job (type `change`). */
+    @POST("projects/{id}/changes")
+    suspend fun requestChange(@Path("id") id: String, @Body body: ChangeRequest): ChangeStarted
+
+    @POST("projects/{id}/changes/{changeId}/pay")
+    suspend fun payChange(
+        @Path("id") id: String,
+        @Path("changeId") changeId: String,
+        @Header("Idempotency-Key") idempotencyKey: String,
+        @Body body: Empty = Empty(),
+    ): Project
+
+    /** v0.12.0: the client invited Raviga's publishing user in that store. */
+    @POST("projects/{id}/handover/invited")
+    suspend fun handoverInvited(@Path("id") id: String, @Body body: HandoverInvitedRequest): Project
+
+    // Store-account emails (v0.12.0, R-109): where the TestFlight and Play test invites go.
+    @GET("me/store-emails")
+    suspend fun storeEmails(): StoreEmails
+
+    @PUT("me/store-emails")
+    suspend fun putStoreEmails(@Body body: StoreEmails): StoreEmails
+
     // Delivery targets
     @GET("me/delivery-targets")
     suspend fun deliveryTargets(): DeliveryTargets

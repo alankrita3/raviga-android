@@ -60,6 +60,9 @@ fun DescribeChooserSheet(projectTitle: String?, onPick: (String) -> Unit, onDism
     }
 }
 
+/** R-109: Raviga builds native iPhone and Android apps only (the server declines anything else at the quote). */
+const val NATIVE_ONLY = "Raviga builds native iPhone and Android apps."
+
 /** The three choices; also shown on Capture after "Add more", with the [parts] so far above them (R-108). */
 @Composable
 fun DescribeChoices(
@@ -101,6 +104,9 @@ fun DescribeChoices(
         Choice(Picture.Type, "Type", "Write or paste a description.", enabled) { onPick(DescribeWith.TYPE) }
         Spacer(Modifier.height(Ra.tileGap))
         Choice(Picture.Upload, "Upload a document", "A PDF, Word or text file you already have.", enabled) { onPick(DescribeWith.UPLOAD) }
+        // R-109 (the PM's answer 3): what Raviga builds, small and grey.
+        Spacer(Modifier.height(12.dp))
+        Text(NATIVE_ONLY, style = RaType.caption, color = Ink.graphite)
         Spacer(Modifier.height(20.dp))
         PrivacyNote(
             "Your recordings and files never leave your phone. Drafts are kept only on this phone.",

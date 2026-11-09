@@ -142,7 +142,8 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
             }
             Block(
                 "What we collect",
-                "The brief you submit for us to build, and any delivery reports you send. A random id for this phone. Your credit purchases and balance. Your AWS account id, so we can build your project there and deliver it.",
+                // R-109 (G, PM-approved as iOS).
+                "The brief you submit for us to build, and any reports or change requests you send. A random id for this phone. Your credit purchases and balance. The Apple ID and Google emails you give for test invites, and your AWS account id if your app has a backend.",
             )
             Block("Why", "To write your brief, quote it, build it and deliver it. We do not sell data or show ads.")
             Block("What we don't keep", StatusCopy.LOCAL_FIRST_PROMISE)

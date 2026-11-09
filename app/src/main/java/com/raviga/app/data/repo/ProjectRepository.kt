@@ -40,6 +40,9 @@ class ProjectRepository(
     private val listGate = RefreshGate<List<ProjectSummary>>()
 
     fun project(id: String): Flow<Project?> = _projects.map { it[id] }.distinctUntilChanged()
+
+    /** Every project this phone holds in full (opened, or cached from before), by id. */
+    val all: StateFlow<Map<String, Project>> = _projects.asStateFlow()
     fun cachedProject(id: String): Project? = _projects.value[id]
 
     suspend fun warmFromCache() {
@@ -108,6 +111,29 @@ class ProjectRepository(
      */
     suspend fun pay(id: String, idempotencyKey: String, quoteToken: String? = null): Project =
         store(apiCall(json) { api.pay(id, idempotencyKey, PayRequest(quoteToken)) })
+
+    /**
+     * v0.12.0 (R-109): asks for a change; the AI writes a short change brief and prices it (a `change` job). Returns
+     * the priced change; the project is refreshed so its `delivery.changes` has it too.
+     */
+    suspend fun requestChange(id: String, description: String, jobs: com.raviga.app.data.api.JobRunner, onProgress: (com.raviga.app.data.api.JobState) -> Unit = {}): com.raviga.app.data.api.Change {
+        val started = apiCall(json) { api.requestChange(id, com.raviga.app.data.api.ChangeRequest(description.trim())) }
+        runCatching { refresh(id) }
+        val change = try {
+            jobs.await(started.job, com.raviga.app.data.api.ChangeResult.serializer(), onProgress).change
+        } finally {
+            runCatching { refresh(id) }
+        }
+        return change
+    }
+
+    /** v0.12.0: pays a priced change; the project goes back to building. [idempotencyKey] is reused on retry. */
+    suspend fun payChange(id: String, changeId: String, idempotencyKey: String): Project =
+        store(apiCall(json) { api.payChange(id, changeId, idempotencyKey) })
+
+    /** v0.12.0: "I've sent the invites" for one store ("apple" | "play"). */
+    suspend fun handoverInvited(id: String, store: String): Project =
+        store(apiCall(json) { api.handoverInvited(id, com.raviga.app.data.api.HandoverInvitedRequest(store)) })
 
     suspend fun cancel(id: String): Project = store(apiCall(json) { api.cancelProject(id) })
 

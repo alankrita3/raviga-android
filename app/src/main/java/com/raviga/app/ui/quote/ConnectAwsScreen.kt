@@ -151,9 +151,9 @@ fun ConnectAwsScreen(nav: NavController) {
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = Ra.gutter)) {
             Spacer(Modifier.height(8.dp))
-            // R-105 (iOS's copy, PM-approved): the project is built and runs in the client's AWS.
+            // R-109 (G, PM-approved): only an app's backend runs in the client's AWS.
             Text(
-                "We build and run your project in your own AWS account, so everything is yours from day one. Connecting adds one role that only Raviga can use, and you can remove it any time.",
+                com.raviga.app.ui.status.DeliveryCopy.CONNECT_AWS_INTRO,
                 style = RaType.body, color = Ink.ink,
             )
             if (!state.saved) {
