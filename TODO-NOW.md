@@ -5,15 +5,16 @@ The PM reads this file if the session has closed. Updated 2026-11-09 14:00.
 
 ## In flight
 
-- **R-109, the new delivery model: built on branch r-109 (c3d4bbe), pushed, not merged.** Contract v0.12.0 shapes
+- **R-109, the new delivery model: built on branch r-109 (c3d4bbe, 296f539), pushed, not merged.** Contract v0.12.0 shapes
   (backend d1d52eb; dev lands in ~1.5 days) and the PM-approved copy (iOS docs/R-109-copy.md A to H, her final
   Welcome page 4). No AWS before pay; invite emails after paying; Demo ready (TestFlight / Play); change requests
   (price, pay, rebuild); Make it live rewritten (store accounts, invite Raviga, AWS only with a backend, we publish,
   live); status `live`. DemoApi mirrors it. Tests debug 262, release 233; lint clean.
   - **Next:** when backend says dev is on v0.12.0: a live check on dev (device pass when adb is back), then merge
     to main. Play listing H: after iOS records its App Store text, word for word.
-  - **Asked the PM:** "accept the delivery" stays in three lines (her R-066 promise, the status footer, the quote's
-    privacy promise) until she says "approve your app"; small additions not in the copy are listed in the report.
+  - **PM decided (2026-11-09):** "approve your app" in the three lines (296f539, iOS told to match); the four small
+    additions (chips "Demo ready"/"Live", store captions in "We publish", F3's line on Settings AWS, "Pay N credits"
+    for a change) approved as they are.
 
 - **R-108 on main (57251c0; her decisions via the PM): "Add more" on every review**, Speak / Type / Upload a
   document; each part its own note at the end (same way twice = new part); tab switch or Back to the choices ends
