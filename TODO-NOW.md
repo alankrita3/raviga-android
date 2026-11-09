@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-09 16:15.
+The PM reads this file if the session has closed. Updated 2026-11-09 16:45.
 
 ## In flight
 
@@ -11,7 +11,9 @@ The PM reads this file if the session has closed. Updated 2026-11-09 16:15.
   (TestFlight + Play), change priced 3 credits → paid → redelivered, approved, Make it live (invites, AWS via the
   aws_verified switch, publish, backend-deployed) → live. Native-only decline seen at a quote. Tests debug 262,
   release 233.
-  - **Waiting:** iOS's recorded App Store text for listing H, then Play's listing word for word (by API, read back).
+  - Play listing H done (226bdfe): full description = App Store Connect's, 2,080, read back. **Waiting on the PM:**
+    words for Play's short description (77, still "…get the code."). Play App access ("Sign in details") was never
+    declared, so no old AWS line there; declaring it is a Console click that needs her typed yes.
 - **Device pass 2026-11-09 (USB): R-107 re-ask, R-108 add-more order, "Brief refunded" all passed.** QA account
   cl_01m6ehvcsp now at 176.83 credits; a "Refund check" draft and two older drafts stay on the phone.
 
