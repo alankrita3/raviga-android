@@ -6,6 +6,7 @@ import com.raviga.app.data.api.Job
 import com.raviga.app.data.api.JobEnvelope
 import com.raviga.app.data.api.Me
 import com.raviga.app.data.api.Project
+import com.raviga.app.data.api.ProjectStatus
 import com.raviga.app.data.api.ProjectsResponse
 import com.raviga.app.data.api.Quote
 import com.raviga.app.data.api.RegisterDeviceResponse
@@ -196,6 +197,39 @@ class DtoDecodingTest {
         assertEquals(config.credits.freeBriefs, demo.credits.freeBriefs)
     }
 
+    /** Contract v0.12.0 (R-109): the new /config parts decode (statusLines' nested maps are not read), and the demo matches. */
+    @Test
+    fun `v0120 config has the publishing user and the handover, and the demo matches`() {
+        val raw = """{"delivery":{"awsTrustedAccountId":"521901166785","awsRoleName":"RavigaDeployRole","awsRegion":"ap-south-1","publishingEmail":"publishing@ravigaapps.com"},
+            "handover":{"appleRole":"App Manager, with access to Certificates, Identifiers & Profiles",
+              "playPermissions":["Release to production, exclude devices, and use Play App Signing","Release apps to testing tracks","Manage testing tracks and edit tester lists","Manage store presence","Manage policy declarations","View app information (read-only)"],
+              "guides":{"appleEnroll":"https://developer.apple.com/programs/enroll/","playSignup":"https://support.google.com/googleplay/android-developer/answer/6112435"}},
+            "statusLines":{"delivered":"Demo ready: check your invites","change":{"pricing":"Change requested"},"store":{"pending":"Waiting for your invite"}}}"""
+        val config = json.decodeFromString(AppConfig.serializer(), raw)
+        assertEquals("publishing@ravigaapps.com", config.delivery.publishingEmail)
+        assertEquals(6, config.handover.playPermissions.size)
+        val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
+        assertEquals(config.delivery.publishingEmail, demo.delivery.publishingEmail)
+        assertEquals(config.handover, demo.handover)
+    }
+
+    /** v0.12.0: a project carries its apps and whether it has a backend; `live` is a status. */
+    @Test
+    fun `v0120 project decodes`() {
+        val p = json.decodeFromString(
+            Project.serializer(),
+            """{"id":"pr_1","ref":"RA-A1B2C3","title":"Tiffin","status":"live","statusLine":"Live in your stores.","apps":["ios","android"],"hasBackend":true,
+               "timeline":{"estimatedWorkingDays":10,"estimatedDeliveryDate":null,"milestones":[{"id":"demo","label":"Demo ready","at":null,"state":"done"},{"id":"live","label":"Live","at":null,"state":"current"}]},
+               "delivery":{"deliveredAt":"a","acceptBy":"b","demo":null,"changes":[],"handover":{"stores":{"apple":"published","play":"published"},"storeLines":{"apple":"Published","play":"Published"},"storeUrls":{"apple":"https://apps.apple.com/app/id1","play":"https://play.google.com/store/apps/details?id=x"},"backend":"deployed","awsAccountId":"123456789012","consoleUrl":"https://console","statusLine":"Live in your stores."}}}""",
+        )
+        assertEquals(ProjectStatus.LIVE, p.status)
+        assertTrue(p.hasBackend)
+        assertEquals(listOf("ios", "android"), p.apps)
+        assertEquals("deployed", p.delivery?.handover?.backend)
+        assertTrue(ProjectStatus.isTerminal(p.status))
+        assertFalse("approval starts Make it live", ProjectStatus.isTerminal(ProjectStatus.ACCEPTED))
+    }
+
     /** R-060 (10-30): Play sells India at the plan prices and the 100 pack at India's cap; dev's /config hints match (backend c5f333b). */
     @Test
     fun `demo rupee hints match Play's India prices`() {
@@ -225,8 +259,9 @@ class DtoDecodingTest {
     /** R-066: her words for "What we don't keep", on the consent screens and Privacy and data. */
     @Test
     fun `the local-first promise is her R-066 wording`() {
+        // R-109 (the PM, 2026-11-09): only the verb changed, "approve your app", as the store listing.
         assertEquals(
-            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
+            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you approve your app.",
             com.raviga.app.ui.status.StatusCopy.LOCAL_FIRST_PROMISE,
         )
     }

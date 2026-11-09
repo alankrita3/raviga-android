@@ -19,9 +19,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Shared by the status and delivery screens: one project and the client's actions on it. Contract v0.10.0 (R-103):
- * no messaging; an accepted project is paid here (a new quote first when its price expired); a delivery is approved or
- * reported.
+ * Shared by the status, delivery and Make it live screens: one project and the client's actions on it. Contract v0.10.0
+ * (R-103): no messaging; an accepted project is paid here (a new quote first when its price expired). v0.12.0 (R-109):
+ * no AWS before paying; the test invites' emails; a demo is approved, reported or changed (a paid change request);
+ * after approval, Make it live.
  */
 class StatusViewModel(
     private val container: AppContainer,
@@ -42,10 +43,17 @@ class StatusViewModel(
         /** The server said the price expired (409 quote_stale, expired) before the phone's clock did. */
         val expiredByServer: Boolean = false,
         val clock: Long = System.currentTimeMillis(),
-        /** The account's AWS role is verified (GET /me). */
+        /** v0.12.0: where the test invites go (`me.storeEmails`), and whether the AWS role is verified (Make it live). */
+        val storeEmails: com.raviga.app.data.api.StoreEmails = com.raviga.app.data.api.StoreEmails(),
         val awsVerified: Boolean = false,
-        /** The server said 409 aws_required before the phone knew. */
-        val awsRequiredByServer: Boolean = false,
+        /** "Saved. You can change these until the invites go out." after the invite emails were saved. */
+        val emailsSaved: Boolean = false,
+        /** Pricing a change request (the AI's job), with its progress line. */
+        val pricing: Boolean = false,
+        /** A change request's own error (its sheet shows it), apart from the screen's. */
+        val changeError: String? = null,
+        /** "Thanks. We'll check and start publishing." once "I've sent the invites" went through. */
+        val invitesSent: Boolean = false,
     ) {
         /** Accepted and not paid yet: the client pays here. */
         val awaitingPayment: Boolean get() = project?.status == ProjectStatus.APPROVED && project.payment == null
@@ -55,14 +63,26 @@ class StatusViewModel(
         val priceExpired: Boolean
             get() = newQuote == null && (expiredByServer ||
                 project?.quote?.expiresAt?.let { Time.parse(it)?.toEpochMilli() }?.let { it <= clock } == true)
-        /**
-         * v0.10.2 (R-105, her decision): every project is built in the client's own AWS, so paying waits for a verified
-         * role: "Connect AWS to start" until then (iOS's copy).
-         */
-        val needsAws: Boolean
-            get() = awaitingPayment && (awsRequiredByServer || (config.delivery.awsRequiredToPay && !awsVerified))
         /** Credits short of the price (iOS's line: "You have 10 credits. You need 20 more."). */
-        val shortBy: Double get() = if (!awaitingPayment || priceExpired || needsAws) 0.0 else (price - balance).coerceAtLeast(0.0)
+        val shortBy: Double get() = if (!awaitingPayment || priceExpired) 0.0 else (price - balance).coerceAtLeast(0.0)
+
+        /** v0.12.0: the change request still open (pricing, quoted or paid); at most one at a time. */
+        val openChange: com.raviga.app.data.api.Change? get() = project?.delivery?.openChange
+        /** A priced change waiting to be paid. */
+        val quotedChange: com.raviga.app.data.api.Change?
+            get() = openChange?.takeIf { it.status == com.raviga.app.data.api.Change.QUOTED }
+        /** Credits short of the priced change. */
+        val changeShortBy: Double
+            get() = quotedChange?.quote?.credits?.let { (it - balance).coerceAtLeast(0.0) } ?: 0.0
+        /** A change can be asked for: after the demo (delivered, approved or live) with none open. */
+        val canRequestChange: Boolean
+            get() = project?.status in CHANGE_STATUSES && openChange == null
+        /** The test invites can still change: built (or rebuilt) and the invites not out yet. */
+        val invitesEditable: Boolean
+            get() = project?.status == ProjectStatus.BUILDING || project?.status == ProjectStatus.REVISION_REQUESTED
+        /** Which invites the project needs: its apps (both when an older server doesn't say). */
+        val wantsApple: Boolean get() = project?.apps.isNullOrEmpty() || project?.apps?.contains("ios") == true
+        val wantsGoogle: Boolean get() = project?.apps.isNullOrEmpty() || project?.apps?.contains("android") == true
     }
 
     private val _state = MutableStateFlow(State())
@@ -76,12 +96,10 @@ class StatusViewModel(
         }
         viewModelScope.launch {
             container.session.me.collect { me ->
-                val verified = me?.deliveryTargets?.aws?.verified == true
                 _state.update {
                     it.copy(
-                        awsVerified = verified,
-                        // Verified since the server said no: try again.
-                        awsRequiredByServer = it.awsRequiredByServer && !verified,
+                        awsVerified = me?.deliveryTargets?.aws?.verified == true,
+                        storeEmails = me?.storeEmails ?: it.storeEmails,
                         balance = if (container.credits.credits.value == null && me != null) me.credits.balance else it.balance,
                     )
                 }
@@ -103,7 +121,7 @@ class StatusViewModel(
     fun onVisible() {
         visible = true
         refresh()
-        // Back from Credits after buying, or from Connect AWS: the balance and the AWS role decide the button.
+        // Back from Credits after buying, or from Connect AWS: the balance and the AWS role decide what shows.
         viewModelScope.launch { runCatching { container.credits.refresh(force = false) } }
         viewModelScope.launch { runCatching { container.session.refreshMe() } }
         pollJob?.cancel()
@@ -156,7 +174,7 @@ class StatusViewModel(
     /** Pay the accepted project: its own price, or the new quote's after the old one expired (contract 11). */
     fun pay() {
         val s = _state.value
-        if (s.busy || !s.awaitingPayment || s.priceExpired || s.needsAws) return
+        if (s.busy || !s.awaitingPayment || s.priceExpired) return
         val token = s.newQuote?.quoteToken
         _state.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
@@ -188,6 +206,71 @@ class StatusViewModel(
         }
     }
 
+    // ----- v0.12.0 (R-109) -----
+
+    /** "Save" the test invites' emails; only the ones the project needs are asked. [onSaved] runs once the server has them. */
+    fun saveStoreEmails(apple: String?, google: String?, onSaved: () -> Unit = {}) {
+        if (_state.value.busy) return
+        _state.update { it.copy(busy = true, error = null, emailsSaved = false) }
+        viewModelScope.launch {
+            runCatching { container.session.setStoreEmails(apple, google) }
+                .onSuccess { _state.update { it.copy(emailsSaved = true) }; onSaved() }
+                .onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
+    /** "Get a price": the AI writes a short change brief and prices it; the sheet shows it once quoted. */
+    fun requestChange(description: String) {
+        val s = _state.value
+        if (s.pricing || description.isBlank()) return
+        _state.update { it.copy(pricing = true, changeError = null) }
+        viewModelScope.launch {
+            runCatching { container.projects.requestChange(projectId, description, container.jobs) }
+                .onFailure { e -> _state.update { it.copy(changeError = e.userLine()) } }
+            _state.update { it.copy(pricing = false) }
+        }
+    }
+
+    /** One key per change: a retry after a lost answer reuses it. */
+    private var changeKey: Pair<String, String>? = null
+
+    /** "Pay N credits" for the priced change: the project goes back to building. [onPaid] once the server took it. */
+    fun payChange(onPaid: () -> Unit = {}) {
+        val s = _state.value
+        val change = s.quotedChange ?: return
+        if (s.busy || s.changeShortBy > 0.0) return
+        val key = changeKey?.takeIf { it.first == change.id }?.second
+            ?: java.util.UUID.randomUUID().toString().also { changeKey = change.id to it }
+        _state.update { it.copy(busy = true, changeError = null) }
+        viewModelScope.launch {
+            runCatching { container.projects.payChange(projectId, change.id, key) }
+                .onSuccess {
+                    changeKey = null
+                    runCatching { container.credits.refresh() }
+                    onPaid()
+                }
+                .onFailure { e ->
+                    val api = e as? ApiException
+                    // Short: the shortfall line and "Buy credits" say it, as for the project.
+                    if (api?.code == ApiException.INSUFFICIENT_CREDITS) {
+                        _state.update { it.copy(balance = api.detailDouble("balance") ?: it.balance) }
+                    } else {
+                        _state.update { it.copy(changeError = e.userLine()) }
+                    }
+                    if (api != null && api.httpStatus in 400..499) changeKey = null
+                    runCatching { container.projects.refresh(projectId) }
+                }
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
+    /** "I've sent the invites": every store still waiting for the client's invite (Make it live, step 2). */
+    fun invitesSent() = action(onSuccess = { _state.update { it.copy(invitesSent = true) } }) {
+        val project = _state.value.project ?: return@action
+        GoLiveLogic.waitingForInvite(project).forEach { store -> container.projects.handoverInvited(projectId, store) }
+    }
+
     private fun action(onSuccess: () -> Unit = {}, block: suspend () -> Unit) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
@@ -203,11 +286,13 @@ class StatusViewModel(
     }
 
     companion object {
+        /** v0.12.0: a change can be asked for after the demo, after approval, and once live. */
+        private val CHANGE_STATUSES = setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE)
+
         /**
          * What the screen shows after a payment didn't go through.
          * - 402 insufficient_credits: no error line; the balance line and "Buy credits" say it (iOS).
          * - 409 quote_stale, expired: the price ran out; "Get a new quote" takes over.
-         * - 409 aws_required (R-105): the server's message, and "Connect AWS to start" takes over (iOS).
          */
         internal fun afterFailedPay(s: State, e: Throwable): State {
             val api = e as? ApiException
@@ -216,7 +301,6 @@ class StatusViewModel(
                     s.copy(error = null, balance = api.detailDouble("balance") ?: s.balance)
                 api?.code == ApiException.QUOTE_STALE && (api.detailBoolean("expired") == true || s.newQuote == null) ->
                     s.copy(error = null, newQuote = null, expiredByServer = true)
-                api?.code == ApiException.AWS_REQUIRED -> s.copy(error = e.userLine(), awsRequiredByServer = true)
                 else -> s.copy(error = e.userLine())
             }
         }

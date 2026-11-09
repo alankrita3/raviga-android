@@ -227,6 +227,16 @@ class SessionRepository(
 
     private fun consentBody(ai: Boolean, analytics: Boolean?) = consentBody(_config.value.legal, ai, analytics)
 
+    // ----- Store-account emails (v0.12.0, R-109) -----
+
+    /** Where the TestFlight and Play test invites go; asked at payment, editable until the invites go out. */
+    suspend fun setStoreEmails(apple: String?, google: String?): com.raviga.app.data.api.StoreEmails {
+        ensureAccount()
+        val emails = apiCall(json) { api.putStoreEmails(com.raviga.app.data.api.StoreEmails(apple?.trim(), google?.trim())) }
+        updateMe { it.copy(storeEmails = emails) }
+        return emails
+    }
+
     // ----- Delivery targets (section 12) -----
 
     suspend fun setDeliveryTargets(awsAccountId: String?): DeliveryTargets {

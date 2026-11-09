@@ -42,6 +42,7 @@ import com.raviga.app.ui.components.PrimaryButton
 import com.raviga.app.ui.components.ProgressRule
 import com.raviga.app.ui.components.ScreenScaffold
 import com.raviga.app.ui.components.SecondaryButton
+import com.raviga.app.ui.components.TertiaryButton
 import com.raviga.app.ui.components.SectionHeading
 import com.raviga.app.ui.components.TimelineView
 import com.raviga.app.ui.nav.Routes
@@ -96,6 +97,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     var confirmAccept by remember { mutableStateOf(false) }
     var category by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     var description by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    // R-109 (E): "Request a change", and back to a priced change waiting to be paid.
+    var changeSheet by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     ScreenScaffold(
         topBar = {
@@ -110,13 +113,18 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
             )
         },
         bottomBar = {
-            if (project?.status != ProjectStatus.DELIVERED) return@ScreenScaffold
-            BottomBar {
+            val status = project?.status ?: return@ScreenScaffold
+            if (status == ProjectStatus.DELIVERED) BottomBar {
                 InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                // R-103 (iOS's labels): approve it, or say what's wrong and the team delivers again.
-                PrimaryButton("It works, approved", loading = state.busy, onClick = { confirmAccept = true })
+                // R-109 (D, iOS's labels): approve it, say what's wrong (free), or ask for something new (paid).
+                PrimaryButton(DeliveryCopy.APPROVE, loading = state.busy, onClick = { confirmAccept = true })
                 Spacer(Modifier.height(8.dp))
-                SecondaryButton("Something's wrong", enabled = !state.busy, onClick = { reportSheet = true })
+                SecondaryButton(DeliveryCopy.SOMETHING_WRONG, enabled = !state.busy, onClick = { reportSheet = true })
+                if (state.canRequestChange) TertiaryButton(DeliveryCopy.REQUEST_CHANGE, enabled = !state.busy, onClick = { changeSheet = true })
+            } else if (state.canRequestChange) BottomBar {
+                // After approval and once live, a change is still a request away.
+                InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
+                TertiaryButton(DeliveryCopy.REQUEST_CHANGE, onClick = { changeSheet = true })
             }
         },
     ) { padding ->
@@ -129,70 +137,67 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     Spacer(Modifier.height(4.dp))
                     Illustration(Picture.Delivered, height = 200.dp, radius = Ra.tileRadius)
                     Spacer(Modifier.height(20.dp))
-                    Text(
-                        when (project.status) {
-                            ProjectStatus.DELIVERED -> "Your code is ready."
-                            ProjectStatus.ACCEPTED -> "Your code."
-                            ProjectStatus.REVISION_REQUESTED -> "Being fixed."
-                            else -> StatusCopy.detailTitle(project.status)
-                        },
-                        style = RaType.title, color = Ink.ink,
-                    )
+                    Text(StatusCopy.detailTitle(project.status), style = RaType.title, color = Ink.ink)
                     Spacer(Modifier.height(6.dp))
                     Text(StatusCopy.projectTitle(project, container.drafts.get(project.id)?.displayTitle), style = RaType.secondary, color = Ink.graphite)
-                    if (project.status == ProjectStatus.ACCEPTED) {
-                        Text("Approved on ${Time.shortDate(project.statusChangedAt ?: project.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at ?: project.updatedAt)}", style = RaType.secondary, color = Ink.moss)
-                    } else if (project.statusLine.isNotBlank()) {
-                        // Contract v0.10.0: the server's line for the status, as it comes.
+                    if (project.statusLine.isNotBlank()) {
+                        // The server's line for the status, as it comes ("Demo ready: check your invites").
                         Spacer(Modifier.height(8.dp))
                         Text(StatusCopy.keepDatesTogether(project.statusLine), style = RaType.body, color = Ink.ink)
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    // R-106 (contract v0.11.0; PM-approved copy as iOS): the code and the guide are in the client's AWS.
-                    delivery?.source?.let { source ->
-                        LinkTile(
-                            title = "Your code",
-                            detail = "In your AWS account, with a zip and the handover guide",
-                            icon = Icons.Outlined.Code,
-                            dark = true,
-                            trailing = Icons.Outlined.ArrowOutward,
-                            onClick = { openLink(context, source) },
-                        )
+                    // R-109 (D): the demo is the real app on the client's phone, from Raviga's store accounts.
+                    val demo = delivery?.demo
+                    if (demo != null && (project.status == ProjectStatus.DELIVERED || project.status == ProjectStatus.REVISION_REQUESTED)) {
+                        SectionHeading(DeliveryCopy.TRY_IT)
+                        Spacer(Modifier.height(12.dp))
+                        demo.testflight?.let { tf ->
+                            val email = demo.invitedEmails.apple ?: state.storeEmails.apple.orEmpty()
+                            DemoStoreTile(
+                                if (tf.ready) DeliveryCopy.testflightReady(email) else DeliveryCopy.TESTFLIGHT_WAITING,
+                                button = DeliveryCopy.OPEN_TESTFLIGHT.takeIf { tf.ready },
+                                onOpen = { tf.url?.let { openLink(context, it) } },
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+                        demo.play?.takeIf { it.ready }?.let { play ->
+                            val email = demo.invitedEmails.google ?: state.storeEmails.google.orEmpty()
+                            DemoStoreTile(
+                                DeliveryCopy.playReady(email),
+                                button = DeliveryCopy.OPEN_PLAY,
+                                onOpen = { play.url?.let { openLink(context, it) } },
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
                     }
-                    delivery?.handover?.let { guide ->
-                        Spacer(Modifier.height(10.dp))
+
+                    // R-109 (F): after approval, the steps into the client's own stores.
+                    if (project.status == ProjectStatus.ACCEPTED || project.status == ProjectStatus.LIVE) {
                         LinkTile(
-                            title = "Handover guide",
-                            detail = "What we built and how to run it",
-                            icon = Icons.AutoMirrored.Outlined.Article,
-                            onClick = { openLink(context, guide) },
-                        )
-                    }
-                    if (delivery?.source != null || delivery?.handover != null) {
-                        Spacer(Modifier.height(8.dp))
-                        Text("Sign in to your AWS account to open them.", style = RaType.caption, color = Ink.graphite)
-                    }
-                    if (delivery != null) {
-                        Spacer(Modifier.height(10.dp))
-                        LinkTile(
-                            title = "Make it live",
-                            detail = "Steps to put it in front of customers",
+                            title = DeliveryCopy.LIVE_TITLE,
+                            detail = project.delivery?.handover?.statusLine?.takeIf { it.isNotBlank() } ?: DeliveryCopy.STEP_ACCOUNTS,
                             icon = Icons.Outlined.Flag,
                             onClick = { nav.navigate(Routes.goLive(projectId)) },
                         )
-                    }
-
-                    delivery?.aws?.let { aws ->
-                        Labelled("Backend") {
-                            Text(GoLiveLogic.awsLine(aws), style = RaType.body, color = if (aws.status == "deployed") Ink.moss else Ink.ink)
-                            // R-105: no Connect AWS here; it's connected before paying.
-                        }
                     }
                     // R-103 (her rule, PM 11-04): no team text reaches the client; the delivered statusLine says it.
                     if (project.status == ProjectStatus.DELIVERED && delivery?.acceptBy != null) {
                         Spacer(Modifier.height(16.dp))
                         Text("Approved automatically on ${Time.shortDate(delivery.acceptBy)} if you do nothing.", style = RaType.caption, color = Ink.graphite)
+                    }
+
+                    // R-109 (E, as iOS): every change with the server's line; a priced one shows its price and Pay here.
+                    val changes = delivery?.changes.orEmpty()
+                    if (changes.isNotEmpty()) {
+                        Spacer(Modifier.height(Ra.sectionGap))
+                        SectionHeading("Your changes")
+                        Spacer(Modifier.height(12.dp))
+                        changes.forEach { change ->
+                            ChangeRow(change, state, onPay = { vm.payChange() }, onBuyCredits = { nav.navigate(Routes.CREDITS) })
+                            Spacer(Modifier.height(Ra.tileGap))
+                        }
+                        InlineNotice(state.changeError.takeIf { !changeSheet })
                     }
 
                     // R-103 (as iOS): the client's reports, one row each; nothing comes back but the status.
@@ -231,19 +236,23 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmAccept = false },
             containerColor = Ink.surface,
-            title = { Text("Approve this delivery?", style = RaType.heading, color = Ink.ink) },
-            text = {
-                Text(
-                    "This deletes the brief from our servers. Your code and handover guide stay yours.",
-                    style = RaType.body, color = Ink.graphite,
-                )
-            },
+            title = { Text(DeliveryCopy.APPROVE_TITLE, style = RaType.heading, color = Ink.ink) },
+            text = { Text(DeliveryCopy.APPROVE_BODY, style = RaType.body, color = Ink.graphite) },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = { confirmAccept = false; vm.accept() }) { Text("Approve", style = RaType.button, color = Ink.ink) }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { confirmAccept = false }) { Text("Not yet", style = RaType.button, color = Ink.ink) }
             },
+        )
+    }
+    if (changeSheet && project != null) {
+        ChangeSheet(
+            state = state,
+            onPrice = { vm.requestChange(it) },
+            onPay = { vm.payChange(onPaid = { changeSheet = false }) },
+            onBuyCredits = { changeSheet = false; nav.navigate(Routes.CREDITS) },
+            onDismiss = { changeSheet = false },
         )
     }
     if (reportSheet && project != null) {
@@ -317,13 +326,48 @@ private fun CategoryRow(label: String, selected: Boolean, enabled: Boolean, onCl
     }
 }
 
-/** A caption label over its content, as on iOS ("Backend"). */
+/** R-109 (E, as iOS): one change: what it is, its line, and for a priced one the price with Pay (or Buy credits). */
 @Composable
-private fun Labelled(label: String, content: @Composable () -> Unit) {
-    Spacer(Modifier.height(16.dp))
-    Text(label, style = RaType.caption, color = Ink.graphite)
-    Spacer(Modifier.height(4.dp))
-    content()
+private fun ChangeRow(change: com.raviga.app.data.api.Change, state: StatusViewModel.State, onPay: () -> Unit, onBuyCredits: () -> Unit) {
+    Column(Modifier.tile(padding = 14.dp)) {
+        val what = change.brief?.title?.takeIf { it.isNotBlank() } ?: change.description?.takeIf { it.isNotBlank() }
+        what?.let {
+            Text(it, style = RaType.bodyMedium, color = Ink.ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+        }
+        if (change.statusLine.isNotBlank()) {
+            Text(change.statusLine, style = RaType.secondary, color = if (change.status == com.raviga.app.data.api.Change.DELIVERED) Ink.moss else Ink.graphite)
+        }
+        val quote = change.quote
+        if (change.status == com.raviga.app.data.api.Change.QUOTED && quote != null) {
+            Spacer(Modifier.height(8.dp))
+            val usd = quote.usd.takeIf { it > 0.0 } ?: (quote.credits * state.config.credits.creditValueUsd)
+            Text(DeliveryCopy.changePrice(com.raviga.app.util.Money.credits(quote.credits), com.raviga.app.util.Money.usd(usd)), style = RaType.body, color = Ink.ink)
+            Spacer(Modifier.height(10.dp))
+            if (state.changeShortBy > 0.0) {
+                Text(
+                    "You have ${com.raviga.app.util.Money.credits(state.balance)}. You need ${com.raviga.app.util.Money.creditsOwed(state.changeShortBy)} more.",
+                    style = RaType.body, color = Ink.ink,
+                )
+                Spacer(Modifier.height(8.dp))
+                SecondaryButton("Buy credits", onClick = onBuyCredits)
+            } else {
+                SecondaryButton("Pay ${com.raviga.app.util.Money.credits(quote.credits)}", enabled = !state.busy, onClick = onPay)
+            }
+        }
+    }
+}
+
+/** R-109 (D): one store's test invite: what to do (or that it's waiting), and the button that opens it. */
+@Composable
+private fun DemoStoreTile(line: String, button: String?, onOpen: () -> Unit) {
+    Column(Modifier.tile(padding = 14.dp)) {
+        Text(line, style = RaType.body, color = Ink.ink)
+        if (button != null) {
+            Spacer(Modifier.height(10.dp))
+            SecondaryButton(button, onClick = onOpen, icon = Icons.Outlined.ArrowOutward)
+        }
+    }
 }
 
 /** The repository or a document, as a tile: an icon square, a name and one line. */

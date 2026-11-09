@@ -85,7 +85,7 @@ object Routes {
     fun forProject(projectId: String, status: String, hasDocument: Boolean = true): String = when (status) {
         "draft" -> document(projectId)
         "submitted", "approved", "building", "rejected", "cancelled" -> status(projectId)
-        "delivered", "revision_requested", "accepted" -> delivery(projectId)
+        "delivered", "revision_requested", "accepted", "live" -> delivery(projectId)
         else -> status(projectId)
     }
 }

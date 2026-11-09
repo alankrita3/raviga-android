@@ -1,6 +1,9 @@
 package com.raviga.app.ui
 
 import com.raviga.app.data.api.ApiException
+import com.raviga.app.data.api.Change
+import com.raviga.app.data.api.ChangeQuote
+import com.raviga.app.data.api.Delivery
 import com.raviga.app.data.api.Payment
 import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectStatus
@@ -15,7 +18,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** R-103 (contract v0.10.0 section 11): paying an accepted project, as iOS does it. */
+/** R-103 (contract v0.10.0 section 11): paying an accepted project, as iOS does it; R-109: and a change. */
 class PayStateTest {
     private val now = 1_800_000_000_000L
     private fun iso(ms: Long) = java.time.Instant.ofEpochMilli(ms).toString()
@@ -56,24 +59,43 @@ class PayStateTest {
     }
 
     /** R-105 (her decision; iOS's copy): built in the client's own AWS, so paying waits for a verified role. */
-    @Test fun anUnverifiedAwsAccountConnectsBeforePaying() {
-        val required = com.raviga.app.data.api.AppConfig(delivery = com.raviga.app.data.api.DeliveryConfig(awsRequiredToPay = true))
-        val s = state().copy(config = required)
-        assertTrue(s.needsAws)
-        assertEquals("no shortfall line while AWS isn't connected", 0.0, s.copy(balance = 10.0).shortBy, 0.0)
-        assertFalse(s.copy(awsVerified = true).needsAws)
-        assertFalse("only an accepted, unpaid project", s.copy(project = accepted.copy(status = ProjectStatus.BUILDING)).needsAws)
-        assertFalse("a server without the rule", state().needsAws)
-        assertEquals(
-            "We build your project in your own AWS account. Connect it once, then pay to start building.",
-            com.raviga.app.ui.status.AWS_BEFORE_PAY,
-        )
-        val refused = StatusViewModel.afterFailedPay(state(), ApiException(
-            ApiException.AWS_REQUIRED, 409, "Connect your AWS account to start the build.",
-            details = buildJsonObject { put("accountId", "123456789012") },
-        ))
-        assertTrue("the server decides too", refused.needsAws)
-        assertEquals("Connect your AWS account to start the build.", refused.error)
+    /** R-109 (contract v0.12.0): no AWS before paying; Raviga builds on its own side. */
+    @Test fun payingNeedsNoAws() {
+        val s = state().copy(awsVerified = false)
+        assertTrue(s.awaitingPayment)
+        assertEquals("the price, whatever AWS says", 0.0, s.shortBy, 0.0)
+        assertEquals(20.0, s.copy(balance = 10.0).shortBy, 0.0)
+    }
+
+    /** R-109 (E): one change at a time, after the demo; a priced one is paid like the project, short of credits too. */
+    @Test fun aChangeIsAskedAfterTheDemoAndPaidLikeTheProject() {
+        val demo = accepted.copy(status = ProjectStatus.DELIVERED, payment = Payment(30, iso(now)), delivery = Delivery())
+        assertTrue(state(demo).canRequestChange)
+        assertTrue(state(demo.copy(status = ProjectStatus.ACCEPTED)).canRequestChange)
+        assertTrue(state(demo.copy(status = ProjectStatus.LIVE)).canRequestChange)
+        assertFalse("not while it's being built", state(demo.copy(status = ProjectStatus.BUILDING)).canRequestChange)
+        assertFalse("not before the demo", state(accepted).canRequestChange)
+
+        val quoted = Change("ch_1", status = Change.QUOTED, statusLine = "Change requested", quote = ChangeQuote(credits = 2.0, usd = 20.0))
+        val withChange = demo.copy(delivery = Delivery(changes = listOf(Change("ch_0", status = Change.DELIVERED), quoted)))
+        val s = state(withChange, balance = 1.5)
+        assertFalse("one open change at a time", s.canRequestChange)
+        assertEquals("ch_1", s.quotedChange?.id)
+        assertEquals(0.5, s.changeShortBy, 0.0)
+        assertEquals(0.0, state(withChange, balance = 5.0).changeShortBy, 0.0)
+        val paid = withChange.copy(delivery = Delivery(changes = listOf(quoted.copy(status = Change.PAID))))
+        assertNull("paid: nothing to pay", state(paid).quotedChange)
+        assertEquals(Change.PAID, state(paid).openChange?.status)
+    }
+
+    /** R-109 (C): the invites asked for are the project's apps; editable while it's built, until they go out. */
+    @Test fun theInvitesFollowTheApps() {
+        val building = accepted.copy(status = ProjectStatus.BUILDING, apps = listOf("ios"))
+        assertTrue(state(building).invitesEditable)
+        assertTrue(state(building).wantsApple)
+        assertFalse(state(building).wantsGoogle)
+        assertTrue("an older server: both", state(building.copy(apps = emptyList())).wantsGoogle)
+        assertFalse("the invites are out", state(building.copy(status = ProjectStatus.DELIVERED)).invitesEditable)
     }
 
     @Test fun aFailedPaymentShowsTheNextStep() {

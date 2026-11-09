@@ -48,6 +48,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         /** R-079: the confirmed recovery email, and one waiting for its code (always 123456 in demo). */
         val recoveryEmail: String? = null,
         val pendingEmail: String? = null,
+        /** v0.12.0 (R-109): where the TestFlight and Play test invites go. */
+        val storeEmails: StoreEmails = StoreEmails(),
     )
 
     @Serializable
@@ -109,6 +111,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         credits = CreditsBalance(balanceOf(s), freeBriefsLeft = (config.credits.freeBriefs - s.briefsWritten).coerceAtLeast(0)),
         consent = s.consent,
         deliveryTargets = s.deliveryTargets,
+        storeEmails = s.storeEmails,
         deviceCount = 1,
         recoveryEmail = s.recoveryEmail?.let { RecoveryEmail(it, verified = true) },
     )
@@ -130,7 +133,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 document = null,
                 title = "",
                 reports = p.reports.map { it.copy(description = null) },
-                delivery = p.delivery?.copy(note = ""),
+                // v0.12.0: change descriptions and briefs go with the rest; ids, statuses, quotes and dates stay.
+                delivery = p.delivery?.copy(changes = p.delivery.changes.map { it.copy(description = null, brief = null) }),
                 contentDeletedAt = now,
             )
         }
@@ -148,10 +152,13 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             else "Accepted. Pay ${p.quote?.credits ?: 0} credits to start building."
         }
         ProjectStatus.REJECTED -> if ((p.payment?.credits ?: 0) > 0) "Not accepted. Your credits are refunded." else "Not accepted. This project is outside what we build. Nothing was charged."
-        ProjectStatus.BUILDING -> "Building and testing. Estimated delivery by ${Time.shortDate(p.timeline?.estimatedDeliveryDate)}."
-        ProjectStatus.DELIVERED -> "Delivered. Check it, then approve it or tell us what's wrong."
+        // v0.12.0 (R-109): a paid change rebuilds; the demo, approval and live lines.
+        ProjectStatus.BUILDING -> if (p.delivery?.changes?.any { it.status == Change.PAID } == true) "Change paid"
+            else "Building and testing. Estimated delivery by ${Time.shortDate(p.timeline?.estimatedDeliveryDate)}."
+        ProjectStatus.DELIVERED -> "Demo ready: check your invites"
         ProjectStatus.REVISION_REQUESTED -> "We're fixing what you reported."
-        ProjectStatus.ACCEPTED -> "Approved by you."
+        ProjectStatus.ACCEPTED -> "Approved. Next: make it live in your own stores."
+        ProjectStatus.LIVE -> "Live in your stores."
         ProjectStatus.CANCELLED -> "Cancelled."
         else -> ""
     }
@@ -212,55 +219,90 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 val (n, t) = transition(next, p.copy(decidedAt = Time.nowIso()), ProjectStatus.APPROVED, "team")
                 next = n; p = t
             }
-            ProjectStatus.BUILDING -> if (elapsed > 40_000) {
-                val slug = p.title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "project" }
+            // v0.12.0 (R-109): the demo team sends TestFlight and Play invites from Raviga's accounts (a paid change too).
+            ProjectStatus.BUILDING, ProjectStatus.REVISION_REQUESTED -> if (elapsed > (if (p.status == ProjectStatus.BUILDING) 40_000 else 25_000)) {
                 val now = Time.nowIso()
-                val hasAws = p.submission?.awsAccountId != null || s.deliveryTargets.aws != null
                 p = p.copy(
-                    delivery = Delivery(
-                        // v0.11.0 (R-106): the source and the guide in a private bucket in the client's AWS (console links).
-                        sourceUrl = "https://s3.console.aws.amazon.com/s3/buckets/raviga-delivery-$slug?region=ap-south-1",
-                        handoverUrl = "https://s3.console.aws.amazon.com/s3/object/raviga-delivery-$slug?region=ap-south-1&prefix=HANDOVER.md",
-                        deliveredAt = now,
-                        note = "",
-                        aws = if (hasAws) AwsDelivery(
-                            status = "deployed", statusLine = "Running in your AWS account.",
-                            consoleUrl = "https://ap-south-1.console.aws.amazon.com/console/home?region=ap-south-1",
-                        ) else AwsDelivery(status = "not_requested"),
-                        acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
-                    ),
+                    reports = p.reports.map { r -> if (r.resolvedAt == null) r.copy(resolvedAt = now) else r },
+                    delivery = demoDelivery(s, p, now),
                 )
                 val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team")
                 next = n; p = t
             }
-            ProjectStatus.REVISION_REQUESTED -> if (elapsed > 25_000) {
-                val now = Time.nowIso()
-                p = p.copy(
-                    reports = p.reports.map { r -> if (r.resolvedAt == null) r.copy(resolvedAt = now) else r },
-                    delivery = p.delivery?.copy(
-                        deliveredAt = now, note = "Fixed what you reported. Pull the latest commit on main.",
-                        acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
-                    ),
+            // Make it live: an invited store is published after a while; a backend is deployed once AWS is verified.
+            ProjectStatus.ACCEPTED -> {
+                val h = p.delivery?.handover ?: return next to p
+                val stores = h.stores.mapValues { (_, st) ->
+                    when {
+                        st == "invited" && elapsed > 8_000 -> "in_review"
+                        st == "in_review" && elapsed > 16_000 -> "published"
+                        else -> st
+                    }
+                }
+                val backend = if (h.backend == "pending" && s.deliveryTargets.aws?.verified == true) "deployed" else h.backend
+                val handover = h.copy(
+                    stores = stores,
+                    storeLines = stores.mapValues { (store, st) -> com.raviga.app.ui.status.DeliveryCopy.storeLine(store, st) },
+                    storeUrls = stores.mapValues { (store, st) ->
+                        if (st != "published") null
+                        else if (store == "apple") "https://apps.apple.com/app/id0000000000" else "https://play.google.com/store/apps/details?id=com.example.demo"
+                    },
+                    backend = backend,
+                    consoleUrl = if (backend == "deployed") "https://ap-south-1.console.aws.amazon.com/console/home?region=ap-south-1" else null,
+                    statusLine = handoverLine(stores, backend),
                 )
-                val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team")
-                next = n; p = t
+                if (handover != h) {
+                    p = p.copy(delivery = p.delivery.copy(handover = handover))
+                    if (stores.values.all { it == "published" } && backend != "pending") {
+                        val (n, t) = transition(next, p, ProjectStatus.LIVE, "system")
+                        next = n; p = t
+                    } else {
+                        next = put(next, p.copy(statusLine = statusLine(p))).copy(statusChangedAt = next.statusChangedAt + (p.id to Time.nowIso()))
+                        p = next.projects.getValue(p.id)
+                    }
+                }
             }
         }
         return next to p
     }
 
-    /** v0.10.0: Submitted, Approved, Paid, Building and QA, Delivered, Approved by you. */
+    /** The demo (v0.12.0): an invite per app, to the store emails; a paid change is in it. */
+    private fun demoDelivery(s: State, p: Project, now: String): Delivery {
+        val apps = p.apps.ifEmpty { listOf("ios", "android") }
+        return (p.delivery ?: Delivery()).copy(
+            deliveredAt = now,
+            acceptBy = Instant.now().plusSeconds(config.acceptance.autoAcceptDays * 86_400L).toString(),
+            demo = Demo(
+                testflight = DemoStore("ready", "https://testflight.apple.com/join/DEMO1234").takeIf { "ios" in apps },
+                play = DemoStore("ready", "https://play.google.com/apps/internaltest/4700000000000000000").takeIf { "android" in apps },
+                invitedEmails = s.storeEmails,
+            ),
+            changes = p.delivery?.changes.orEmpty().map {
+                if (it.status == Change.PAID) it.copy(status = Change.DELIVERED, statusLine = "In your latest demo", deliveredAt = now) else it
+            },
+        )
+    }
+
+    /** The handover's line for where it stands (v0.12.0). */
+    private fun handoverLine(stores: Map<String, String>, backend: String): String = when {
+        stores.values.any { it == "pending" } -> "Next: create your store accounts and invite Raviga."
+        backend == "pending" -> "Next: connect your AWS account."
+        else -> "We're publishing your app."
+    }
+
+    /** v0.12.0: Submitted, Approved, Paid, Building and QA, Demo ready, Approved by you, Live. */
     private fun milestones(status: String, p: Project): List<Milestone> {
         val order = listOf(
             "submitted" to "Submitted", "approved" to "Approved", "paid" to "Paid",
-            "build" to "Building and QA", "delivered" to "Delivered", "accepted" to "Approved by you",
+            "build" to "Building and QA", "demo" to "Demo ready", "accepted" to "Approved by you", "live" to "Live",
         )
         val current = when (status) {
             ProjectStatus.SUBMITTED, ProjectStatus.REJECTED, ProjectStatus.CANCELLED -> 2
             ProjectStatus.APPROVED -> 3
             ProjectStatus.BUILDING, ProjectStatus.REVISION_REQUESTED -> 4
-            ProjectStatus.DELIVERED -> 6
+            ProjectStatus.DELIVERED -> 5
             ProjectStatus.ACCEPTED -> 7
+            ProjectStatus.LIVE -> 8
             else -> 0
         }
         return order.mapIndexed { i, (id, label) ->
@@ -273,8 +315,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 "submitted" -> p.submission?.submittedAt
                 "approved" -> p.decidedAt
                 "paid", "build" -> p.payment?.paidAt
-                "delivered" -> p.delivery?.deliveredAt
+                "demo" -> p.delivery?.deliveredAt
                 "accepted" -> p.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at
+                "live" -> p.history.lastOrNull { it.status == ProjectStatus.LIVE }?.at
                 else -> null
             }
             Milestone(id = id, label = label, at = at.takeIf { st == "done" }, state = st)
@@ -509,6 +552,11 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             if (demoPolicyHit(doc.title + " " + doc.sections.joinToString(" ") { it.body })) {
                 throw policyRefusal("This brief describes software we can't build under our Acceptable use policy.")
             }
+            // v0.12.0 (R-109): native iPhone and Android apps only.
+            if (appsOf(doc.section(com.raviga.app.data.api.SectionIds.PLATFORMS)?.body.orEmpty()).isEmpty()) throw ApiException(
+                ApiException.CONTENT_REJECTED, 422, "Raviga builds native iPhone and Android apps only.",
+                details = buildJsonObject { put("kind", "scope") },
+            )
             val parts = BriefWriter.quote(doc, config)
             val hash = hashOf(body.document)
             val quote = Quote(
@@ -573,6 +621,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             document = held(body.document, 1),
             quote = quote.copy(status = "used"),
             submission = Submission(submittedAt = now, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
+            apps = appsOf(body.document.sections.firstOrNull { it.id == com.raviga.app.data.api.SectionIds.PLATFORMS }?.body.orEmpty()),
+            hasBackend = body.document.sections.any { it.id == com.raviga.app.data.api.SectionIds.DATA_AUTH && it.body.isNotBlank() } ||
+                body.document.sections.any { Regex("(?i)admin|dashboard|account|login|sync").containsMatchIn(it.body) },
             timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
             history = emptyList(),
         )
@@ -586,12 +637,12 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val p = requireProject(s, id)
         if (p.status != ProjectStatus.APPROVED || p.payment != null) throw ApiException(ApiException.INVALID_STATE, 409, "This project can't be paid now.", details = buildJsonObject { put("status", p.status) })
         requireConsent(s)
-        // v0.10.2 (R-105): built in the client's own AWS; paying needs a verified role (the demo verifies on "Check connection").
-        if (config.delivery.awsRequiredToPay && s.deliveryTargets.aws?.verified != true) throw ApiException(
-            ApiException.AWS_REQUIRED, 409, "Connect your AWS account to start the build.",
-            details = buildJsonObject { put("accountId", s.deliveryTargets.aws?.accountId) },
-        )
-        var next = s
+        // v0.12.0 (R-109): no AWS before paying; the invite emails may come with the payment.
+        var next = if (body.appleIdEmail != null || body.googleEmail != null) {
+            s.copy(storeEmails = StoreEmails(body.appleIdEmail ?: s.storeEmails.apple, body.googleEmail ?: s.storeEmails.google))
+        } else {
+            s
+        }
         var quote = p.quote ?: throw ApiException(ApiException.INVALID_STATE, 409, "No price on this project.")
         val token = body.quoteToken
         if (token == null) {
@@ -629,7 +680,19 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     override suspend fun accept(id: String, body: Empty): Project = mutate { s ->
         val p = requireProject(s, id)
         if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Nothing to accept yet.")
-        val project = p
+        // v0.12.0: approval starts Make it live: a store per app waiting for the client's invite, AWS if it has a backend.
+        val stores = p.apps.ifEmpty { listOf("ios", "android") }.map { if (it == "ios") Handover.APPLE else Handover.PLAY }.associateWith { "pending" }
+        val backend = if (p.hasBackend) "pending" else "none"
+        val project = p.copy(
+            delivery = (p.delivery ?: Delivery()).copy(
+                handover = Handover(
+                    stores = stores,
+                    storeLines = stores.mapValues { (store, st) -> com.raviga.app.ui.status.DeliveryCopy.storeLine(store, st) },
+                    backend = backend,
+                    statusLine = handoverLine(stores, backend),
+                ),
+            ),
+        )
         transition(s, project, ProjectStatus.ACCEPTED, "client")
     }
 
@@ -644,6 +707,102 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         if (demoPolicyHit(text)) throw policyRefusal("We can't send that report. Describe what isn't working in the delivered project.")
         val report = Report(id = "rp_" + UUID.randomUUID().toString().take(6), createdAt = Time.nowIso(), category = body.category, description = text)
         transition(s, p.copy(reports = p.reports + report), ProjectStatus.REVISION_REQUESTED, "client")
+    }
+
+    // ----- v0.12.0 (R-109): changes, Make it live, store emails -----
+
+    override suspend fun requestChange(id: String, body: ChangeRequest): ChangeStarted {
+        val text = body.description.trim()
+        val change = mutate { s ->
+            val p = requireProject(s, id)
+            if (p.status !in setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE) || p.delivery?.openChange != null) {
+                throw ApiException(ApiException.INVALID_STATE, 409, "A change can't be requested now.", details = buildJsonObject { put("status", p.status) })
+            }
+            if (text.isEmpty() || text.length > config.report.descriptionMaxChars) {
+                throw ApiException(ApiException.INVALID_ARGUMENT, 400, "Describe the change in up to ${config.report.descriptionMaxChars} characters.")
+            }
+            if (demoPolicyHit(text)) throw policyRefusal("We can't take that change. Describe what's new or different in the app.")
+            val c = Change(id = "ch_" + UUID.randomUUID().toString().take(8), createdAt = Time.nowIso(), description = text, statusLine = "Change requested")
+            put(s, p.copy(delivery = (p.delivery ?: Delivery()).copy(changes = p.delivery?.changes.orEmpty() + c))) to c
+        }
+        val job = startJob("change", id, listOf("Reading your change", "Writing the change brief", "Pricing it"), 900) {
+            val priced = mutate { s ->
+                val p = requireProject(s, id)
+                val words = text.split(Regex("\\s+")).take(5).joinToString(" ").trimEnd('.', ',')
+                val quoted = change.copy(
+                    status = Change.QUOTED,
+                    statusLine = "Change requested",
+                    brief = ChangeBrief(title = words.replaceFirstChar { it.uppercase() }, items = listOf(text)),
+                    quote = ChangeQuote(credits = 2.0, usd = 2 * config.credits.creditValueUsd, estimatedWorkingDays = 3,
+                        expiresAt = Instant.now().plusSeconds(config.quote.validDays * 86_400L).toString()),
+                )
+                val delivery = p.delivery ?: Delivery()
+                put(s, p.copy(delivery = delivery.copy(changes = delivery.changes.map { if (it.id == change.id) quoted else it }))) to quoted
+            }
+            json.encodeToJsonElement(ChangeResult.serializer(), ChangeResult(priced))
+        }
+        return ChangeStarted(change, job.job)
+    }
+
+    override suspend fun payChange(id: String, changeId: String, idempotencyKey: String, body: Empty): Project = mutate { s ->
+        s.submits[idempotencyKey]?.let { return@mutate s to requireProject(s, it) }
+        val p = requireProject(s, id)
+        val change = p.delivery?.changes?.firstOrNull { it.id == changeId }
+            ?: throw ApiException(ApiException.NOT_FOUND, 404, "No such change.")
+        if (change.status != Change.QUOTED) throw ApiException(ApiException.INVALID_STATE, 409, "This change can't be paid now.")
+        val credits = change.quote?.credits ?: 0.0
+        val balance = balanceOf(s)
+        if (balance < credits) throw ApiException(
+            ApiException.INSUFFICIENT_CREDITS, 402, "You need ${com.raviga.app.util.Money.credits(credits - balance)} more.",
+            details = buildJsonObject { put("required", credits); put("balance", balance) },
+        )
+        var next = ledger(s, "charge", -credits, LedgerRef(projectId = id), "Change paid")
+        val paid = change.copy(status = Change.PAID, statusLine = "Change paid", paidAt = Time.nowIso())
+        val delivery = p.delivery ?: Delivery()
+        val project = p.copy(delivery = delivery.copy(changes = delivery.changes.map { if (it.id == changeId) paid else it }))
+        next = next.copy(submits = next.submits + (idempotencyKey to id))
+        transition(next, project, ProjectStatus.BUILDING, "client")
+    }
+
+    override suspend fun handoverInvited(id: String, body: HandoverInvitedRequest): Project = mutate { s ->
+        val p = requireProject(s, id)
+        if (p.status != ProjectStatus.ACCEPTED) throw ApiException(ApiException.INVALID_STATE, 409, "Not making it live now.")
+        val h = p.delivery?.handover ?: throw ApiException(ApiException.INVALID_STATE, 409, "Not making it live now.")
+        if (body.store !in h.stores) throw ApiException(ApiException.INVALID_ARGUMENT, 400, "This project has no app for that store.")
+        val stores = h.stores + (body.store to (h.stores.getValue(body.store).takeIf { it != "pending" } ?: "invited"))
+        val handover = h.copy(
+            stores = stores,
+            storeLines = stores.mapValues { (store, st) -> com.raviga.app.ui.status.DeliveryCopy.storeLine(store, st) },
+            statusLine = handoverLine(stores, h.backend),
+        )
+        val project = p.copy(delivery = p.delivery.copy(handover = handover), updatedAt = Time.nowIso())
+        put(s, project).copy(statusChangedAt = s.statusChangedAt + (id to Time.nowIso())) to project
+    }
+
+    override suspend fun storeEmails(): StoreEmails = readState { it.storeEmails }
+
+    override suspend fun putStoreEmails(body: StoreEmails): StoreEmails = mutate { s ->
+        listOfNotNull(body.apple, body.google).forEach {
+            if (it.length > 254 || !Regex("""^[^\s@]+@[^\s@]+\.[^\s@]+$""").matches(it.trim())) {
+                throw ApiException(ApiException.INVALID_ARGUMENT, 400, "That doesn't look like an email address.")
+            }
+        }
+        val emails = StoreEmails(body.apple?.trim() ?: s.storeEmails.apple, body.google?.trim() ?: s.storeEmails.google)
+        s.copy(storeEmails = emails) to emails
+    }
+
+    /** v0.12.0: the store apps a brief's Platforms section asks for; none means it's not a native app (declined). */
+    private fun appsOf(platforms: String): List<String> {
+        val lower = platforms.lowercase()
+        if (lower.isBlank()) return listOf("ios", "android")
+        val ios = listOf("iphone", "ios", "ipad", "app store").any { it in lower }
+        val android = listOf("android", "play store", "google play").any { it in lower }
+        val mobile = listOf("mobile app", "phone app", "both platforms", "mobile").any { it in lower }
+        return when {
+            ios || android -> listOfNotNull("ios".takeIf { ios }, "android".takeIf { android })
+            mobile -> listOf("ios", "android")
+            else -> emptyList()
+        }
     }
 
     // ----- delivery targets -----
@@ -812,7 +971,20 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
                 retentionMonths = 2,
             ),
-            delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1", awsRequiredToPay = true),
+            // v0.12.0 (R-109): Raviga's publishing user (one address for both stores) and the Make it live details.
+            delivery = DeliveryConfig("521901166785", "RavigaDeployRole", "ap-south-1", publishingEmail = "publishing@ravigaapps.com"),
+            handover = com.raviga.app.data.api.HandoverConfig(
+                appleRole = "App Manager, with access to Certificates, Identifiers & Profiles",
+                playPermissions = listOf(
+                    "Release to production, exclude devices, and use Play App Signing", "Release apps to testing tracks",
+                    "Manage testing tracks and edit tester lists", "Manage store presence", "Manage policy declarations",
+                    "View app information (read-only)",
+                ),
+                guides = com.raviga.app.data.api.HandoverGuides(
+                    appleEnroll = "https://developer.apple.com/programs/enroll/",
+                    playSignup = "https://support.google.com/googleplay/android-developer/answer/6112435",
+                ),
+            ),
             legal = LegalConfig(
                 companyName = "Raviga Apps Private Limited",
                 // The legal site on Raviga's domain (dev /config since backend 5fe84e0); demo mode opens the same pages.

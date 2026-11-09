@@ -1,111 +1,67 @@
 package com.raviga.app.ui.status
 
-import com.raviga.app.data.api.ReportCategory
-import com.raviga.app.data.api.AwsDelivery
-import com.raviga.app.data.api.Delivery
+import com.raviga.app.data.api.Handover
+import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectStatus
+import com.raviga.app.data.api.ReportCategory
 
 /**
- * "Make it live": the steps between a delivery and customers using the product, worked
- * out from the delivery's state and what the brief says about platforms and paid services. A port of
- * iOS GoLiveLogic (docs/DESIGN.md, 14b); the wording is shared.
+ * "Make it live" (R-109, her delivery model; PM-approved copy as iOS): after approval Raviga publishes the app into the
+ * client's own store accounts and, when the project has a backend, deploys it into their AWS. The client creates the
+ * store accounts and invites Raviga; the server's handover says where each store stands.
  */
 object GoLiveLogic {
 
-    enum class Action { OpenSource, OpenGuide, OpenConsole }
+    enum class StepId { ACCOUNTS, INVITE, AWS, PUBLISH, LIVE }
 
-    data class Step(
-        val id: String,
-        val title: String,
-        val detail: String,
-        val done: Boolean = false,
-        val action: Action? = null,
-    )
+    data class Step(val id: StepId, val title: String, val done: Boolean)
 
-    data class Platforms(val mobile: Boolean, val web: Boolean)
-
-    /** From the brief's Platforms section. Nothing recognisable counts as web, the simplest thing to put live. */
-    fun platforms(text: String): Platforms {
-        val lower = text.lowercase()
-        val mobile = listOf("iphone", "ios", "android", "mobile app", "app store", "play store", "ipad").any { it in lower }
-        val web = listOf("web", "website", "browser", "dashboard", "portal").any { it in lower }
-        return Platforms(mobile = mobile, web = web || !mobile)
+    /** The stores this project goes into: the handover's own, else the project's apps (both when an older server is silent). */
+    data class Stores(val apple: Boolean, val play: Boolean) {
+        val list: List<String> get() = listOfNotNull(Handover.APPLE.takeIf { apple }, Handover.PLAY.takeIf { play })
     }
 
-    fun steps(
-        delivery: Delivery,
-        status: String,
-        platforms: Platforms,
-        hasPaidServices: Boolean,
-    ): List<Step> = buildList {
-        // R-106 (contract v0.11.0, her decision; PM-approved copy as iOS): no GitHub; the code arrives in the client's AWS.
-        add(
-            Step(
-                "source", "Your code and handover guide are in your AWS account",
-                "Sign in to your AWS console to open them. The guide shows how to put the code on GitHub or GitLab if you want it there.",
-                action = if (delivery.source != null) Action.OpenSource else null,
-            ),
-        )
-        add(
-            Step(
-                "guide", "Read the handover guide",
-                "What we built, how the pieces fit together, how to run it, and every setting and key it needs.",
-                action = Action.OpenGuide,
-            ),
-        )
-        // R-105 (her decision; iOS's copy): the project is built and runs in the client's own AWS from the start.
-        // The console link arrives with the deployment (delivery.aws.consoleUrl, null until then).
-        val console = delivery.aws?.consoleUrl?.takeIf { it.isNotBlank() }
-        add(
-            Step(
-                "aws", "Your app is running in your AWS account",
-                if (console != null) "Open it in the AWS console." else awsLine(delivery.aws),
-                done = delivery.aws?.status == "deployed",
-                action = if (console != null) Action.OpenConsole else null,
-            ),
-        )
-        if (hasPaidServices) {
-            add(
-                Step(
-                    "keys", "Add your own keys for paid services",
-                    "Payments, messages, maps and similar services are billed to your accounts. The guide lists each key and where it goes.",
-                ),
-            )
-        }
-        if (platforms.mobile) {
-            add(
-                Step(
-                    "stores", "Publish to the App Store and Google Play",
-                    "Store developer accounts are yours. Invite us to your Apple Developer and Google Play Console accounts and we publish it for you.",
-                ),
-            )
-        }
-        if (platforms.web) {
-            add(Step("domain", "Put it on your domain", "The guide shows how to point your domain at it. Share access and we can do it for you."))
-        }
-        // R-103: approve it, or report what's wrong and the team delivers again (no round limit).
-        val accepted = status == ProjectStatus.ACCEPTED
-        add(
-            Step(
-                "accept",
-                if (accepted) "Delivery approved" else "Approve the delivery",
-                if (accepted) "It's yours." else "Or tell us what's wrong and we'll fix it and deliver again.",
-                done = accepted,
-            ),
-        )
+    fun stores(project: Project): Stores {
+        val handover = project.delivery?.handover?.stores.orEmpty()
+        if (handover.isNotEmpty()) return Stores(apple = Handover.APPLE in handover, play = Handover.PLAY in handover)
+        val apps = project.apps
+        if (apps.isEmpty()) return Stores(apple = true, play = true)
+        return Stores(apple = "ios" in apps, play = "android" in apps)
     }
+
+    /** Make it live's steps, from approval on; null before it (the screen says the steps appear once approved). */
+    fun steps(project: Project, awsVerified: Boolean): List<Step>? {
+        if (project.status != ProjectStatus.ACCEPTED && project.status != ProjectStatus.LIVE) return null
+        val handover = project.delivery?.handover
+        val states = stores(project).list.map { handover?.stores?.get(it) ?: "pending" }
+        val live = project.status == ProjectStatus.LIVE
+        val invited = live || states.none { it == "pending" }
+        val published = live || states.all { it == "published" }
+        return buildList {
+            add(Step(StepId.ACCOUNTS, DeliveryCopy.STEP_ACCOUNTS, done = invited))
+            add(Step(StepId.INVITE, DeliveryCopy.STEP_INVITE, done = invited))
+            if (project.hasBackend) {
+                add(Step(StepId.AWS, DeliveryCopy.STEP_AWS, done = live || awsVerified || handover?.backend == "deployed"))
+            }
+            add(Step(StepId.PUBLISH, DeliveryCopy.STEP_PUBLISH, done = published))
+            add(Step(StepId.LIVE, DeliveryCopy.STEP_LIVE, done = live))
+        }
+    }
+
+    /** A store's line in "We publish": the server's (`storeLines`), else the same words from its state. */
+    fun storeLine(handover: Handover?, store: String): String =
+        handover?.storeLines?.get(store)?.takeIf { it.isNotBlank() }
+            ?: DeliveryCopy.storeLine(store, handover?.stores?.get(store) ?: "pending")
+
+    /** Stores still waiting for the client's invite: "I've sent the invites" is offered while there are any. */
+    fun waitingForInvite(project: Project): List<String> =
+        stores(project).list.filter { (project.delivery?.handover?.stores?.get(it) ?: "pending") == "pending" }
+
+    /** Settings shows "AWS account" only when a project with a backend has reached Make it live (R-109, G). */
+    fun needsAwsRow(projects: Collection<Project>): Boolean =
+        projects.any { it.hasBackend && (it.status == ProjectStatus.ACCEPTED || it.status == ProjectStatus.LIVE) }
 
     /** A report's category in config's words; an id this build doesn't know shows as "Something else". */
     fun reportLabel(id: String, categories: List<ReportCategory>): String =
         categories.firstOrNull { it.id == id }?.label ?: categories.firstOrNull { it.id == "other" }?.label ?: "Something else"
-
-    /**
-     * Where the app runs (R-105, iOS's copy): in the client's own AWS. No team text (R-103), so the delivery's AWS note
-     * is not shown. A project delivered before R-105 that never had a verified role keeps its own honest line.
-     */
-    fun awsLine(aws: AwsDelivery?): String = aws?.statusLine?.takeIf { it.isNotBlank() } ?: when (aws?.status ?: "not_requested") {
-        "deployed" -> "Running in your AWS account."
-        "pending" -> "Setting up in your AWS account."
-        else -> "The backend runs on our AWS until you connect yours."
-    }
 }

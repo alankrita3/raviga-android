@@ -51,8 +51,6 @@ open class ApiException(
         const val INSUFFICIENT_CREDITS = "insufficient_credits"
         const val ACTIVE_PROJECTS = "active_projects"
         const val AWS_ROLE_NOT_READY = "aws_role_not_ready"
-        /** v0.10.2 (R-105): /pay without a verified AWS role on the account; details.accountId. */
-        const val AWS_REQUIRED = "aws_required"
         const val OTP_INVALID = "otp_invalid"
         const val LINK_CODE_INVALID = "link_code_invalid"
         const val UPGRADE_REQUIRED = "upgrade_required"

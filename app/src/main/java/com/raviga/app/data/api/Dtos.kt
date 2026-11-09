@@ -104,6 +104,8 @@ data class Me(
     val credits: CreditsBalance = CreditsBalance(),
     val consent: ConsentState = ConsentState(),
     val recoveryEmail: RecoveryEmail? = null,
+    /** v0.12.0 (R-109): where the TestFlight and Play test invites go; each null until set. */
+    val storeEmails: StoreEmails = StoreEmails(),
     val deliveryTargets: DeliveryTargets = DeliveryTargets(),
     val deviceCount: Int = 1,
     val deletion: Deletion? = null,
@@ -172,6 +174,8 @@ data class AppConfig(
     val ai: AiConfig = AiConfig(),
     val analytics: AnalyticsConfig = AnalyticsConfig(),
     val delivery: DeliveryConfig = DeliveryConfig(),
+    /** v0.12.0 (R-109): Make it live: the Apple role, the Play permissions and the official guides. */
+    val handover: HandoverConfig = HandoverConfig(),
     val legal: LegalConfig = LegalConfig(),
 ) {
     fun bracket(id: String?): Bracket? = quote.brackets.firstOrNull { it.id == id }
@@ -306,9 +310,20 @@ data class DeliveryConfig(
     val awsTrustedAccountId: String = "",
     val awsRoleName: String = "RavigaDeployRole",
     val awsRegion: String = "ap-south-1",
-    /** v0.10.2 (R-105, her decision): every project is built in the client's AWS; /pay needs a verified role. */
-    val awsRequiredToPay: Boolean = false,
+    /** v0.12.0 (R-109): Raviga's publishing user, one address for both stores; the client invites it. */
+    val publishingEmail: String = "",
 )
+
+/** v0.12.0 (R-109): what the client gives Raviga's publishing user in each store, and where to sign up. */
+@Serializable
+data class HandoverConfig(
+    val appleRole: String = "",
+    val playPermissions: List<String> = emptyList(),
+    val guides: HandoverGuides = HandoverGuides(),
+)
+
+@Serializable
+data class HandoverGuides(val appleEnroll: String = "", val playSignup: String = "")
 
 // Contract v0.9.2 (R-055, founder, 2026-10-29): no person's name and no address in the app. The server still sends
 // companyAddress, grievance.officerName and grievance.address for older builds; they are not decoded, so nothing can
@@ -347,12 +362,15 @@ object ProjectStatus {
     const val DELIVERED = "delivered"
     const val REVISION_REQUESTED = "revision_requested"
     const val ACCEPTED = "accepted"
+    /** v0.12.0 (R-109): published in the client's stores (and its backend running in their AWS). */
+    const val LIVE = "live"
     const val REJECTED = "rejected"
     const val CANCELLED = "cancelled"
 
     /** Only a draft (on the phone) can change; a submitted brief is v1 for good. */
     fun isEditable(status: String) = status == DRAFT
-    fun isTerminal(status: String) = status == ACCEPTED || status == REJECTED || status == CANCELLED
+    /** Nothing more happens without the client (v0.12.0: approval starts Make it live, so `accepted` still moves). */
+    fun isTerminal(status: String) = status == LIVE || status == REJECTED || status == CANCELLED
     /** Free until paid: submitted, or accepted and not yet paid. */
     fun canCancel(status: String) = status == SUBMITTED || status == APPROVED
 }
@@ -409,6 +427,10 @@ data class Project(
     /** What the project keeps of its quote: price, timeline and expiresAt (paid at /pay; re-quoted when expired). */
     val quote: Quote? = null,
     val submission: Submission? = null,
+    /** v0.12.0 (R-109): the store apps this project builds ("ios", "android"), from the quote. */
+    val apps: List<String> = emptyList(),
+    /** v0.12.0: the project needs a server (an admin panel counts); only then does Make it live ask for AWS. */
+    val hasBackend: Boolean = false,
     /** v0.10.0: null until paid. */
     val payment: Payment? = null,
     /** When the project was accepted or declined. */
@@ -557,7 +579,16 @@ data class ReportRequest(val category: String, val description: String)
 
 /** Empty while the project's quote holds; after it expired, the token of a new quote for the same brief. */
 @Serializable
-data class PayRequest(val quoteToken: String? = null)
+data class PayRequest(
+    val quoteToken: String? = null,
+    /** v0.12.0 (R-109): the test invites' addresses, saved to /me/store-emails first when given. */
+    val appleIdEmail: String? = null,
+    val googleEmail: String? = null,
+)
+
+/** v0.12.0 (R-109): `GET`/`PUT /me/store-emails`, and `me.storeEmails`. */
+@Serializable
+data class StoreEmails(val apple: String? = null, val google: String? = null)
 
 @Serializable
 data class Submission(
@@ -575,40 +606,115 @@ data class Timeline(
 
 @Serializable
 data class Milestone(
-    val id: String,                // v0.10.0: submitted | approved | paid | build | delivered | accepted
+    val id: String,                // v0.12.0: submitted | approved | paid | build | demo | accepted | live
     val label: String,
     val at: String? = null,
     val state: String = "upcoming", // done | current | upcoming
 )
 
 /**
- * Contract v0.11.0 (R-106, her decision): no GitHub. The deliverable is the source (a git bundle, a zip and
- * HANDOVER.md) in a private bucket in the client's own AWS account, plus the running app there. [sourceUrl] is the AWS
- * console link to that bucket, [handoverUrl] the console link to HANDOVER.md; both open after signing in to AWS. An older
- * delivery shows its repository link as [sourceUrl].
+ * Contract v0.12.0 (R-109, her delivery model): no source code is delivered. The demo is the real app on the client's
+ * phone (TestFlight and a Play internal test from Raviga's accounts); changes are paid requests; after approval
+ * [handover] tracks Make it live: publishing into the client's own stores, and the backend into their AWS.
  */
 @Serializable
 data class Delivery(
-    val sourceUrl: String? = null,
-    val handoverUrl: String? = null,
     val deliveredAt: String? = null,
-    val note: String? = null,
-    val aws: AwsDelivery? = null,
     val acceptBy: String? = null,
+    val demo: Demo? = null,
+    val changes: List<Change> = emptyList(),
+    val handover: Handover? = null,
 ) {
-    val handover: String? get() = handoverUrl?.takeIf { it.isNotBlank() }
-    val source: String? get() = sourceUrl?.takeIf { it.isNotBlank() }
+    /** The change still open (pricing, quoted or paid); at most one at a time. */
+    val openChange: Change? get() = changes.lastOrNull { it.status in Change.OPEN }
 }
 
 @Serializable
-data class AwsDelivery(
-    val status: String = "not_requested",
-    val note: String = "",
-    /** v0.10.2 (R-105): the fixed line ("Setting up in your AWS account." / "Running in your AWS account."); null when not requested. */
-    val statusLine: String? = null,
-    /** v0.10.2: the AWS console link; null until deployed. */
-    val consoleUrl: String? = null,
+data class Demo(
+    val testflight: DemoStore? = null,
+    val play: DemoStore? = null,
+    val invitedEmails: StoreEmails = StoreEmails(),
 )
+
+/** One store's test invite: `pending` until it's ready (Apple's first beta review takes about a day). */
+@Serializable
+data class DemoStore(val status: String = "pending", val url: String? = null) {
+    val ready: Boolean get() = status == "ready" && !url.isNullOrBlank()
+}
+
+@Serializable
+data class Handover(
+    /** "apple" / "play" → pending | invited | in_review | published, one per app the project builds. */
+    val stores: Map<String, String> = emptyMap(),
+    /** The fixed line per store ("Waiting for your invite", "Publishing", "In Apple's review", "Published"). */
+    val storeLines: Map<String, String> = emptyMap(),
+    val storeUrls: Map<String, String?> = emptyMap(),
+    /** none | pending | deployed */
+    val backend: String = "none",
+    val awsAccountId: String? = null,
+    val consoleUrl: String? = null,
+    val statusLine: String? = null,
+) {
+    companion object {
+        const val APPLE = "apple"
+        const val PLAY = "play"
+    }
+}
+
+/** v0.12.0 (R-109): a change request: described by the client, briefed and priced by the AI (floor 1 credit), paid. */
+@Serializable
+data class Change(
+    val id: String,
+    val createdAt: String? = null,
+    /** Null once the project's content is deleted. */
+    val description: String? = null,
+    /** pricing | quoted | paid | delivered | expired | failed */
+    val status: String = PRICING,
+    /** The fixed line for the status ("Change requested", "Change paid", …); show it as sent. */
+    val statusLine: String = "",
+    val brief: ChangeBrief? = null,
+    val quote: ChangeQuote? = null,
+    val paidAt: String? = null,
+    val deliveredAt: String? = null,
+    val jobId: String? = null,
+) {
+    companion object {
+        const val PRICING = "pricing"
+        const val QUOTED = "quoted"
+        const val PAID = "paid"
+        const val DELIVERED = "delivered"
+        const val EXPIRED = "expired"
+        const val FAILED = "failed"
+        val OPEN = setOf(PRICING, QUOTED, PAID)
+    }
+}
+
+@Serializable
+data class ChangeBrief(val title: String = "", val items: List<String> = emptyList())
+
+@Serializable
+data class ChangeQuote(
+    val credits: Double = 0.0,
+    val usd: Double = 0.0,
+    val estimatedWorkingDays: Int = 0,
+    val expiresAt: String? = null,
+)
+
+/** `POST /projects/{id}/changes`. */
+@Serializable
+data class ChangeRequest(val description: String)
+
+/** `202 { change, job }` from `POST /projects/{id}/changes`. */
+@Serializable
+data class ChangeStarted(val change: Change, val job: Job)
+
+/** The `change` job's result: the same object as in `project.delivery.changes`. */
+@Serializable
+data class ChangeResult(val change: Change)
+
+/** `POST /projects/{id}/handover/invited`: the client invited Raviga in that store ("apple" | "play"). */
+@Serializable
+data class HandoverInvitedRequest(val store: String)
 
 // ---------- Stateless AI, quotes, submit (contract v0.6) ----------
 

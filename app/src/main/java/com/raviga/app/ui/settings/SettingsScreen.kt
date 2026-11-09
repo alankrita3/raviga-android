@@ -60,8 +60,9 @@ fun SettingsScreen(nav: NavController) {
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             Text("Settings", style = RaType.title, color = Ink.ink, modifier = Modifier.padding(horizontal = Ra.gutter).padding(top = 8.dp, bottom = 20.dp))
-            // R-106 (PM-approved copy as iOS): no GitHub; the AWS account is where the project is built, delivered and run.
-            RaRow(
+            // R-109 (G): only when a project has a backend at Make it live (or an account is already connected).
+            val projects by container.projects.all.collectAsStateWithLifecycle()
+            if (aws != null || com.raviga.app.ui.status.GoLiveLogic.needsAwsRow(projects.values)) RaRow(
                 title = "AWS account",
                 subtitle = when {
                     aws == null -> "Not connected yet"

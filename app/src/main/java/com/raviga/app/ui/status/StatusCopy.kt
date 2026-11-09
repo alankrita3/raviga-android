@@ -14,7 +14,7 @@ object StatusCopy {
         ProjectStatus.DRAFT, ProjectStatus.CANCELLED -> Ink.ash
         ProjectStatus.SUBMITTED, ProjectStatus.REVISION_REQUESTED -> Ink.amber
         ProjectStatus.APPROVED, ProjectStatus.BUILDING -> Ink.blue
-        ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED -> Ink.moss
+        ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE -> Ink.moss
         ProjectStatus.REJECTED -> Ink.brick
         else -> Ink.ash
     }
@@ -25,9 +25,11 @@ object StatusCopy {
         ProjectStatus.SUBMITTED -> "In review"
         ProjectStatus.APPROVED -> "Accepted"
         ProjectStatus.BUILDING -> "In build"
-        ProjectStatus.DELIVERED -> "Delivered"
+        // v0.12.0 (R-109): the contract's milestone words; a demo, not a delivery of code.
+        ProjectStatus.DELIVERED -> "Demo ready"
         ProjectStatus.REVISION_REQUESTED -> "Being fixed"
         ProjectStatus.ACCEPTED -> "Approved by you"
+        ProjectStatus.LIVE -> "Live"
         ProjectStatus.REJECTED -> "Not accepted"
         ProjectStatus.CANCELLED -> "Cancelled"
         else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
@@ -54,7 +56,9 @@ object StatusCopy {
     fun pushLine(status: String): String = when (status) {
         ProjectStatus.APPROVED -> "Accepted. Pay to start building."
         ProjectStatus.BUILDING -> "Paid. We're building it."
-        ProjectStatus.DELIVERED -> "Delivered. Check it, then approve it or tell us what's wrong."
+        // The server's own lines (v0.12.0), for a push that came without a body.
+        ProjectStatus.DELIVERED -> "Demo ready: check your invites"
+        ProjectStatus.LIVE -> "Live in your stores."
         ProjectStatus.REVISION_REQUESTED -> "We're fixing what you reported."
         ProjectStatus.REJECTED -> "Not accepted."
         ProjectStatus.CANCELLED -> "Cancelled."
@@ -71,7 +75,7 @@ object StatusCopy {
     const val LOCAL_FIRST_PROMISE =
         "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, " +
             "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
-            "review and build it, and delete it when you accept the delivery."
+            "review and build it, and delete it when you approve your app."
 
     /** Under "Download my data" (her copy, 2026-11-03; same words as iOS). The zip carries drafts/ from [ExportBuilder]. */
     const val EXPORT_DRAFTS_CAPTION =
