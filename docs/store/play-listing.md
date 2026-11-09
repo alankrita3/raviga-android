@@ -11,7 +11,44 @@ Python `len()`, which is how Play counts.
 
 **Raviga** (6)
 
-## Full description as in Play since 2026-11-04, R-099 O (2,033)
+## Full description as in Play since 2026-11-09, R-109 H (2,080)
+
+R-109 listing H (her delivery model; the PM's go): the App Store text word for word as iOS recorded it (raviga-ios
+9aa9208, docs/R-109-copy.md section H; saved in App Store Connect, not submitted). Set by API after checking Play's live
+text was the R-099 O version, read back equal. The short description (77, "…get the code.") is not part of H and is
+now out of date; it waits for the PM's words. Play's App access ("Sign in details") has never been declared, so no
+review instructions carry the old AWS line.
+
+```text
+Raviga turns your idea into a native iPhone and Android app. Describe it in your own words, approve the quote, and try the real app on your phone before we publish it for you. AI does the building, with automated quality checks and developer oversight when needed.
+
+Describe it your way
+Speak, type, or upload a PDF, Word or text file. Speech is turned into text on your phone, and recordings and files never leave it.
+
+A written brief you control
+AI writes a clear project brief from your notes. Edit any section, regenerate it, and go back to earlier versions. Drafts are kept only on your phone.
+
+See the price first
+Get a quote in credits, with a breakdown of the work and a delivery estimate. A typical project is ready in 1 to 2 weeks after payment. Free to submit: you pay only once we accept it.
+
+Built by AI, quality checked
+AI builds your project at speed, with automated quality checks and developer oversight when needed. Follow each step in the app.
+
+Published for you
+Try the real app on your phone through TestFlight and Google Play. Approve it, tell us what's wrong and we fix it, or ask for a change. Then we publish it to your own App Store and Google Play accounts, under your name, and run its backend in your AWS account if it has one.
+
+Credits
+Projects are priced in credits (1 credit is US$10), bought in the app in packs of 10, 25 (plus 2 bonus), 50 (plus 6) and 100 (plus 15). Credits don't expire while your account exists. Nothing is charged until we accept your brief, and if we decline it after you paid, the credits come back. Your first brief is free; each new brief after that uses 1/12 credit (about US$0.83).
+
+Private by design
+No sign-up and no password. Your drafts stay on your phone. The brief you submit is kept only to build your project, and deleted from our servers when you approve your app. Usage analytics runs only if you turn it on.
+
+You need to be 18 or older. To publish, you'll need your own Apple and Google developer accounts.
+Terms: https://legal.ravigaapps.com/terms-of-use
+Privacy: https://legal.ravigaapps.com/privacy-policy
+```
+
+## Full description as in Play since 2026-11-04, R-099 O (2,033), before R-109 H
 
 R-099 O (PM-approved copy J-O, her decision): the Credits paragraph ends with the brief price. The App Store text word
 for word (iOS 3fd3778, docs/store/listing.md); set by API after checking that Play's live text plus this one sentence
