@@ -150,8 +150,9 @@ class DeliveryCopyTest {
     @Test fun nothingAboutCodeOrSource() {
         val all = listOf(
             DeliveryCopy.LIVE_INTRO, DeliveryCopy.LIVE_LINE, DeliveryCopy.AWS_LINE, DeliveryCopy.CONNECT_AWS_INTRO,
-            DeliveryCopy.NOTHING_YET, DeliveryCopy.PUBLISH_LINE,
+            DeliveryCopy.NOTHING_YET, DeliveryCopy.PUBLISH_LINE, DeliveryCopy.AWS_ID_HINT,
         )
+        assertEquals("Your 12-digit AWS account id. We deploy your app's backend here when it goes live.", DeliveryCopy.AWS_ID_HINT)
         assertTrue(all.none { "code" in it.lowercase() || "github" in it.lowercase() || "source" in it.lowercase() })
     }
 }

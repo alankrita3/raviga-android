@@ -180,7 +180,8 @@ fun ConnectAwsScreen(nav: NavController) {
                 trailing = if (state.saved) ({ InlineAction("Change", onClick = { vm.setAccountId("") }) }) else null,
             )
             Spacer(Modifier.height(6.dp))
-            Text("The 12-digit account id where we build and run your project. Find it in the AWS console under your account name, top right.", style = RaType.caption, color = Ink.graphite)
+            // R-109 (the PM's copy for both apps, 2026-11-09).
+            Text(com.raviga.app.ui.status.DeliveryCopy.AWS_ID_HINT, style = RaType.caption, color = Ink.graphite)
 
             val target = state.target
             if (state.saved && target != null) {

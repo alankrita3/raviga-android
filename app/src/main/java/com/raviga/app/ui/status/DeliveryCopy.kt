@@ -107,4 +107,6 @@ object DeliveryCopy {
     const val CONNECT_AWS_INTRO =
         "Your app's backend runs in your own AWS account. Connecting adds one role that only Raviga can use, and you can remove it any time."
     const val NOTHING_YET = "These steps appear once you approve your app."
+    /** Connect AWS, under the account id field (the PM's copy, 2026-11-09). */
+    const val AWS_ID_HINT = "Your 12-digit AWS account id. We deploy your app's backend here when it goes live."
 }
