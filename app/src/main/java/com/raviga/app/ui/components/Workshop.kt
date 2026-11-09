@@ -282,7 +282,7 @@ fun PrivacyPromise(modifier: Modifier = Modifier) {
             Text("Your idea stays yours", style = RaType.bodyMedium, color = Ink.blueInk)
             Spacer(Modifier.height(6.dp))
             Text(
-                "We use your brief only to build this project. We never sell it or use it to train AI, and we delete it from our servers when you accept the delivery.",
+                "We use your brief only to build this project. We never sell it or use it to train AI, and we delete it from our servers when you approve your app.",
                 style = RaType.secondary,
                 color = Ink.blueInk,
             )

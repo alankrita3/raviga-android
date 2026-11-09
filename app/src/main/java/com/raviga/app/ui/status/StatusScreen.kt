@@ -166,7 +166,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     if (deletedAt != null) {
                         StatusCopy.deletedLine(Time.shortDate(deletedAt), hasCopy = container.drafts.get(project.id) != null)
                     } else {
-                        "We keep this brief only to review and build it, and delete it from our servers when you accept the delivery."
+                        "We keep this brief only to review and build it, and delete it from our servers when you approve your app."
                     },
                     style = RaType.caption, color = Ink.graphite,
                 )

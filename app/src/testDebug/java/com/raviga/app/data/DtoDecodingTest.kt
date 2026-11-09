@@ -259,8 +259,9 @@ class DtoDecodingTest {
     /** R-066: her words for "What we don't keep", on the consent screens and Privacy and data. */
     @Test
     fun `the local-first promise is her R-066 wording`() {
+        // R-109 (the PM, 2026-11-09): only the verb changed, "approve your app", as the store listing.
         assertEquals(
-            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you accept the delivery.",
+            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you approve your app.",
             com.raviga.app.ui.status.StatusCopy.LOCAL_FIRST_PROMISE,
         )
     }

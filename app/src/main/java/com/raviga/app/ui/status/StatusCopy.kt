@@ -75,7 +75,7 @@ object StatusCopy {
     const val LOCAL_FIRST_PROMISE =
         "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, " +
             "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
-            "review and build it, and delete it when you accept the delivery."
+            "review and build it, and delete it when you approve your app."
 
     /** Under "Download my data" (her copy, 2026-11-03; same words as iOS). The zip carries drafts/ from [ExportBuilder]. */
     const val EXPORT_DRAFTS_CAPTION =
