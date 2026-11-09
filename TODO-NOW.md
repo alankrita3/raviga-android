@@ -1,7 +1,7 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-09 14:00.
+The PM reads this file if the session has closed. Updated 2026-11-09 15:40.
 
 ## In flight
 
@@ -33,10 +33,10 @@ The PM reads this file if the session has closed. Updated 2026-11-09 14:00.
   **Device check pending** (adb, below).
 - **Contract v0.11.3 on main (c6ff760):** "Brief refunded" ledger line (+1/12 credit, as iOS 507af2e); Capture
   refreshes credits after a draft fails with ai_unavailable/internal. Not checked on the phone (adb below).
-- **adb can't reach the OnePlus since ~16:30 (my doing).** I restarted the adb server to clear an "offline" state; the
-  new daemon gets "No route to host" while the port answers (macOS Local Network permission: the old daemon had it,
-  one started from this session doesn't). Fix: she runs `adb kill-server; adb connect 192.168.1.4:5555` once from
-  her own Terminal. The phone lock is free. mirakee-android shares the phone and lost its connection too.
+- **The OnePlus is on USB (2026-11-09, her plug-in): serial `3bdf6ba7`.** Wi-Fi adb doesn't hold from this Mac: its
+  Wi-Fi address is now 192.168.1.12 (was .4); `adb tcpip 5555` works, but a server started from this session gets "No
+  route to host" (macOS Local Network), and one started from a Terminal window connected once, then went offline. She
+  keeps USB for today.
 - **Post-launch backlog (the PM's call, via backend):** install fingerprint so the free brief can't be farmed: the
   per-app ANDROID_ID, hashed, sent at register and recover; backend sends a short contract when picked up. Data safety
   would then declare a device ID.
@@ -145,7 +145,7 @@ The PM reads this file if the session has closed. Updated 2026-11-09 14:00.
   turns up. The next upload is versionCode 9 (+1 per upload).
 - **Unit tests** debug 240, release 213; instrumented 6 (run with `am instrument`, never `connectedAndroidTest`: it
   uninstalls the app and its dev client). Kotlin warnings 0, lint errors 0, no `!!`.
-- **The OnePlus:** `tools/device_lock.sh take 192.168.1.4:5555 <session>` before using it, `give` after. Free now.
+- **The OnePlus:** `tools/device_lock.sh take 3bdf6ba7 <session>` (USB; Wi-Fi 192.168.1.12:5555 when it works) before using it, `give` after.
 - **Emulator:** started only with load under 20. It was shut down from outside this session twice today (08:0x, 09:1x).
   The PM told the iOS sessions not to stop processes they didn't start. If it happens again, tell the PM with the time.
 - **Test accounts:** backend deleted the dev clients on 11-03 (purge 11-10): cl_01m6efysre, cl_01m6ehqybe,
