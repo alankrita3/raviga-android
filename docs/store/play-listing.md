@@ -15,8 +15,9 @@ Python `len()`, which is how Play counts.
 
 R-109 listing H (her delivery model; the PM's go): the App Store text word for word as iOS recorded it (raviga-ios
 9aa9208, docs/R-109-copy.md section H; saved in App Store Connect, not submitted). Set by API after checking Play's live
-text was the R-099 O version, read back equal. The short description (77, "…get the code.") is not part of H and is
-now out of date; it waits for the PM's words. Play's App access ("Sign in details") has never been declared, so no
+text was the R-099 O version, read back equal. Short description since 2026-11-09 (her pick via the PM, 74, set
+by API, read back): "Custom apps, built with AI. Describe it, approve the quote, we publish it." (was "Custom software,
+built with AI. Describe it, approve the quote, get the code."). Play's App access ("Sign in details") has never been declared, so no
 review instructions carry the old AWS line.
 
 ```text
