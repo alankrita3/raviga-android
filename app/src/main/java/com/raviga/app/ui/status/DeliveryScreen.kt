@@ -172,18 +172,6 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                         }
                     }
 
-                    // R-109 (E): the change still open, with the server's line ("Change requested", "Change paid").
-                    state.openChange?.let { change ->
-                        Spacer(Modifier.height(6.dp))
-                        LinkTile(
-                            title = change.statusLine.ifBlank { DeliveryCopy.YOUR_CHANGE },
-                            detail = change.brief?.title?.takeIf { it.isNotBlank() } ?: change.description.orEmpty(),
-                            icon = Icons.Outlined.Flag,
-                            onClick = { if (state.quotedChange != null) changeSheet = true },
-                        )
-                        Spacer(Modifier.height(10.dp))
-                    }
-
                     // R-109 (F): after approval, the steps into the client's own stores.
                     if (project.status == ProjectStatus.ACCEPTED || project.status == ProjectStatus.LIVE) {
                         LinkTile(
@@ -197,6 +185,19 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     if (project.status == ProjectStatus.DELIVERED && delivery?.acceptBy != null) {
                         Spacer(Modifier.height(16.dp))
                         Text("Approved automatically on ${Time.shortDate(delivery.acceptBy)} if you do nothing.", style = RaType.caption, color = Ink.graphite)
+                    }
+
+                    // R-109 (E, as iOS): every change with the server's line; a priced one shows its price and Pay here.
+                    val changes = delivery?.changes.orEmpty()
+                    if (changes.isNotEmpty()) {
+                        Spacer(Modifier.height(Ra.sectionGap))
+                        SectionHeading("Your changes")
+                        Spacer(Modifier.height(12.dp))
+                        changes.forEach { change ->
+                            ChangeRow(change, state, onPay = { vm.payChange() }, onBuyCredits = { nav.navigate(Routes.CREDITS) })
+                            Spacer(Modifier.height(Ra.tileGap))
+                        }
+                        InlineNotice(state.changeError.takeIf { !changeSheet })
                     }
 
                     // R-103 (as iOS): the client's reports, one row each; nothing comes back but the status.
@@ -322,6 +323,38 @@ private fun CategoryRow(label: String, selected: Boolean, enabled: Boolean, onCl
     ) {
         Text(label, style = RaType.body, color = Ink.ink, modifier = Modifier.weight(1f))
         if (selected) Icon(Icons.Outlined.Check, contentDescription = null, tint = Ink.blue, modifier = Modifier.size(20.dp))
+    }
+}
+
+/** R-109 (E, as iOS): one change: what it is, its line, and for a priced one the price with Pay (or Buy credits). */
+@Composable
+private fun ChangeRow(change: com.raviga.app.data.api.Change, state: StatusViewModel.State, onPay: () -> Unit, onBuyCredits: () -> Unit) {
+    Column(Modifier.tile(padding = 14.dp)) {
+        val what = change.brief?.title?.takeIf { it.isNotBlank() } ?: change.description?.takeIf { it.isNotBlank() }
+        what?.let {
+            Text(it, style = RaType.bodyMedium, color = Ink.ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+        }
+        if (change.statusLine.isNotBlank()) {
+            Text(change.statusLine, style = RaType.secondary, color = if (change.status == com.raviga.app.data.api.Change.DELIVERED) Ink.moss else Ink.graphite)
+        }
+        val quote = change.quote
+        if (change.status == com.raviga.app.data.api.Change.QUOTED && quote != null) {
+            Spacer(Modifier.height(8.dp))
+            val usd = quote.usd.takeIf { it > 0.0 } ?: (quote.credits * state.config.credits.creditValueUsd)
+            Text(DeliveryCopy.changePrice(com.raviga.app.util.Money.credits(quote.credits), com.raviga.app.util.Money.usd(usd)), style = RaType.body, color = Ink.ink)
+            Spacer(Modifier.height(10.dp))
+            if (state.changeShortBy > 0.0) {
+                Text(
+                    "You have ${com.raviga.app.util.Money.credits(state.balance)}. You need ${com.raviga.app.util.Money.creditsOwed(state.changeShortBy)} more.",
+                    style = RaType.body, color = Ink.ink,
+                )
+                Spacer(Modifier.height(8.dp))
+                SecondaryButton("Buy credits", onClick = onBuyCredits)
+            } else {
+                SecondaryButton("Pay ${com.raviga.app.util.Money.credits(quote.credits)}", enabled = !state.busy, onClick = onPay)
+            }
+        }
     }
 }
 
