@@ -1,15 +1,18 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-11 22:00.
+The PM reads this file if the session has closed. Updated 2026-11-11 23:00.
 
 ## In flight
 
 - **R-116 items 1-7 on main (her walkthrough round 2; iOS docs/walkthrough-round2-2026-11-11.md).** Welcome (no
   brief-price line, step 3 body, "By Raviga Apps", page 1 body), Home's empty line, keep/delete wording (AI "What we
   keep.", rights, Delete my data confirm and row), How it works step 3 without the code line. Tests debug 280,
-  release 248; OnePlus: the delete confirm (dismissed with Keep) and How it works. **Waiting:** item 8 (the
-  five-section brief) on backend's R-115 contract version.
+  release 248; OnePlus: the delete confirm (dismissed with Keep) and How it works. Item 8 (contract v0.14.0, the
+  five-section brief) on main too (429620f): old drafts load as five (retired dropped, must-have as Features, today's
+  headings), regenerate only for the five, demo drafter in plain words. OnePlus on dev v0.14.0: an old 12-section draft
+  opens as five; a new brief (five sections, regenerate Features), quoted 26 and submitted as RA-0NA02Y (accepted,
+  unpaid, its brief five sections). Tests debug 282, release 249.
 
 - **R-113 on main (48b904d, 1dfda1f; her GO 11-11): the walkthrough bundle, items 1-6**, from iOS
   docs/walkthrough-bundle-2026-11-10.md and contract v0.12.1/v0.13.0. Tests debug 278, release 246 (incl. the demo
