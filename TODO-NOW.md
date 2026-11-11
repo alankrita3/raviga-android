@@ -1,9 +1,20 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-09 16:45.
+The PM reads this file if the session has closed. Updated 2026-11-11 20:00.
 
 ## In flight
+
+- **R-113 on main (48b904d, 1dfda1f; her GO 11-11): the walkthrough bundle, items 1-6**, from iOS
+  docs/walkthrough-bundle-2026-11-10.md and contract v0.12.1/v0.13.0. Tests debug 278, release 246 (incl. the demo
+  lifecycle: pay, launch, window start, a fix after launch, 409 after it). OnePlus pass over Wi-Fi in demo mode
+  (11-11): pay confirm, Buy credits → 50+6 highlighted → demo purchase → "Credits added. Pay 28 credits to start
+  building?"; demo, approve, Make it live (fee line, fold, 4 steps no AWS), live ("Your app is live", Something's
+  wrong in the window), report from live → fix → "Approve this version?", window ended → Request a change alone and
+  the sheet's short line; brief with 11 sections and the new deliverables; the quote's ownership line; How it works
+  from Settings and the timeline. Not on device: the old-quote 409 re-quote, the 409 free_fixes_ended sheet (tests
+  only), the Home card (the phone's Home isn't empty). Waiting: the PM's call on the quote's lock line ("after
+  delivery"). versionCode 9 waits for her word.
 
 - **R-109 on main (4cd526f, merged 2026-11-09; hint fac0dae): the new delivery model.** Contract v0.12.0, copy A to H,
   her Welcome page 4, the PM's decisions ("approve your app" in three lines, four small additions, the Connect AWS
