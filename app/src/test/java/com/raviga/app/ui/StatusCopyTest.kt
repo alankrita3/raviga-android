@@ -91,7 +91,7 @@ class StatusCopyTest {
     @Test fun everyContractErrorHasItsOwnLine() {
         val codes = listOf(
             "unauthenticated", "permission_denied", "consent_required", "not_found", "invalid_argument",
-            "invalid_state", "aws_required", "quote_stale", "insufficient_credits",
+            "invalid_state", "free_fixes_ended", "quote_stale", "insufficient_credits",
             "active_projects", "aws_role_not_ready", "link_code_invalid", "otp_invalid", "upgrade_required",
             "rate_limited", "content_rejected", "account_restricted", "ai_unavailable", "conflict", "internal",
         )

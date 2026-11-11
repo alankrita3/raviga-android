@@ -40,13 +40,17 @@ object GoLiveLogic {
         return buildList {
             add(Step(StepId.ACCOUNTS, DeliveryCopy.STEP_ACCOUNTS, done = invited))
             add(Step(StepId.INVITE, DeliveryCopy.STEP_INVITE, done = invited))
-            if (project.hasBackend) {
+            // R-113 (4b, as iOS): AWS only when the server says there's a backend (pending or deployed).
+            if (hasBackendStep(handover)) {
                 add(Step(StepId.AWS, DeliveryCopy.STEP_AWS, done = live || awsVerified || handover?.backend == "deployed"))
             }
             add(Step(StepId.PUBLISH, DeliveryCopy.STEP_PUBLISH, done = published))
             add(Step(StepId.LIVE, DeliveryCopy.STEP_LIVE, done = live))
         }
     }
+
+    /** The AWS step and every AWS line appear only with a backend: `handover.backend` pending or deployed. */
+    fun hasBackendStep(handover: Handover?): Boolean = handover?.backend == "pending" || handover?.backend == "deployed"
 
     /** A store's line in "We publish": the server's (`storeLines`), else the same words from its state. */
     fun storeLine(handover: Handover?, store: String): String =

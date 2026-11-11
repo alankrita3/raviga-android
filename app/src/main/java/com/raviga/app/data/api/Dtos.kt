@@ -236,7 +236,17 @@ data class ReportConfig(
         ReportCategory("other", "Something else"),
     ),
     val descriptionMaxChars: Int = 1000,
-)
+    /** v0.13.0 (R-112): free fixes end this many days after the first store is published. */
+    val freeFixDays: Int = 7,
+    /** v0.13.0: the rule in one line, shown by the report and change buttons while the window is open. */
+    val freeFixesLine: String = FREE_FIXES_LINE,
+) {
+    companion object {
+        /** Her words (2026-11-11); the built-in fallback when /config doesn't send the line. */
+        const val FREE_FIXES_LINE =
+            "Bugs and anything that doesn't match the brief are fixed free until 7 days after launch. New features are quoted as changes."
+    }
+}
 
 @Serializable
 data class ReportCategory(val id: String, val label: String)
@@ -387,11 +397,16 @@ object SectionIds {
     const val NON_FUNCTIONAL = "non_functional"
     const val DELIVERABLES = "deliverables"
     const val OUT_OF_SCOPE = "out_of_scope"
-    const val OPEN_QUESTIONS = "open_questions"
+    /**
+     * v0.12.1 (R-111, her decision: clients provide nothing): the brief has no open questions any more. A draft from
+     * before still carries the section; it's dropped quietly when drafts load ([Document.withoutRetired]).
+     */
+    const val RETIRED_OPEN_QUESTIONS = "open_questions"
 
+    /** The brief's 11 sections, in order (v0.12.1). */
     val ordered = listOf(
         SUMMARY, TARGET_USERS, PLATFORMS, FEATURES_MUST, FEATURES_NICE, SCREENS,
-        INTEGRATIONS, DATA_AUTH, NON_FUNCTIONAL, DELIVERABLES, OUT_OF_SCOPE, OPEN_QUESTIONS,
+        INTEGRATIONS, DATA_AUTH, NON_FUNCTIONAL, DELIVERABLES, OUT_OF_SCOPE,
     )
 
     val headings = mapOf(
@@ -406,7 +421,6 @@ object SectionIds {
         NON_FUNCTIONAL to "Non-functional requirements",
         DELIVERABLES to "Deliverables",
         OUT_OF_SCOPE to "Out of scope",
-        OPEN_QUESTIONS to "Open questions",
     )
 }
 
@@ -431,6 +445,11 @@ data class Project(
     val apps: List<String> = emptyList(),
     /** v0.12.0: the project needs a server (an admin panel counts); only then does Make it live ask for AWS. */
     val hasBackend: Boolean = false,
+    /**
+     * v0.13.0 (R-112): when free fixes end, 7 days after the first store is published; null before launch (fixes are
+     * free throughout the demo and handover). It never moves.
+     */
+    val freeFixesUntil: String? = null,
     /** v0.10.0: null until paid. */
     val payment: Payment? = null,
     /** When the project was accepted or declined. */
@@ -517,6 +536,11 @@ data class Document(
 
     /** What the AI and quote calls take: title and section bodies only. */
     fun body() = DocumentBody(title = title, sections = sections.map { SectionBody(it.id, it.body) })
+
+    /** v0.12.1: without the retired open-questions section (a draft from before keeps the rest as it was). */
+    fun withoutRetired(): Document =
+        if (sections.none { it.id == SectionIds.RETIRED_OPEN_QUESTIONS }) this
+        else copy(sections = sections.filter { it.id != SectionIds.RETIRED_OPEN_QUESTIONS })
 }
 
 @Serializable

@@ -60,6 +60,14 @@ data class LocalDraft(
             (latest.document.title != submitted.document.title || latest.document.sections != submitted.document.sections)
     }
     val isSubmitted: Boolean get() = serverProjectId != null
+
+    /**
+     * v0.12.1 (R-111): a draft from before keeps every version, without the retired open-questions section. Its quote
+     * was made with it: the server answers that submit with 409 quote_stale, and the app re-quotes as usual.
+     */
+    fun withoutRetired(): LocalDraft =
+        if (versions.none { v -> v.document.sections.any { it.id == com.raviga.app.data.api.SectionIds.RETIRED_OPEN_QUESTIONS } }) this
+        else copy(versions = versions.map { it.copy(document = it.document.withoutRetired()) })
     val isRefused: Boolean get() = refusal != null
     val quoteIsCurrent: Boolean get() = quote != null && quoteToken != null && quotedVersion == current?.version
     val displayTitle: String get() = (document?.title ?: title).ifBlank { title }

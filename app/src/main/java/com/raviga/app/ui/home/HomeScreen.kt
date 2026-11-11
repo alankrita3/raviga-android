@@ -149,6 +149,16 @@ fun HomeScreen(nav: NavController) {
                             style = RaType.body,
                             color = Ink.graphite,
                         )
+                        // R-113 item 6: before the first project, the whole flow is a tap away.
+                        Spacer(Modifier.height(20.dp))
+                        com.raviga.app.ui.components.RaRow(
+                            title = com.raviga.app.ui.onboarding.HowItWorks.EYEBROW,
+                            subtitle = com.raviga.app.ui.onboarding.HowItWorks.TITLE,
+                            onClick = { nav.navigate(Routes.HOW_IT_WORKS) },
+                            modifier = Modifier.tile(padding = 0.dp),
+                            hairline = false,
+                            horizontalPadding = 16.dp,
+                        )
                         if (signedOut) {
                             Spacer(Modifier.height(24.dp))
                             RemovedNotice(

@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -112,6 +113,8 @@ private fun StepBody(id: GoLiveLogic.StepId, project: Project, state: StatusView
     }
     when (id) {
         GoLiveLogic.StepId.ACCOUNTS -> {
+            // R-113 (her yes, 4a/4d): the stores' own fees, once, at the top; no prices.
+            Detail(DeliveryCopy.feeLine(stores.apple, stores.play))
             if (stores.apple) {
                 Detail(DeliveryCopy.APPLE_JOIN)
                 link(DeliveryCopy.APPLE_ENROL_GUIDE, guides.appleEnroll.ifBlank { DeliveryCopy.APPLE_ENROL_URL })
@@ -129,6 +132,7 @@ private fun StepBody(id: GoLiveLogic.StepId, project: Project, state: StatusView
         GoLiveLogic.StepId.INVITE -> {
             // The publishing user from /config (one address for both stores); nothing hardcoded.
             val email = state.config.delivery.publishingEmail
+            val named = email.ifBlank { DeliveryCopy.PUBLISHING_EMAIL_FALLBACK }
             val copy = rememberCopier()
             if (email.isNotBlank()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -136,13 +140,21 @@ private fun StepBody(id: GoLiveLogic.StepId, project: Project, state: StatusView
                     InlineAction(DeliveryCopy.COPY, onClick = { copy(email, false) })
                 }
             }
-            if (stores.apple) {
-                Detail(DeliveryCopy.appleInvite(email))
-                link(DeliveryCopy.APPLE_GUIDE, DeliveryCopy.APPLE_GUIDE_URL)
+            Detail(DeliveryCopy.INVITE_LINE)
+            // R-113 (her yes, 4c): the exact roles and permissions fold behind "Show exact steps", opened in place.
+            var steps by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+            if (!steps) {
+                InlineAction(DeliveryCopy.SHOW_STEPS, onClick = { steps = true }, modifier = Modifier.offset(x = (-8).dp))
             }
-            if (stores.play) {
-                Detail(DeliveryCopy.googleInvite(email))
-                link(DeliveryCopy.GOOGLE_GUIDE, DeliveryCopy.GOOGLE_GUIDE_URL)
+            if (steps) {
+                if (stores.apple) {
+                    Detail(DeliveryCopy.appleInvite(named))
+                    link(DeliveryCopy.APPLE_GUIDE, DeliveryCopy.APPLE_GUIDE_URL)
+                }
+                if (stores.play) {
+                    Detail(DeliveryCopy.googleInvite(named))
+                    link(DeliveryCopy.GOOGLE_GUIDE, DeliveryCopy.GOOGLE_GUIDE_URL)
+                }
             }
             Spacer(Modifier.height(8.dp))
             if (GoLiveLogic.waitingForInvite(project).isNotEmpty() && !state.invitesSent) {
@@ -172,7 +184,8 @@ private fun StepBody(id: GoLiveLogic.StepId, project: Project, state: StatusView
             Detail(DeliveryCopy.LIVE_LINE)
             handover?.storeUrls?.get(Handover.APPLE)?.takeIf { stores.apple && it.isNotBlank() }?.let { link(DeliveryCopy.OPEN_APP_STORE, it) }
             handover?.storeUrls?.get(Handover.PLAY)?.takeIf { stores.play && it.isNotBlank() }?.let { link(DeliveryCopy.OPEN_GOOGLE_PLAY, it) }
-            if (project.hasBackend) Detail(DeliveryCopy.BACKEND_LIVE)
+            // 4b: only when the backend is deployed; nothing about AWS without one.
+            if (handover?.backend == "deployed") Detail(DeliveryCopy.BACKEND_LIVE)
         }
     }
 }

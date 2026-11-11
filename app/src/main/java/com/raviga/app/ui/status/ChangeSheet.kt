@@ -108,7 +108,8 @@ fun ChangeSheet(
                 else -> {
                     Text(DeliveryCopy.REQUEST_CHANGE, style = RaType.heading, color = Ink.ink)
                     Spacer(Modifier.height(8.dp))
-                    Text(DeliveryCopy.CHANGE_LINE, style = RaType.secondary, color = Ink.graphite)
+                    // R-113: it points to Something's wrong only while that's offered (the free-fix window).
+                    Text(DeliveryCopy.changeLine(state.freeFixesOpen), style = RaType.secondary, color = Ink.graphite)
                     Spacer(Modifier.height(16.dp))
                     RaTextField(
                         value = text,

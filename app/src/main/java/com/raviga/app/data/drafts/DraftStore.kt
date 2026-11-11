@@ -60,7 +60,7 @@ class DraftStore(
             val map = dir.listFiles { f -> f.name.endsWith(EXT) }.orEmpty()
                 .filter { f -> f.name.removeSuffix(EXT) !in known }
                 .mapNotNull { f ->
-                    runCatching { json.decodeFromString(LocalDraft.serializer(), String(sealer.open(f.readBytes()), Charsets.UTF_8)) }
+                    runCatching { json.decodeFromString(LocalDraft.serializer(), String(sealer.open(f.readBytes()), Charsets.UTF_8)).withoutRetired() }
                         .onFailure { bad++ }
                         .getOrNull()
                 }.associateBy { it.id }

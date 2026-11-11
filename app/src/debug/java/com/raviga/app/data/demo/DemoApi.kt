@@ -251,9 +251,16 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                     consoleUrl = if (backend == "deployed") "https://ap-south-1.console.aws.amazon.com/console/home?region=ap-south-1" else null,
                     statusLine = handoverLine(stores, backend),
                 )
-                if (handover != h) {
-                    p = p.copy(delivery = p.delivery.copy(handover = handover))
-                    if (stores.values.all { it == "published" } && backend != "pending") {
+                // v0.13.0 (R-112): the free-fix window starts at the first store published, and never moves.
+                val firstPublished = p.freeFixesUntil == null && stores.values.any { it == "published" }
+                val done = stores.values.all { it == "published" } && backend != "pending"
+                if (handover != h || firstPublished || done) {
+                    p = p.copy(
+                        delivery = p.delivery.copy(handover = handover),
+                        freeFixesUntil = p.freeFixesUntil
+                            ?: if (firstPublished) Instant.now().plusSeconds(config.report.freeFixDays * 86_400L).toString() else null,
+                    )
+                    if (done) {
                         val (n, t) = transition(next, p, ProjectStatus.LIVE, "system")
                         next = n; p = t
                     } else {
@@ -680,6 +687,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     override suspend fun accept(id: String, body: Empty): Project = mutate { s ->
         val p = requireProject(s, id)
         if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Nothing to accept yet.")
+        // v0.13.0: a fix or a change approved after launch is published again into the same stores.
+        if (p.delivery?.handover != null) return@mutate transition(s, p, ProjectStatus.ACCEPTED, "client")
         // v0.12.0: approval starts Make it live: a store per app waiting for the client's invite, AWS if it has a backend.
         val stores = p.apps.ifEmpty { listOf("ios", "android") }.map { if (it == "ios") Handover.APPLE else Handover.PLAY }.associateWith { "pending" }
         val backend = if (p.hasBackend) "pending" else "none"
@@ -699,7 +708,16 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     /** v0.10.0 section 12: "Something's wrong" with a delivery: a fixed category and a short description. */
     override suspend fun report(id: String, body: ReportRequest): Project = mutate { s ->
         val p = requireProject(s, id)
-        if (p.status != ProjectStatus.DELIVERED) throw ApiException(ApiException.INVALID_STATE, 409, "Reports are for a delivered project.", details = buildJsonObject { put("status", p.status) })
+        // v0.13.0 (R-112): from the demo, after approval and once live, until free fixes end.
+        if (p.status !in setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE)) {
+            throw ApiException(ApiException.INVALID_STATE, 409, "Reports are for a delivered project.", details = buildJsonObject { put("status", p.status) })
+        }
+        val until = p.freeFixesUntil
+        if (until != null && Time.parse(until)?.isBefore(Instant.now()) == true) throw ApiException(
+            ApiException.FREE_FIXES_ENDED, 409,
+            "Free fixes ended on ${Time.shortDate(until)}, ${config.report.freeFixDays} days after launch. Request a change and we'll price it.",
+            details = buildJsonObject { put("freeFixesUntil", until); put("status", p.status) },
+        )
         val text = body.description.trim()
         if (body.category !in config.report.categories.map { it.id } || text.isEmpty() || text.length > config.report.descriptionMaxChars) {
             throw ApiException(ApiException.INVALID_ARGUMENT, 400, "Pick what's wrong and describe it in up to ${config.report.descriptionMaxChars} characters.")
@@ -732,7 +750,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 val quoted = change.copy(
                     status = Change.QUOTED,
                     statusLine = "Change requested",
-                    brief = ChangeBrief(title = words.replaceFirstChar { it.uppercase() }, items = listOf(text)),
+                    brief = ChangeBrief(title = words.replaceFirstChar { it.uppercase() }, items = listOf(text, config.report.freeFixesLine)),
                     quote = ChangeQuote(credits = 2.0, usd = 2 * config.credits.creditValueUsd, estimatedWorkingDays = 3,
                         expiresAt = Instant.now().plusSeconds(config.quote.validDays * 86_400L).toString()),
                 )
@@ -895,6 +913,13 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val backdated = s.copy(statusChangedAt = s.statusChangedAt + (latest.id to Instant.now().minusSeconds(3600).toString()))
         val (next, p) = advance(backdated, latest)
         next to "${p.title.ifBlank { "Project" }} is now ${p.status.replace('_', ' ')}"
+    }
+
+    /** Demo-only (R-113): ends the free-fix window of every live project now, to see the after-window screen. */
+    suspend fun demoEndFreeFixes(): Int = mutate { s ->
+        val ended = Instant.now().minusSeconds(60).toString()
+        val hit = s.projects.values.filter { it.freeFixesUntil != null }
+        hit.fold(s) { acc, p -> put(acc, p.copy(freeFixesUntil = ended)) } to hit.size
     }
 
     suspend fun demoAddCredits(credits: Int) = mutate { s ->

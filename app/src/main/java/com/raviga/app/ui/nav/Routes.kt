@@ -69,6 +69,9 @@ object Routes {
     const val CREDITS = "credits"
     /** The credits screen, going straight on to buy [productId] (after the first consent). */
     const val CREDITS_BUY = "credits/buy/{productId}"
+    /** R-113: the packs, opened from a project short of [short] credits (the covering pack stands out; back to pay). */
+    const val CREDITS_FOR = "credits/for/{projectId}?short={short}"
+    fun creditsFor(projectId: String, short: Double) = "credits/for/$projectId?short=$short"
     fun creditsBuy(productId: String) = "credits/buy/$productId"
     const val SETTINGS = "settings"
     const val DELIVERY_TARGETS = "settings/targets"

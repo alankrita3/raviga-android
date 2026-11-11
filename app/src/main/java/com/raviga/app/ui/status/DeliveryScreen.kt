@@ -99,6 +99,12 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
     var description by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     // R-109 (E): "Request a change", and back to a priced change waiting to be paid.
     var changeSheet by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    // R-113 (3, the PM: the same for changes): paying for a change asks first; back from buying credits, asks to pay.
+    var confirmChangePay by remember { mutableStateOf(false) }
+    val handle = nav.currentBackStackEntry?.savedStateHandle
+    val creditsAdded by (handle?.getStateFlow(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) ?: kotlinx.coroutines.flow.MutableStateFlow(false))
+        .collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(creditsAdded) { if (creditsAdded) vm.watchCredits() }
 
     ScreenScaffold(
         topBar = {
@@ -114,17 +120,25 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
         },
         bottomBar = {
             val status = project?.status ?: return@ScreenScaffold
-            if (status == ProjectStatus.DELIVERED) BottomBar {
-                InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                // R-109 (D, iOS's labels): approve it, say what's wrong (free), or ask for something new (paid).
-                PrimaryButton(DeliveryCopy.APPROVE, loading = state.busy, onClick = { confirmAccept = true })
-                Spacer(Modifier.height(8.dp))
-                SecondaryButton(DeliveryCopy.SOMETHING_WRONG, enabled = !state.busy, onClick = { reportSheet = true })
+            if (status == ProjectStatus.DELIVERED || state.freeFixesOpen || state.canRequestChange) BottomBar {
+                InlineNotice(state.error.takeIf { !reportSheet }, Modifier.padding(bottom = 8.dp))
+                // R-113 (the PM's call 1): the free-fix rule once, by the buttons, while fixes are free.
+                if (state.freeFixesOpen) {
+                    Text(
+                        state.config.report.freeFixesLine.ifBlank { com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE },
+                        style = RaType.caption, color = Ink.graphite,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    )
+                }
+                // R-109 (D, iOS's labels): approve the demo, say what's wrong (free), or ask for something new (paid).
+                if (status == ProjectStatus.DELIVERED) {
+                    PrimaryButton(DeliveryCopy.APPROVE, loading = state.busy, onClick = { confirmAccept = true })
+                    Spacer(Modifier.height(8.dp))
+                }
+                // R-113 (5b): from the demo until 7 days after launch; after that, Request a change alone.
+                if (state.freeFixesOpen) SecondaryButton(DeliveryCopy.SOMETHING_WRONG, enabled = !state.busy, onClick = { reportSheet = true })
                 if (state.canRequestChange) TertiaryButton(DeliveryCopy.REQUEST_CHANGE, enabled = !state.busy, onClick = { changeSheet = true })
-            } else if (state.canRequestChange) BottomBar {
-                // After approval and once live, a change is still a request away.
-                InlineNotice(state.error, Modifier.padding(bottom = 8.dp))
-                TertiaryButton(DeliveryCopy.REQUEST_CHANGE, onClick = { changeSheet = true })
             }
         },
     ) { padding ->
@@ -172,10 +186,11 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                         }
                     }
 
-                    // R-109 (F): after approval, the steps into the client's own stores.
-                    if (project.status == ProjectStatus.ACCEPTED || project.status == ProjectStatus.LIVE) {
+                    // R-109 (F): after approval, the steps into the client's own stores. R-113 (5a): "Your app is live" once
+                    // it's in a store, also while a fix or a change goes round again.
+                    if (project.status == ProjectStatus.ACCEPTED || project.status == ProjectStatus.LIVE || state.launched) {
                         LinkTile(
-                            title = DeliveryCopy.LIVE_TITLE,
+                            title = if (state.launched) DeliveryCopy.LIVE_TILE else DeliveryCopy.LIVE_TITLE,
                             detail = project.delivery?.handover?.statusLine?.takeIf { it.isNotBlank() } ?: DeliveryCopy.STEP_ACCOUNTS,
                             icon = Icons.Outlined.Flag,
                             onClick = { nav.navigate(Routes.goLive(projectId)) },
@@ -194,7 +209,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                         SectionHeading("Your changes")
                         Spacer(Modifier.height(12.dp))
                         changes.forEach { change ->
-                            ChangeRow(change, state, onPay = { vm.payChange() }, onBuyCredits = { nav.navigate(Routes.CREDITS) })
+                            ChangeRow(change, state, onPay = { confirmChangePay = true }, onBuyCredits = { nav.navigate(Routes.creditsFor(projectId, state.changeShortBy)) })
                             Spacer(Modifier.height(Ra.tileGap))
                         }
                         InlineNotice(state.changeError.takeIf { !changeSheet })
@@ -225,6 +240,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     project.timeline?.takeIf { it.milestones.isNotEmpty() }?.let { tl ->
                         Spacer(Modifier.height(Ra.sectionGap))
                         TimelineView(tl.milestones, note = "Projects are usually delivered well ahead of this date.", estimatedDeliveryDate = tl.estimatedDeliveryDate)
+                        // R-113 item 6: the whole flow, by the timeline.
+                        InlineAction(com.raviga.app.ui.onboarding.HowItWorks.EYEBROW, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
                     }
                     Spacer(Modifier.height(32.dp))
                 }
@@ -236,8 +253,15 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmAccept = false },
             containerColor = Ink.surface,
-            title = { Text(DeliveryCopy.APPROVE_TITLE, style = RaType.heading, color = Ink.ink) },
-            text = { Text(DeliveryCopy.APPROVE_BODY, style = RaType.body, color = Ink.graphite) },
+            // R-113 (the PM's call 2): a fix or a change approved again is published again; the brief went at the first.
+            title = { Text(if (state.secondApproval) DeliveryCopy.APPROVE_AGAIN_TITLE else DeliveryCopy.APPROVE_TITLE, style = RaType.heading, color = Ink.ink) },
+            text = {
+                val stores = GoLiveLogic.stores(project ?: return@AlertDialog)
+                Text(
+                    if (state.secondApproval) DeliveryCopy.approveAgainBody(stores.apple, stores.play) else DeliveryCopy.APPROVE_BODY,
+                    style = RaType.body, color = Ink.graphite,
+                )
+            },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = { confirmAccept = false; vm.accept() }) { Text("Approve", style = RaType.button, color = Ink.ink) }
             },
@@ -246,12 +270,27 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
             },
         )
     }
+    val quoted = state.quotedChange?.quote?.credits
+    if (confirmChangePay && quoted != null) {
+        PayDialog(
+            com.raviga.app.ui.credits.PayCopy.confirm(quoted, state.balance),
+            onPay = { confirmChangePay = false; vm.payChange(onPaid = { changeSheet = false }) },
+            onCancel = { confirmChangePay = false },
+        )
+    }
+    if (creditsAdded && quoted != null && state.changeShortBy <= 0.0 && !state.busy && !confirmChangePay) {
+        PayDialog(
+            com.raviga.app.ui.credits.PayCopy.creditsAdded(quoted),
+            onPay = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false); vm.payChange(onPaid = { changeSheet = false }) },
+            onCancel = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) },
+        )
+    }
     if (changeSheet && project != null) {
         ChangeSheet(
             state = state,
             onPrice = { vm.requestChange(it) },
-            onPay = { vm.payChange(onPaid = { changeSheet = false }) },
-            onBuyCredits = { changeSheet = false; nav.navigate(Routes.CREDITS) },
+            onPay = { confirmChangePay = true },
+            onBuyCredits = { changeSheet = false; nav.navigate(Routes.creditsFor(projectId, state.changeShortBy)) },
             onDismiss = { changeSheet = false },
         )
     }
@@ -292,6 +331,11 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                 Text(REPORT_HINT, style = RaType.secondary, color = Ink.graphite)
                 InlineNotice(state.error)
                 Spacer(Modifier.height(16.dp))
+                // v0.13.0: free fixes ended while the sheet was open: the server's words above, then Request a change.
+                if (state.freeFixesEnded) {
+                    PrimaryButton(DeliveryCopy.REQUEST_CHANGE, onClick = { reportSheet = false; vm.clearError(); changeSheet = true })
+                    return@Column
+                }
                 PrimaryButton(
                     "Send report",
                     enabled = category != null && description.isNotBlank(),

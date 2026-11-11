@@ -14,6 +14,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.border
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -81,6 +84,8 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
         val offerRecoveryEmail: Boolean = false,
         val loadingOlder: Boolean = false,
         val olderError: String? = null,
+        /** R-113: bumped when a purchase went through (or was taken and is still being booked). */
+        val purchased: Int = 0,
     )
 
     private val _state = MutableStateFlow(State(demoBilling = container.credits.isDemoBilling, billingAvailable = container.billing.isAvailable))
@@ -125,9 +130,11 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
             _state.update {
                 it.copy(
                     buying = null,
+                    purchased = if (outcome == PurchaseOutcome.Success || outcome == PurchaseOutcome.NotBookedYet) it.purchased + 1 else it.purchased,
                     error = (outcome as? PurchaseOutcome.Failed)?.message,
                     notice = when (outcome) {
-                        PurchaseOutcome.Success -> "${pack.total} credits added."
+                        // R-113: "10 credits added." (was "10.0 credits added." since credits became decimals).
+                        PurchaseOutcome.Success -> "${Money.credits(pack.total)} added."
                         PurchaseOutcome.Pending -> "Payment pending. Your credits arrive as soon as your bank confirms it."
                         PurchaseOutcome.NotBookedYet -> "Your purchase is confirmed. The credits arrive in a moment."   // R-092 #20, as iOS
                         else -> null
@@ -171,7 +178,7 @@ class CreditsViewModel(private val container: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun CreditsScreen(nav: NavController, buy: String? = null) {
+fun CreditsScreen(nav: NavController, buy: String? = null, forProject: String? = null, short: Double = 0.0) {
     val container = LocalAppContainer.current
     val vm: CreditsViewModel = viewModel { CreditsViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -192,6 +199,16 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
             delay(250)
         }
     }
+
+    // R-113 (her yes, 3b): bought for a project: straight back to it, which asks to pay once the credits cover it.
+    LaunchedEffect(state.purchased) {
+        if (state.purchased > 0 && forProject != null) {
+            nav.previousBackStackEntry?.savedStateHandle?.set(PayCopy.CREDITS_ADDED, true)
+            nav.popBackStack()
+        }
+    }
+    // R-113 (3c): opened from a project, the smallest pack that covers what's owed stands out.
+    val highlight = if (forProject != null) PackPick.covering(state.packs, short)?.productId else null
 
     ScreenScaffold(topBar = { RaTopBar(onBack = { nav.popBackStack() }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
@@ -232,10 +249,16 @@ fun CreditsScreen(nav: NavController, buy: String? = null) {
                 // Before Agree a tap goes to the first consent (R-056), then back here to buy this pack.
                 val agreed = container.session.agreed
                 val enabled = (!agreed || state.billingAvailable || state.demoBilling) && state.buying == null
+                val picked = pack.productId == highlight
                 Row(
                     Modifier
                         .padding(horizontal = Ra.gutter)
                         .padding(bottom = 10.dp)
+                        .then(
+                            if (picked) Modifier.border(2.dp, Ink.link, androidx.compose.foundation.shape.RoundedCornerShape(Ra.tileRadius))
+                                .semantics { selected = true }
+                            else Modifier,
+                        )
                         .tile(padding = 16.dp, onClick = if (enabled) ({
                             if (!agreed) nav.navigate(Routes.consentFirst(Routes.creditsBuy(pack.productId)))
                             else context.findActivity()?.let { vm.buy(it, pack) }

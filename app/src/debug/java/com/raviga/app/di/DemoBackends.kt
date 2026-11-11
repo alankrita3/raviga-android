@@ -13,6 +13,7 @@ object DemoBackends {
             override val api: RavigaApi = demo
             override suspend fun advanceLatest() = demo.demoAdvanceLatest()
             override suspend fun addCredits(credits: Int) { demo.demoAddCredits(credits) }
+            override suspend fun endFreeFixes() = demo.demoEndFreeFixes()
             override suspend fun reset() { demo.demoReset() }
             override suspend fun purchase(productId: String) { demo.demoPurchase(productId) }
         }

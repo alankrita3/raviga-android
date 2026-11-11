@@ -135,6 +135,10 @@ class SettingsViewModel(
 
     fun demoAdvance() = demoAction { demo?.advanceLatest() ?: "No submitted project to advance." }
     fun demoAddCredits() = demoAction { demo?.addCredits(50); container.credits.refresh(); "50 demo credits added." }
+    fun demoEndFreeFixes() = demoAction {
+        val n = demo?.endFreeFixes() ?: 0
+        if (n == 0) "No live project has a free-fix window yet." else "Free fixes ended on $n project${if (n == 1) "" else "s"}."
+    }
     fun demoReset() = demoAction {
         demo?.reset()
         container.cache.clearAll()

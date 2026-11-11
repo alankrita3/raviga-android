@@ -41,9 +41,9 @@ object BriefWriter {
         SectionIds.INTEGRATIONS to "Payments, maps, messaging, other services.",
         SectionIds.DATA_AUTH to "How people sign in and what is stored.",
         SectionIds.NON_FUNCTIONAL to "Speed, scale, security, accessibility.",
-        SectionIds.DELIVERABLES to "What you receive at handover.",
+        // v0.12.1 (the PM, 2026-11-10): the server's words.
+        SectionIds.DELIVERABLES to "iPhone and Android apps, backend, admin panel, store listings.",
         SectionIds.OUT_OF_SCOPE to "What this project does not include.",
-        SectionIds.OPEN_QUESTIONS to "Things we still need you to decide.",
     )
 
     private class Signal(
@@ -178,35 +178,20 @@ object BriefWriter {
             "Font scaling and screen reader labels on every screen",
         )
 
-        val deliverables = buildList {
-            add("Source code in a GitHub repository transferred to your account")
-            if (platforms.any { it.contains("Android") }) add("Play Store ready Android build (AAB)")
-            if (platforms.any { it.contains("iOS") }) add("App Store ready iOS build")
-            if (platforms.any { it.contains("web", true) }) add("Deployed web app with your domain pointed at it")
-            add("Backend deployed on AWS, handed over through a cross-account role")
-            add("Setup notes and a README for the next developer")
-            add("Two rounds of revisions after delivery")
-        }
+        // R-109/R-111/R-112 (as the server's drafter): no source code, no revision rounds; ends with the free-fix rule.
+        val deliverables = listOf(
+            "Your app, published in your App Store and Google Play accounts",
+            "Backend running in your AWS account (only if your app needs one)",
+            com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE,
+        )
 
+        // R-111b: nothing about who makes the content; the client provides nothing.
         val outOfScope = buildList {
-            add("Logo, brand design and marketing material")
-            add("Writing product content, listings or help articles")
-            add("Store listing assets, developer account fees and ongoing hosting costs")
+            add("Your App Store and Google Play developer accounts (set up at Make it live)")
             if (found.none { it.feature.startsWith("Admin") }) add("An admin web panel (can be added as a second project)")
             if (platforms.none { it.contains("iOS") }) add("An iOS app")
             if (platforms.none { it.contains("web", true) }) add("A public website")
         }
-
-        val questions = buildList {
-            if (!Regex("\\b(pay|price|free|monet|subscri|ads?|revenue|commission)\\w*", RegexOption.IGNORE_CASE).containsMatchIn(text))
-                add("How will the product make money, if at all?")
-            if (users.isEmpty()) add("Who is the first group of people who will use it?")
-            if (found.none { it.feature.startsWith("Sign in") }) add("Do people need accounts, or can they use it without signing in?")
-            add("Do you have a name, logo and colours we should use?")
-            if (found.none { it.feature == "Multiple languages" }) add("Should it support languages other than English?")
-            if (!Regex("\\b(existing|current|already|migrate|old)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text))
-                add("Is there an existing system or data we must connect to or migrate from?")
-        }.take(5)
 
         fun section(id: String, body: String) = Section(id = id, heading = headings.getValue(id), body = body, hint = hints[id])
         fun bullets(items: List<String>) = items.joinToString("\n") { "- $it" }
@@ -225,7 +210,6 @@ object BriefWriter {
                 section(SectionIds.NON_FUNCTIONAL, bullets(nonFunctional)),
                 section(SectionIds.DELIVERABLES, bullets(deliverables)),
                 section(SectionIds.OUT_OF_SCOPE, bullets(outOfScope)),
-                section(SectionIds.OPEN_QUESTIONS, bullets(questions)),
             ),
         )
     }
@@ -287,11 +271,12 @@ object BriefWriter {
         val days = timeline.maxWeeks * 5
         val score = (personDays / 40.0 * 10).roundToInt().coerceIn(1, 10)
         val assumptions = buildList {
-            add("Design follows Raviga's standard minimal interface unless you provide brand guidelines")
-            add("Third-party accounts (Stripe, Google Maps, Apple Developer) are opened by you; we set them up")
-            add("Product content and images are provided by you")
+            // R-111 (as iOS's mock): no asks of the client; the merchant-account question stays parked.
+            add("Third-party services (payments, SMS, maps) are billed to your own accounts.")
             if (!doc.section(SectionIds.FEATURES_NICE)?.body.orEmpty().contains("languages", true)) add("One language (English) in the first release")
             add("Nice-to-have features are not included in this quote")
+            // R-112: the assumptions end with the free-fix rule.
+            add(com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE)
         }
         return QuoteParts(credits, bracket?.id, days, timeline, score, drivers.take(4), assumptions, breakdown)
     }

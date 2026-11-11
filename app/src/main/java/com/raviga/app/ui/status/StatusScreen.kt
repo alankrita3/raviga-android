@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -62,6 +63,13 @@ fun StatusScreen(nav: NavController, projectId: String) {
     }
     val project = state.project
     var confirmCancel by remember { mutableStateOf(false) }
+    // R-113 (her yes, 3a): paying asks first.
+    var confirmPay by remember { mutableStateOf(false) }
+    // R-113 (3b): back from buying credits for this project: ask to pay once they cover the price.
+    val handle = nav.currentBackStackEntry?.savedStateHandle
+    val creditsAdded by (handle?.getStateFlow(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) ?: kotlinx.coroutines.flow.MutableStateFlow(false))
+        .collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(creditsAdded) { if (creditsAdded) vm.watchCredits() }
 
     ScreenScaffold(
         topBar = {
@@ -82,8 +90,9 @@ fun StatusScreen(nav: NavController, projectId: String) {
                         when {
                             !state.awaitingPayment -> Unit
                             state.priceExpired -> PrimaryButton("Get a new quote", loading = state.quoting, enabled = !state.busy, onClick = { vm.requestNewQuote() })
-                            state.shortBy > 0.0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.CREDITS) })
-                            else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { vm.pay() })
+                            // R-113 (3b, 3c): the packs, with the pack that covers it standing out; back here to pay.
+                            state.shortBy > 0.0 -> PrimaryButton("Buy credits", onClick = { nav.navigate(Routes.creditsFor(projectId, state.shortBy)) })
+                            else -> PrimaryButton("Pay ${Money.credits(state.price)}", loading = state.busy, enabled = !state.quoting, onClick = { confirmPay = true })
                         }
                         Spacer(Modifier.height(4.dp))
                         DestructiveButton("Cancel project", enabled = !state.busy && !state.quoting, onClick = { confirmCancel = true })
@@ -158,6 +167,8 @@ fun StatusScreen(nav: NavController, projectId: String) {
                         estimatedDeliveryDate = tl.estimatedDeliveryDate,
                         undatedDelivery = weeks?.let { "Ready in $it after payment" },
                     )
+                    // R-113 item 6: the whole flow, by the timeline.
+                    InlineAction(com.raviga.app.ui.onboarding.HowItWorks.EYEBROW, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
                 }
 
                 val deletedAt = project.contentDeletedAt
@@ -175,6 +186,17 @@ fun StatusScreen(nav: NavController, projectId: String) {
         }
     }
 
+    if (confirmPay && project != null) {
+        PayDialog(com.raviga.app.ui.credits.PayCopy.confirm(state.price.toDouble(), state.balance), onPay = { confirmPay = false; vm.pay() }, onCancel = { confirmPay = false })
+    }
+    // Credits landed and cover it: one tap to start building. Cancel leaves the Pay button as it was.
+    if (creditsAdded && state.awaitingPayment && !state.priceExpired && state.shortBy <= 0.0 && !state.busy && !confirmPay) {
+        PayDialog(
+            com.raviga.app.ui.credits.PayCopy.creditsAdded(state.price.toDouble()),
+            onPay = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false); vm.pay() },
+            onCancel = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) },
+        )
+    }
     if (confirmCancel) {
         // R-092 #37 (iOS review): no draft is made on cancel; say what really happens to the brief.
         val hasCopy = project?.let { container.drafts.get(it.id) } != null
@@ -192,6 +214,18 @@ fun StatusScreen(nav: NavController, projectId: String) {
             dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Keep it", style = RaType.button, color = Ink.ink) } },
         )
     }
+}
+
+/** R-113 (3a, 3b): a one-line question with Pay and Cancel (as iOS). */
+@Composable
+internal fun PayDialog(question: String, onPay: () -> Unit, onCancel: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        containerColor = Ink.surface,
+        title = { Text(question, style = RaType.heading, color = Ink.ink) },
+        confirmButton = { TextButton(onClick = onPay) { Text(com.raviga.app.ui.credits.PayCopy.PAY, style = RaType.button, color = Ink.ink) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(com.raviga.app.ui.credits.PayCopy.CANCEL, style = RaType.button, color = Ink.ink) } },
+    )
 }
 
 /** Building while the team works on it, the parcel once it's delivered; no picture for the rest. */

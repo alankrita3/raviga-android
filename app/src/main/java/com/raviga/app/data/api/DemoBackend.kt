@@ -10,6 +10,8 @@ interface DemoBackend {
     /** Plays the team's next move on the latest submitted project now; the line to show, or null if none. */
     suspend fun advanceLatest(): String?
     suspend fun addCredits(credits: Int)
+    /** R-113: ends every live project's free-fix window now; how many it ended. */
+    suspend fun endFreeFixes(): Int
     suspend fun reset()
     suspend fun purchase(productId: String)
 }

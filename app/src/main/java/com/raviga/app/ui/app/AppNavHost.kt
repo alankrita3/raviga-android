@@ -106,7 +106,8 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
 
     NavHost(navController = nav, startDestination = state.startRoute) {
         composable(Routes.WELCOME) { WelcomeScreen(nav) }
-        composable(Routes.HOW_IT_WORKS) { WelcomeScreen(nav, replay = true) }
+        // R-113 item 6: the approved eight-step flow (Settings, Home before the first project, by the timeline).
+        composable(Routes.HOW_IT_WORKS) { com.raviga.app.ui.onboarding.HowItWorksScreen(nav) }
         composable(Routes.NOTIFY_PROMPT, arguments = listOf(navArgument("next") { type = NavType.StringType })) { entry ->
             NotificationPromptScreen(nav, next = entry.arguments?.getString("next") ?: Routes.HOME)
         }
@@ -172,6 +173,15 @@ fun AppNavHost(nav: NavHostController, pendingDeepLinkProject: String?, onDeepLi
         composable(Routes.GO_LIVE) { entry -> com.raviga.app.ui.status.GoLiveScreen(nav, entry.arguments?.getString("projectId").orEmpty()) }
         composable(Routes.CREDITS) { CreditsScreen(nav) }
         composable(Routes.CREDITS_BUY) { entry -> CreditsScreen(nav, buy = entry.arguments?.getString("productId")) }
+        composable(
+            Routes.CREDITS_FOR,
+            arguments = listOf(
+                navArgument("projectId") { type = NavType.StringType },
+                navArgument("short") { type = NavType.FloatType; defaultValue = 0f },
+            ),
+        ) { entry ->
+            CreditsScreen(nav, forProject = entry.arguments?.getString("projectId"), short = entry.arguments?.getFloat("short")?.toDouble() ?: 0.0)
+        }
         composable(Routes.SETTINGS) { SettingsScreen(nav) }
         composable(Routes.DELIVERY_TARGETS) { DeliveryTargetsScreen(nav) }
         composable(Routes.PRIVACY) { PrivacyScreen(nav) }

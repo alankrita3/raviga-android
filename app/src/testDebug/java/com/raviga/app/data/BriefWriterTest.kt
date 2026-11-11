@@ -13,7 +13,7 @@ class BriefWriterTest {
     private val salon = "I want an app for my salon in Delhi called GlowBook. Customers should be able to book appointments, pay online with UPI, and get reminders. There should be an admin dashboard for the staff."
 
     @Test
-    fun `writes all twelve sections in order`() {
+    fun `writes all eleven sections in order`() {
         val draft = BriefWriter.write(listOf(salon))
         assertEquals(SectionIds.ordered, draft.sections.map { it.id })
         assertTrue(draft.sections.all { it.body.isNotBlank() })
@@ -68,5 +68,34 @@ class BriefWriterTest {
         val config = DemoApi.demoConfig()
         assertEquals(null, config.quote.brackets.first { it.id == "enterprise" }.timeline)
         assertEquals(com.raviga.app.data.api.QuoteTimeline(1, 2), config.quote.brackets.first { it.id == "standard" }.timeline)
+    }
+}
+
+/** R-113 item 1 (contract v0.12.1 and v0.13.0, as the server's drafter): the client provides nothing; fixes are free until 7 days after launch. */
+class BriefWriterV013Test {
+    private val salon = "I want an app for my salon in Delhi called GlowBook. Customers should be able to book appointments, pay online with UPI, and get reminders."
+
+    @Test
+    fun `no open questions and nothing asked of the client`() {
+        val draft = BriefWriter.write(listOf(salon))
+        assertEquals(11, draft.sections.size)
+        assertEquals(SectionIds.OUT_OF_SCOPE, draft.sections.last().id)
+        val text = draft.sections.joinToString("\n") { it.body }
+        listOf("?", "you provide", "provided by you", "Two rounds", "revision", "GitHub", "source code", "logo", "brand").forEach {
+            assertTrue("no \"$it\"", !text.contains(it, ignoreCase = true))
+        }
+    }
+
+    @Test
+    fun `deliverables and assumptions end with the free-fix rule`() {
+        val draft = BriefWriter.write(listOf(salon))
+        val deliverables = draft.sections.first { it.id == SectionIds.DELIVERABLES }.body.lines()
+        assertEquals("- Your app, published in your App Store and Google Play accounts", deliverables.first())
+        assertEquals("- " + com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE, deliverables.last())
+        assertTrue(draft.sections.first { it.id == SectionIds.OUT_OF_SCOPE }.body.contains("Your App Store and Google Play developer accounts (set up at Make it live)"))
+        val doc = com.raviga.app.data.api.Document(title = draft.title, sections = draft.sections)
+        val assumptions = BriefWriter.quote(doc, com.raviga.app.data.demo.DemoApi.demoConfig()).assumptions
+        assertEquals(com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE, assumptions.last())
+        assertTrue(assumptions.contains("Third-party services (payments, SMS, maps) are billed to your own accounts."))
     }
 }

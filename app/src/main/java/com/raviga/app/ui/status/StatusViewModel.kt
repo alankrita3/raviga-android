@@ -54,7 +54,22 @@ class StatusViewModel(
         val changeError: String? = null,
         /** "Thanks. We'll check and start publishing." once "I've sent the invites" went through. */
         val invitesSent: Boolean = false,
+        /** v0.13.0: the server said 409 free_fixes_ended (the window closed while the screen was open). */
+        val freeFixesEnded: Boolean = false,
     ) {
+        /**
+         * R-113 (her decision 5b; contract v0.13.0): "Something's wrong" is offered from the demo until 7 days after
+         * launch: in delivered, accepted and live while the server's `freeFixesUntil` is missing or still ahead. The app
+         * never works the date out itself.
+         */
+        val freeFixesOpen: Boolean
+            get() = project?.status in REPORT_STATUSES && !freeFixesEnded &&
+                (project?.freeFixesUntil?.let { Time.parse(it)?.toEpochMilli()?.let { end -> end > clock } ?: false } ?: true)
+        /** Live in a store (the free-fix clock has started): the tile reads "Your app is live". */
+        val launched: Boolean get() = project?.status == ProjectStatus.LIVE || project?.freeFixesUntil != null
+        /** A fix or a change approved after the first approval: "Approve this version?" (the PM's call 2). */
+        val secondApproval: Boolean
+            get() = project?.history.orEmpty().any { it.status == ProjectStatus.ACCEPTED || it.status == ProjectStatus.LIVE }
         /** Accepted and not paid yet: the client pays here. */
         val awaitingPayment: Boolean get() = project?.status == ProjectStatus.APPROVED && project.payment == null
         /** What paying costs now: the new quote's price once there is one. */
@@ -158,9 +173,27 @@ class StatusViewModel(
         container.analytics.deliveryAccepted(before?.quote?.bracketId, before?.reports?.size ?: 0)
     }
 
-    /** "Something's wrong" (R-103). [onSent] runs only once the server has it; a failure keeps the sheet and its text. */
-    fun report(category: String, description: String, onSent: () -> Unit = {}) =
-        action(onSent) { container.projects.report(projectId, category, description) }
+    /**
+     * "Something's wrong" (R-103; v0.13.0 also after approval and once live, until free fixes end). [onSent] runs only
+     * once the server has it; a failure keeps the sheet and its text. After the window: the server's words, then the
+     * screen offers Request a change.
+     */
+    fun report(category: String, description: String, onSent: () -> Unit = {}) {
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true, error = null) }
+            runCatching { container.projects.report(projectId, category, description) }
+                .onSuccess { onSent() }
+                .onFailure { e ->
+                    val ended = (e as? ApiException)?.code == ApiException.FREE_FIXES_ENDED
+                    _state.update { it.copy(error = e.userLine(), freeFixesEnded = it.freeFixesEnded || ended) }
+                    runCatching { container.projects.refresh(projectId) }
+                }
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
+    /** The report sheet hands over to Request a change after free fixes ended: its error goes with it. */
+    fun clearError() = _state.update { it.copy(error = null) }
 
     /**
      * One key per price paid: a retry after a lost answer reuses it (the server answers the same), a new quote gets a
@@ -189,6 +222,22 @@ class StatusViewModel(
             if (_state.value.error != null) runCatching { container.projects.refresh(projectId) }
             if ((_state.value.error == null) && (_state.value.shortBy > 0)) runCatching { container.credits.refresh() }
             _state.update { it.copy(busy = false) }
+        }
+    }
+
+    /**
+     * R-113 (3b): back from buying credits for this project. They land by webhook, so the balance is read again every 2 s
+     * for up to 10 s; the screen asks to pay once it covers the price.
+     */
+    fun watchCredits() {
+        viewModelScope.launch {
+            repeat(6) {
+                runCatching { container.credits.refresh() }
+                val s = _state.value
+                val covered = if (s.quotedChange != null) s.changeShortBy <= 0.0 else s.shortBy <= 0.0
+                if (covered) return@launch
+                delay(2_000)
+            }
         }
     }
 
@@ -288,6 +337,8 @@ class StatusViewModel(
     companion object {
         /** v0.12.0: a change can be asked for after the demo, after approval, and once live. */
         private val CHANGE_STATUSES = setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE)
+        /** v0.13.0: a report is taken from the demo, after approval and once live (until free fixes end). */
+        private val REPORT_STATUSES = setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE)
 
         /**
          * What the screen shows after a payment didn't go through.

@@ -51,6 +51,8 @@ open class ApiException(
         const val INSUFFICIENT_CREDITS = "insufficient_credits"
         const val ACTIVE_PROJECTS = "active_projects"
         const val AWS_ROLE_NOT_READY = "aws_role_not_ready"
+        /** v0.13.0 (R-112): a problem report after the free-fix window; details.freeFixesUntil, details.status. */
+        const val FREE_FIXES_ENDED = "free_fixes_ended"
         const val OTP_INVALID = "otp_invalid"
         const val LINK_CODE_INVALID = "link_code_invalid"
         const val UPGRADE_REQUIRED = "upgrade_required"

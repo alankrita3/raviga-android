@@ -15,9 +15,11 @@ import java.io.File
  * projects, so the app opens instantly and reads work offline. The backend is
  * the source of truth; nothing here is ever written back to it.
  */
-class CacheStore(context: Context, private val json: Json) {
+class CacheStore(private val dir: File, private val json: Json) {
 
-    private val dir = File(context.filesDir, "cache").apply { mkdirs() }
+    constructor(context: Context, json: Json) : this(File(context.filesDir, "cache"), json)
+
+    init { dir.mkdirs() }
 
     /** Writes are small and rare; one lock keeps two writers of the same file from interleaving. */
     private val writeLock = Mutex()

@@ -40,10 +40,25 @@ object DeliveryCopy {
     const val REQUEST_CHANGE = "Request a change"
     const val APPROVE_TITLE = "Approve this app?"
     const val APPROVE_BODY = "Next, we publish it to your App Store and Google Play accounts. Your brief is deleted from our servers."
+    /** R-113 (the PM's call 2, 2026-11-11): approving a fix or a change after the first approval. */
+    const val APPROVE_AGAIN_TITLE = "Approve this version?"
+    fun approveAgainBody(apple: Boolean, play: Boolean) = when {
+        apple && !play -> "Next, we publish it again to your App Store account."
+        play && !apple -> "Next, we publish it again to your Google Play account."
+        else -> "Next, we publish it again to your App Store and Google Play accounts."
+    }
+
+    /** R-113 (the PM's copy, 5a): the project's tile once the app is live, in place of "Make it live". */
+    const val LIVE_TILE = "Your app is live"
 
     // E. Request a change.
     const val CHANGE_LINE =
         "Describe what's new or different. Bugs and anything that doesn't match the brief are fixed free: use Something's wrong for those."
+    /** R-113 (the PM, 2026-11-11): after the free-fix window, the sheet doesn't point to Something's wrong. */
+    const val CHANGE_LINE_AFTER = "Describe what's new or different."
+
+    /** The change sheet's line: it points to Something's wrong only while that's offered. */
+    fun changeLine(freeFixesOpen: Boolean) = if (freeFixesOpen) CHANGE_LINE else CHANGE_LINE_AFTER
     const val CHANGE_FIELD = "What should change?"
     const val GET_A_PRICE = "Get a price"
     const val PRICING = "Pricing your change"
@@ -56,14 +71,22 @@ object DeliveryCopy {
     const val LIVE_INTRO =
         "Your app goes into your own App Store and Google Play accounts, under your name. Here's what you do, and what we do."
     const val STEP_ACCOUNTS = "Create your store accounts"
-    const val APPLE_JOIN = "Join the Apple Developer Program (US$99 a year)."
+    // R-113 (her yes, 4a): no store prices; one line on the stores' own fees at the top of step 1.
+    const val APPLE_JOIN = "Join the Apple Developer Program."
     const val APPLE_ENROL_GUIDE = "Apple's enrolment guide"
     const val APPLE_ENROL_URL = "https://developer.apple.com/programs/enroll/"
     const val APPLE_ORG =
         "A business should enrol as an organisation. That needs a D-U-N-S number, which is free and can take up to 5 business days."
     const val DUNS = "Get a D-U-N-S number"
     const val DUNS_URL = "https://developer.apple.com/support/D-U-N-S"
-    const val GOOGLE_JOIN = "Create a Google Play developer account (US$25, once)."
+    const val GOOGLE_JOIN = "Create a Google Play developer account."
+
+    /** 4a/4d: "Apple and Google charge their own account fees.", or the one store's own. */
+    fun feeLine(apple: Boolean, play: Boolean) = when {
+        apple && !play -> "Apple charges its own account fee."
+        play && !apple -> "Google charges its own account fee."
+        else -> "Apple and Google charge their own account fees."
+    }
     const val GOOGLE_SIGNUP_GUIDE = "Google's sign-up guide"
     const val GOOGLE_SIGNUP_URL = "https://support.google.com/googleplay/android-developer/answer/6112435"
     const val GOOGLE_ORG =
@@ -71,6 +94,11 @@ object DeliveryCopy {
     const val CLOSED_TEST = "About this test"
     const val CLOSED_TEST_URL = "https://support.google.com/googleplay/android-developer/answer/14151465"
     const val STEP_INVITE = "Invite Raviga"
+    /** R-113 (her yes, 4c): shown under the email; the store paragraphs fold behind "Show exact steps". */
+    const val INVITE_LINE = "Invite us as a team member"
+    const val SHOW_STEPS = "Show exact steps"
+    /** When /config has no publishing email yet, the paragraphs name it like this. */
+    const val PUBLISHING_EMAIL_FALLBACK = "Raviga's publishing email"
     const val COPY = "Copy"
     fun appleInvite(email: String) =
         "In App Store Connect, open Users and Access, then People, and tap +. Invite $email with the App Manager role, and turn on Access to Certificates, Identifiers & Profiles."

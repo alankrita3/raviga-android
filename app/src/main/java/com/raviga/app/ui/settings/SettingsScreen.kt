@@ -107,6 +107,8 @@ fun SettingsScreen(nav: NavController) {
                 Text("Demo controls", style = RaType.secondary, color = Ink.graphite, modifier = Modifier.padding(horizontal = Ra.gutter, vertical = 4.dp))
                 RaRow(title = "Advance the latest project", subtitle = "Plays the team's next move now instead of on the timer", onClick = { vm.demoAdvance() }, chevron = false)
                 RaRow(title = "Add 50 credits", subtitle = "No store purchase in demo mode", onClick = { vm.demoAddCredits() }, chevron = false)
+                // R-113: to see Live after the 7 days (Something's wrong gone, Request a change alone).
+                RaRow(title = "End free fixes now", subtitle = "Moves every live project past its 7 days", onClick = { vm.demoEndFreeFixes() }, chevron = false)
                 RaRow(title = "Reset demo data", subtitle = "Clears projects, credits and consent on this phone", titleColor = Ink.brick, onClick = { vm.demoReset() }, chevron = false)
                 Column(Modifier.padding(horizontal = Ra.gutter)) {
                     com.raviga.app.ui.components.InlineNotice(state.notice, color = Ink.moss)

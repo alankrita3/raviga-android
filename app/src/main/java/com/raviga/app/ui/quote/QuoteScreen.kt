@@ -226,9 +226,12 @@ fun QuoteScreen(nav: NavController, projectId: String) {
 
             // R-109 (B): nothing is asked before paying; "Where to deliver" is gone.
             PrivacyPromise()
+            // R-113 (her pick, 2026-11-10): a quiet line before payment, small, like the validity line under it.
+            Spacer(Modifier.height(20.dp))
+            Text(OWNERSHIP_LINE, style = RaType.caption, color = Ink.ash)
             // R-100: the price's date, small and grey, at the end of the quote (as iOS a5f8fc9).
             state.priceLine?.let {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(it, style = RaType.caption, color = Ink.ash)
             }
             Spacer(Modifier.height(32.dp))
@@ -302,6 +305,9 @@ internal fun timelineText(minWeeks: Int, maxWeeks: Int, workingDays: Int): Strin
         else -> about((workingDays + 4) / 5)
     }
 }
+
+/** R-113 (her pick, 2026-11-10; also in How it works, step 3). */
+internal const val OWNERSHIP_LINE = "Your published app is yours. The editable code stays with us, so we can keep improving it for you."
 
 /** R-103: above Submit (the PM's final copy, as iOS). */
 internal const val FREE_TO_SUBMIT = "Free to submit. You pay only once we accept it."
