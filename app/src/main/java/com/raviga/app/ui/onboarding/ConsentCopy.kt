@@ -11,7 +11,8 @@ object ConsentCopy {
     val AI_LINES = listOf(
         "What is sent." to "Only text about your project. Never your recordings or files.",
         "Who processes it." to "Anthropic's Claude, under its business terms: deleted within 30 days, never used to train AI.",
-        "What we keep." to "Nothing, until you submit a project. Then we keep your brief while it is being built, and delete it when the project closes.",
+        // R-116 (6a, her call): the brief goes at approval.
+        "What we keep." to "Nothing, until you submit a project. Then we keep your brief to review and build it, and delete it when you approve your app.",
         "Your choice." to "Raviga can't work without it. You can withdraw your permission at any time by deleting your account in Settings.",
     )
 }

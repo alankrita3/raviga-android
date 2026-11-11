@@ -77,13 +77,14 @@ private val steps = listOf(
     Step(
         "See the price first.",
         "You pay for the build only once your project is accepted.",
+        // R-116 (1, her words): no brief-price line here; Describe says it before each new brief.
         Picture.Quote,
-        small = "Your first brief is free. After that, each new brief costs a little.",
     ),
     // R-109 (her final page 4, via the PM 2026-11-09): no Apple or Google names on the Welcome pages.
     Step(
         "We make it live.",
-        "You try the real app on your phone. When you're happy, we publish it under your name.",
+        // R-116 (2, her yes).
+        "You try a working demo on your phone. When you're happy, we publish it under your name.",
         Picture.Delivered,
         small = "Your app, in your own store accounts.",
     ),
@@ -101,7 +102,6 @@ private val steps = listOf(
 @Composable
 fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
     val container = LocalAppContainer.current
-    val config by container.session.config.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pager = rememberPagerState(pageCount = { steps.size + 1 })
@@ -162,8 +162,9 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
                     if (page in 1 until last) {
                         InlineAction("Skip", onClick = finish, color = Ink.graphite)
                     } else if (page == last) {
+                        // R-116 (3, her pick): the short name; the full legal name stays in Terms, Privacy and About.
                         Text(
-                            "By ${config.legal.companyName}",
+                            "By Raviga Apps",
                             style = RaType.caption,
                             color = Ink.ash,
                             textAlign = TextAlign.Center,
@@ -211,7 +212,8 @@ private fun IntroWords() {
         Text("Say what you want built.", style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(14.dp))
         Text(
-            "Describe it in your own words. We write the brief, quote it and build it.",
+            // R-116 (5, the PM's copy).
+            "Describe it in your own words. We write the brief, give you a price and build it.",
             style = RaType.body,
             color = Ink.graphite,
         )

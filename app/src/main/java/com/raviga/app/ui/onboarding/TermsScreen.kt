@@ -153,7 +153,8 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
             )
             Block(
                 "Your rights",
-                "You can download or delete everything from Settings at any time, withdraw consent, and raise a grievance.",
+                // R-116 (6b, her call): "everything" read as the project too.
+                "You can download or delete your data from Settings at any time, withdraw consent, and raise a grievance.",
             )
             // R-107: AI processing at the bottom, before the optional analytics switch; her words, no switch.
             AiSection()

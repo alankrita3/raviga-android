@@ -145,7 +145,8 @@ fun HomeScreen(nav: NavController) {
                         Text("What should we build?", style = RaType.title, color = Ink.ink)
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Describe what you want built: say it, type it, or upload a document you already have. We turn it into a brief you can edit, quote it, and build it.",
+                            // R-116 (4, the PM's copy).
+                            "Say it, type it, or upload a document you already have. We write the brief, give you a price, and build it.",
                             style = RaType.body,
                             color = Ink.graphite,
                         )

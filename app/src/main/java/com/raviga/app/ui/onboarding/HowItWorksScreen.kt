@@ -85,11 +85,8 @@ object HowItWorks {
             "Your idea becomes a clear plan: the screens, the features and what the app does. Read it and change anything that isn't right.",
             ours = true,
         ),
-        Step(
-            "We", "You see the price", "One price in credits, with what it covers and how long it's valid.",
-            note = "Your published app is yours. The editable code stays with us, so we can keep improving it for you.",
-            ours = true,
-        ),
+        // R-116 (7, her call): no line about the code here; only the Quote screen says it.
+        Step("We", "You see the price", "One price in credits, with what it covers and how long it's valid.", ours = true),
         Step(
             "You", "Submit, then pay when we accept",
             "Our team reviews your brief. You pay only once we accept it, in credits you buy through the App Store or Google Play.",

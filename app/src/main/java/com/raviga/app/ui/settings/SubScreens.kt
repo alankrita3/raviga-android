@@ -233,7 +233,8 @@ fun PrivacyScreen(nav: NavController) {
             Hairline(Modifier.padding(horizontal = Ra.gutter))
             RaRow(
                 title = "Delete my data",
-                subtitle = "Drafts on this phone, submitted projects and this phone's link. Credits history is kept anonymised, as the law requires.",
+                // R-116 (6c's words, Android's row): only what is deleted is named.
+                subtitle = "Drafts on this phone, your briefs, reports and personal details, and this phone's link. Credits history is kept anonymised, as the law requires.",
                 titleColor = Ink.brick,
                 onClick = if (!state.busy) ({ confirmDelete = true }) else null,
                 chevron = false,
@@ -271,14 +272,15 @@ fun PrivacyScreen(nav: NavController) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             containerColor = Ink.surface,
-            title = { Text("Delete everything?", style = RaType.heading, color = Ink.ink) },
+            // R-116 (6c, 6d, her calls; iOS's title): "your data", and only what is deleted is named.
+            title = { Text("Delete all your data?", style = RaType.heading, color = Ink.ink) },
             text = {
                 Text(
-                    "Your drafts on this phone are deleted now. Submitted projects are deleted after ${state.config.retention.deletionGraceDays} days; recovering with your key before then cancels it. Active projects must be finished or cancelled first.",
+                    "Drafts on this phone are deleted now. Your briefs, reports and personal details are deleted from our servers after ${state.config.retention.deletionGraceDays} days; recovering with your key before then cancels it. Active projects must be finished or cancelled first.",
                     style = RaType.body, color = Ink.graphite,
                 )
             },
-            confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteEverything() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
+            confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteEverything() }) { Text("Delete my data", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )
     }

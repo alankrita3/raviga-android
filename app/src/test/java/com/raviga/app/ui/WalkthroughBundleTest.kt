@@ -62,7 +62,8 @@ class WalkthroughBundleTest {
             "Your published app is yours. The editable code stays with us, so we can keep improving it for you.",
             com.raviga.app.ui.quote.OWNERSHIP_LINE,
         )
-        assertEquals("the same words in How it works, step 3", com.raviga.app.ui.quote.OWNERSHIP_LINE, HowItWorks.steps[2].note)
+        // R-116 (7): only the Quote screen says it; How it works step 3 has no note.
+        assertNull(HowItWorks.steps[2].note)
     }
 
     // ----- 3. Pay -----
@@ -203,10 +204,20 @@ class WalkthroughBundleTest {
         assertEquals("For 1 day after launch, bugs and anything that doesn't match the brief are still fixed free.", HowItWorks.steps(1)[7].body)
         // TalkBack: one element per step.
         assertEquals(
-            "Step 3 of 8. We. You see the price. One price in credits, with what it covers and how long it's valid. " +
-                "Your published app is yours. The editable code stays with us, so we can keep improving it for you.",
+            "Step 3 of 8. We. You see the price. One price in credits, with what it covers and how long it's valid.",
             HowItWorks.spoken(3, 8, HowItWorks.steps[2]),
         )
         assertTrue(HowItWorks.spoken(6, 8, demo).contains("Something's wrong, Fixed free: A bug, or it doesn't match the brief."))
+    }
+
+    // ----- R-116: her walkthrough, round 2 (items 1-7) -----
+
+    /** 7: no screen but the Quote says we keep the code; 6a: the brief goes at approval. */
+    @Test fun onlyTheQuoteSaysWhoKeepsTheCode() {
+        assertTrue(HowItWorks.steps.none { (it.note.orEmpty() + it.body).contains("code") })
+        assertEquals(
+            "Nothing, until you submit a project. Then we keep your brief to review and build it, and delete it when you approve your app.",
+            com.raviga.app.ui.onboarding.ConsentCopy.AI_LINES.first { it.first == "What we keep." }.second,
+        )
     }
 }
