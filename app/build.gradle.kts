@@ -34,6 +34,10 @@ fun secret(key: String, default: String): String = secrets.getProperty(key) ?: d
 // signed with the upload key and never falls back to the in-app demo backend.
 val internalTest: Boolean = (findProperty("raviga.internalTest") as String?) == "true"
 
+// `-Praviga.noBilling=true` (R-113, device checks only): a build without the RevenueCat key, so the in-app demo backend
+// takes purchases itself (no store, no charge) and the pay-after-purchase prompt can be seen on a phone.
+val noBilling: Boolean = (findProperty("raviga.noBilling") as String?) == "true"
+
 android {
     namespace = "com.raviga.app"
     compileSdk = 36
@@ -54,7 +58,7 @@ android {
         // so every screen can be exercised before the API is deployed.
         buildConfigField("String", "API_BASE_URL", "\"${secret("API_BASE_URL", "")}\"")
         // RevenueCat public Android SDK key (public by design, meant to be embedded).
-        buildConfigField("String", "REVENUECAT_API_KEY", "\"${secret("REVENUECAT_API_KEY", "")}\"")
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"${if (noBilling) "" else secret("REVENUECAT_API_KEY", "")}\"")
     }
 
     signingConfigs {

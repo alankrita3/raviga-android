@@ -294,6 +294,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     private fun handoverLine(stores: Map<String, String>, backend: String): String = when {
         stores.values.any { it == "pending" } -> "Next: create your store accounts and invite Raviga."
         backend == "pending" -> "Next: connect your AWS account."
+        // R-113: once every store is published (and any backend deployed), the server's live line.
+        stores.values.all { it == "published" } -> "Live in your stores."
         else -> "We're publishing your app."
     }
 
