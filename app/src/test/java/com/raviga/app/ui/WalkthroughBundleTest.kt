@@ -30,10 +30,35 @@ class WalkthroughBundleTest {
 
     // ----- 1. Brief: no open questions; an old draft drops the section quietly -----
 
-    @Test fun theBriefHasElevenSections() {
-        assertEquals(11, SectionIds.ordered.size)
-        assertEquals(SectionIds.OUT_OF_SCOPE, SectionIds.ordered.last())
+    /** R-116 item 8 (contract v0.14.0): five plain sections. */
+    @Test fun theBriefHasFiveSections() {
+        assertEquals(listOf("summary", "target_users", "features", "screens", "deliverables"), SectionIds.ordered)
+        assertEquals(listOf("Summary", "Who it's for", "Features", "Screens", "What you get"), SectionIds.ordered.map { SectionIds.headings.getValue(it) })
+        assertEquals("iPhone and Android apps, backend, admin panel, store listings.", SectionIds.hints[SectionIds.DELIVERABLES])
         assertFalse(SectionIds.headings.containsValue("Open questions"))
+    }
+
+    @Test fun anElevenSectionDraftLoadsAsFive() {
+        val old = Document(title = "Salon", sections = listOf(
+            Section("summary", "Summary", "A salon app"),
+            Section("target_users", "Target users", "- Customers"),
+            Section("platforms", "Platforms", "- Android app"),
+            Section("features_must", "Must-have features", "- Book a slot"),
+            Section("features_nice", "Nice-to-have features", "- Loyalty points"),
+            Section("screens", "Screens", "- Home"),
+            Section("integrations", "Integrations", "- Payments"),
+            Section("deliverables", "Deliverables", "- Your app"),
+            Section("out_of_scope", "Out of scope", "- A website"),
+        ))
+        val now = old.withoutRetired()
+        assertEquals(listOf("summary", "target_users", "features", "screens", "deliverables"), now.sections.map { it.id })
+        assertEquals("must-have is read as Features", "- Book a slot", now.section(SectionIds.FEATURES)?.body)
+        assertEquals("Features", now.section(SectionIds.FEATURES)?.heading)
+        assertEquals("today's headings", listOf("Summary", "Who it's for", "Features", "Screens", "What you get"), now.sections.map { it.heading })
+        assertFalse("the retired sections' text isn't moved", now.sections.any { "Loyalty" in it.body || "website" in it.body })
+        val both = old.copy(sections = old.sections + Section("features", "Features", "- Already here")).withoutRetired()
+        assertEquals("a draft with Features keeps it; must-have goes", "- Already here", both.section(SectionIds.FEATURES)?.body)
+        assertEquals(1, both.sections.count { it.id == SectionIds.FEATURES })
     }
 
     @Test fun aStoredTwelveSectionDraftLoadsWithoutOpenQuestions() {
@@ -49,7 +74,7 @@ class WalkthroughBundleTest {
         val draft = json.decodeFromString(LocalDraft.serializer(), stored).withoutRetired()
         assertEquals("every version kept", 2, draft.versions.size)
         assertTrue(draft.versions.all { v -> v.document.sections.none { it.id == SectionIds.RETIRED_OPEN_QUESTIONS } })
-        assertEquals(listOf("summary", "out_of_scope"), draft.versions.first().document.sections.map { it.id })
+        assertEquals("v0.14.0: Out of scope goes too", listOf("summary"), draft.versions.first().document.sections.map { it.id })
         assertEquals("A salon booking app", draft.document?.section(SectionIds.SUMMARY)?.body)
         val clean = LocalDraft("ld_2", createdAt = "a", updatedAt = "b", versions = listOf(LocalVersion(1, Document(sections = listOf(Section("summary", "Summary", "x"))), "a", "draft")))
         assertTrue("a clean draft is left as it is", clean.withoutRetired() === clean)

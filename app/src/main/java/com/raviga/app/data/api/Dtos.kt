@@ -386,42 +386,45 @@ object ProjectStatus {
 }
 
 object SectionIds {
+    // v0.14.0 (R-115, her decision 2026-11-11): the brief is a short plain document of five sections.
     const val SUMMARY = "summary"
     const val TARGET_USERS = "target_users"
-    const val PLATFORMS = "platforms"
-    const val FEATURES_MUST = "features_must"
-    const val FEATURES_NICE = "features_nice"
+    /** Everything that is built, one list (no nice-to-have: later wishes are paid changes). */
+    const val FEATURES = "features"
     const val SCREENS = "screens"
-    const val INTEGRATIONS = "integrations"
-    const val DATA_AUTH = "data_auth"
-    const val NON_FUNCTIONAL = "non_functional"
     const val DELIVERABLES = "deliverables"
-    const val OUT_OF_SCOPE = "out_of_scope"
-    /**
-     * v0.12.1 (R-111, her decision: clients provide nothing): the brief has no open questions any more. A draft from
-     * before still carries the section; it's dropped quietly when drafts load ([Document.withoutRetired]).
-     */
-    const val RETIRED_OPEN_QUESTIONS = "open_questions"
 
-    /** The brief's 11 sections, in order (v0.12.1). */
-    val ordered = listOf(
-        SUMMARY, TARGET_USERS, PLATFORMS, FEATURES_MUST, FEATURES_NICE, SCREENS,
-        INTEGRATIONS, DATA_AUTH, NON_FUNCTIONAL, DELIVERABLES, OUT_OF_SCOPE,
-    )
+    /** The brief's five sections, in order (v0.14.0). */
+    val ordered = listOf(SUMMARY, TARGET_USERS, FEATURES, SCREENS, DELIVERABLES)
 
     val headings = mapOf(
         SUMMARY to "Summary",
-        TARGET_USERS to "Target users",
-        PLATFORMS to "Platforms",
-        FEATURES_MUST to "Must-have features",
-        FEATURES_NICE to "Nice-to-have features",
+        TARGET_USERS to "Who it's for",
+        FEATURES to "Features",
         SCREENS to "Screens",
-        INTEGRATIONS to "Integrations",
-        DATA_AUTH to "Data and authentication",
-        NON_FUNCTIONAL to "Non-functional requirements",
-        DELIVERABLES to "Deliverables",
-        OUT_OF_SCOPE to "Out of scope",
+        DELIVERABLES to "What you get",
     )
+
+    /** The server's hints (shown when a section is empty). */
+    val hints = mapOf(
+        SUMMARY to "What is being built, for whom, and why, in a few sentences.",
+        TARGET_USERS to "The people who use it: customers, staff, the owner.",
+        FEATURES to "Everything that is built, in plain words.",
+        SCREENS to "Each screen and what it shows and does.",
+        DELIVERABLES to "iPhone and Android apps, backend, admin panel, store listings.",
+    )
+
+    /**
+     * Sections a draft from an older build may still carry: dropped quietly when drafts load (their text isn't moved,
+     * as the server does). Open questions went in v0.12.1 (R-111), the six others in v0.14.0 (R-115).
+     */
+    const val RETIRED_OPEN_QUESTIONS = "open_questions"
+    val RETIRED = setOf(
+        RETIRED_OPEN_QUESTIONS, "platforms", "features_nice", "integrations", "data_auth", "non_functional", "out_of_scope",
+    )
+
+    /** v0.14.0: an older draft's must-have list becomes Features when it has none. */
+    const val RENAMED_FEATURES_MUST = "features_must"
 }
 
 @Serializable
@@ -537,10 +540,24 @@ data class Document(
     /** What the AI and quote calls take: title and section bodies only. */
     fun body() = DocumentBody(title = title, sections = sections.map { SectionBody(it.id, it.body) })
 
-    /** v0.12.1: without the retired open-questions section (a draft from before keeps the rest as it was). */
-    fun withoutRetired(): Document =
-        if (sections.none { it.id == SectionIds.RETIRED_OPEN_QUESTIONS }) this
-        else copy(sections = sections.filter { it.id != SectionIds.RETIRED_OPEN_QUESTIONS })
+    /**
+     * v0.12.1 and v0.14.0: an older draft in today's sections, as the server reads it: the retired sections dropped
+     * (their text isn't moved), and "Must-have features" read as Features when there's no Features yet.
+     */
+    fun withoutRetired(): Document {
+        val hasFeatures = sections.any { it.id == SectionIds.FEATURES }
+        if (sections.none { it.id in SectionIds.RETIRED || it.id == SectionIds.RENAMED_FEATURES_MUST }) return this
+        val mapped = sections.mapNotNull { s ->
+            val id = when {
+                s.id in SectionIds.RETIRED -> return@mapNotNull null
+                s.id == SectionIds.RENAMED_FEATURES_MUST -> if (hasFeatures) return@mapNotNull null else SectionIds.FEATURES
+                else -> s.id
+            }
+            // Today's headings and hints ("Who it's for", "What you get"), as the server sends them now.
+            SectionIds.headings[id]?.let { heading -> s.copy(id = id, heading = heading, hint = SectionIds.hints[id]) } ?: s
+        }
+        return copy(sections = mapped.sortedBy { SectionIds.ordered.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } })
+    }
 }
 
 @Serializable

@@ -297,7 +297,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                                             "Edit", enabled = state.busyMessage == null, onClick = { nav.navigate(Routes.section(draftId, section.id)) },
                                             modifier = Modifier.semantics { contentDescription = "Edit $heading" },
                                         )
-                                        InlineAction(
+                                        // v0.14.0: only the brief's five sections can be rewritten (the server refuses others).
+                                        if (section.id in SectionIds.ordered) InlineAction(
                                             "Regenerate", enabled = state.busyMessage == null, onClick = { vm.openRegenerate(section.id) },
                                             modifier = Modifier.semantics { contentDescription = "Regenerate $heading" },
                                         )

@@ -42,7 +42,8 @@ class DemoLifecycleTest {
         api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion, aiProcessing = true))
 
         // A native, no-backend brief; quoted and submitted.
-        val doc = DocumentBody("Salon", listOf(SectionBody("summary", "A salon booking app"), SectionBody("platforms", "- iPhone app\n- Android app")))
+        // v0.14.0: five plain sections; nothing here needs a backend (no sign in, payments or admin).
+        val doc = DocumentBody("Salon", listOf(SectionBody("summary", "An iPhone and Android app that shows a salon's price list"), SectionBody("features", "- Shows the price list")))
         var job = api.createQuote(QuoteRequest(doc)).job
         while (job.status != "done") { delay(300); job = api.job(job.jobId) }
         val quote = json.decodeFromJsonElement(QuoteResult.serializer(), job.result!!)

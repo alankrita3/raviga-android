@@ -191,19 +191,41 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     }
 
     /** Stand-in for the server's hash over the normalised brief. */
-    private fun hashOf(doc: DocumentBody): String {
+    /**
+     * v0.14.0 (as the server): an older document's retired sections are dropped (their text isn't moved) and
+     * features_must is read as features when there's none, before screening, hashing, pricing and storage.
+     */
+    private fun normalised(doc: DocumentBody): DocumentBody {
+        val hasFeatures = doc.sections.any { it.id == SectionIds.FEATURES }
+        return doc.copy(sections = doc.sections.mapNotNull { s ->
+            when {
+                s.id in SectionIds.RETIRED -> null
+                s.id == SectionIds.RENAMED_FEATURES_MUST -> if (hasFeatures) null else s.copy(id = SectionIds.FEATURES)
+                else -> s
+            }
+        })
+    }
+
+    private fun hashOf(raw: DocumentBody): String {
+        val doc = normalised(raw)
         val normal = doc.title.trim() + "\n" + doc.sections.sortedBy { it.id }.joinToString("\n") { it.id + ":" + it.body.trim().replace(Regex("\\s+"), " ") }
         val digest = java.security.MessageDigest.getInstance("SHA-256").digest(normal.toByteArray())
         return digest.joinToString("") { "%02x".format(it) }.take(32)
     }
 
     /** A request brief with the server's headings and hints filled back in. */
-    private fun fullDocument(body: DocumentBody): Document = Document(
-        title = body.title,
-        sections = SectionIds.ordered.map { id ->
-            Section(id = id, heading = SectionIds.headings[id] ?: id, body = body.sections.firstOrNull { it.id == id }?.body.orEmpty())
-        },
-    )
+    private fun fullDocument(raw: DocumentBody): Document = normalised(raw).let { body ->
+        Document(
+            title = body.title,
+            sections = SectionIds.ordered.map { id ->
+                Section(id = id, heading = SectionIds.headings[id] ?: id, body = body.sections.firstOrNull { it.id == id }?.body.orEmpty(), hint = SectionIds.hints[id])
+            },
+        )
+    }
+
+    /** All a brief's words, for what the demo works out from the text (apps, a backend, the native-only rule). */
+    private fun textOf(doc: DocumentBody): String =
+        doc.title + "\n" + normalised(doc).sections.filter { it.id != SectionIds.DELIVERABLES }.joinToString("\n") { it.body }
 
     // ----- lifecycle simulation -----
 
@@ -544,6 +566,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     override suspend fun aiRegenerate(body: AiRegenerateRequest): JobEnvelope {
         readState { requireConsent(it) }
         return startJob("regenerate", null, listOf("Rereading the section", "Rewriting"), 900) {
+            // v0.14.0: only the five sections can be rewritten; a removed one is 400, as the server.
+            if (body.sectionId !in SectionIds.ordered) throw ApiException(ApiException.INVALID_ARGUMENT, 400, "That section isn't part of the brief any more.")
             val current = fullDocument(body.document)
             val section = current.section(body.sectionId) ?: throw ApiException(ApiException.NOT_FOUND, 404, "No such section.")
             if (demoPolicyHit(body.instruction.orEmpty())) throw policyRefusal("This isn't something Raviga can build. It falls outside our Acceptable use policy.")
@@ -562,7 +586,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 throw policyRefusal("This brief describes software we can't build under our Acceptable use policy.")
             }
             // v0.12.0 (R-109): native iPhone and Android apps only.
-            if (appsOf(doc.section(com.raviga.app.data.api.SectionIds.PLATFORMS)?.body.orEmpty()).isEmpty()) throw ApiException(
+            if (appsOf(textOf(body.document)).isEmpty()) throw ApiException(
                 ApiException.CONTENT_REJECTED, 422, "Raviga builds native iPhone and Android apps only.",
                 details = buildJsonObject { put("kind", "scope") },
             )
@@ -630,9 +654,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             document = held(body.document, 1),
             quote = quote.copy(status = "used"),
             submission = Submission(submittedAt = now, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
-            apps = appsOf(body.document.sections.firstOrNull { it.id == com.raviga.app.data.api.SectionIds.PLATFORMS }?.body.orEmpty()),
-            hasBackend = body.document.sections.any { it.id == com.raviga.app.data.api.SectionIds.DATA_AUTH && it.body.isNotBlank() } ||
-                body.document.sections.any { Regex("(?i)admin|dashboard|account|login|sync").containsMatchIn(it.body) },
+            // v0.14.0: from the brief's own words (the server decides from the same text).
+            apps = appsOf(textOf(body.document)),
+            hasBackend = Regex("(?i)admin|dashboard|account|sign in|log ?in|sync|payment|booking").containsMatchIn(textOf(body.document)),
             timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
             history = emptyList(),
         )
@@ -812,16 +836,20 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     }
 
     /** v0.12.0: the store apps a brief's Platforms section asks for; none means it's not a native app (declined). */
-    private fun appsOf(platforms: String): List<String> {
-        val lower = platforms.lowercase()
-        if (lower.isBlank()) return listOf("ios", "android")
-        val ios = listOf("iphone", "ios", "ipad", "app store").any { it in lower }
-        val android = listOf("android", "play store", "google play").any { it in lower }
-        val mobile = listOf("mobile app", "phone app", "both platforms", "mobile").any { it in lower }
+    /**
+     * v0.14.0: the store apps a brief's words ask for (its "What you get" lines left out). None only when it plans a
+     * website or desktop app and no app at all: declined at the quote, as the server's native-only rule.
+     */
+    private fun appsOf(text: String): List<String> {
+        val lower = text.lowercase()
+        val ios = Regex("\\b(iphone|ios|ipad|app store)\\b").containsMatchIn(lower)
+        val android = Regex("\\b(android|play store|google play)\\b").containsMatchIn(lower)
+        val app = Regex("\\b(app|apps|mobile|phone)\\b").containsMatchIn(lower)
+        val web = Regex("\\b(website|web app|webapp|desktop)\\b").containsMatchIn(lower)
         return when {
             ios || android -> listOfNotNull("ios".takeIf { ios }, "android".takeIf { android })
-            mobile -> listOf("ios", "android")
-            else -> emptyList()
+            web && !app -> emptyList()
+            else -> listOf("ios", "android")
         }
     }
 

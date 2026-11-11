@@ -13,7 +13,7 @@ class BriefWriterTest {
     private val salon = "I want an app for my salon in Delhi called GlowBook. Customers should be able to book appointments, pay online with UPI, and get reminders. There should be an admin dashboard for the staff."
 
     @Test
-    fun `writes all eleven sections in order`() {
+    fun `writes the five sections in order`() {
         val draft = BriefWriter.write(listOf(salon))
         assertEquals(SectionIds.ordered, draft.sections.map { it.id })
         assertTrue(draft.sections.all { it.body.isNotBlank() })
@@ -21,13 +21,13 @@ class BriefWriterTest {
     }
 
     @Test
-    fun `detects features and platforms`() {
+    fun `detects features in plain words`() {
         val draft = BriefWriter.write(listOf(salon))
-        val must = draft.sections.first { it.id == SectionIds.FEATURES_MUST }.body
-        assertTrue(must.contains("Booking", ignoreCase = true))
-        assertTrue(must.contains("Payments", ignoreCase = true))
-        val platforms = draft.sections.first { it.id == SectionIds.PLATFORMS }.body
-        assertTrue(platforms.contains("Admin panel"))
+        val features = draft.sections.first { it.id == SectionIds.FEATURES }.body
+        assertTrue(features.contains("Booking", ignoreCase = true))
+        assertTrue(features.contains("Takes UPI and card payments"))
+        assertTrue(features.contains("An admin screen"))
+        assertTrue(draft.sections.first { it.id == SectionIds.SUMMARY }.body.startsWith("GlowBook is an iPhone and Android app"))
     }
 
     @Test
@@ -47,7 +47,7 @@ class BriefWriterTest {
     @Test
     fun `regenerate shorter halves the bullets`() {
         val draft = BriefWriter.write(listOf(salon))
-        val section = draft.sections.first { it.id == SectionIds.NON_FUNCTIONAL }
+        val section = draft.sections.first { it.id == SectionIds.FEATURES }
         val shorter = BriefWriter.regenerate(section, listOf(salon), "make it shorter")
         assertTrue(shorter.body.lines().size < section.body.lines().size)
     }
@@ -57,8 +57,8 @@ class BriefWriterTest {
         val first = BriefWriter.write(listOf(salon))
         val doc = Document(version = 1, title = first.title, sections = first.sections)
         val merged = BriefWriter.append(doc, listOf(salon, "Also add a loyalty points and rewards feature."))
-        val nice = merged.first { it.id == SectionIds.FEATURES_NICE }.body
-        assertTrue(nice.contains("rewards", ignoreCase = true))
+        val features = merged.first { it.id == SectionIds.FEATURES }.body
+        assertTrue("one list: a later wish joins Features", features.contains("rewards", ignoreCase = true))
         val screens = merged.first { it.id == SectionIds.SCREENS }.body
         assertTrue(screens.contains("Welcome"))
     }
@@ -76,14 +76,21 @@ class BriefWriterV013Test {
     private val salon = "I want an app for my salon in Delhi called GlowBook. Customers should be able to book appointments, pay online with UPI, and get reminders."
 
     @Test
-    fun `no open questions and nothing asked of the client`() {
+    fun `no open questions, nothing asked of the client, no technical names`() {
         val draft = BriefWriter.write(listOf(salon))
-        assertEquals(11, draft.sections.size)
-        assertEquals(SectionIds.OUT_OF_SCOPE, draft.sections.last().id)
-        val text = draft.sections.joinToString("\n") { it.body }
-        listOf("?", "you provide", "provided by you", "Two rounds", "revision", "GitHub", "source code", "logo", "brand").forEach {
-            assertTrue("no \"$it\"", !text.contains(it, ignoreCase = true))
-        }
+        assertEquals(listOf("Summary", "Who it's for", "Features", "Screens", "What you get"), draft.sections.map { it.heading })
+        // v0.14.0: plain words a shop owner understands; "What you get" keeps its backend line.
+        val text = draft.sections.filter { it.id != SectionIds.DELIVERABLES }.joinToString("\n") { it.body }
+        listOf(
+            "?", "you provide", "provided by you", "Two rounds", "revision", "GitHub", "source code", "logo", "brand",
+            "Firebase", "AWS", "Amazon", "API", "SDK", "OTP", "GDPR", "HTTPS", "database", "server", "Android 8", "iOS 15", "Stripe", "Twilio",
+        ).forEach { assertTrue("no \"$it\"", !text.contains(it, ignoreCase = it.length > 4)) }
+    }
+
+    @Test
+    fun `a website asked for is said plainly in the summary`() {
+        val draft = BriefWriter.write(listOf("An app for my bakery, and a website for orders too."))
+        assertTrue(draft.sections.first { it.id == SectionIds.SUMMARY }.body.endsWith("We build the iPhone and Android apps; the website isn't part of this."))
     }
 
     @Test
@@ -92,7 +99,6 @@ class BriefWriterV013Test {
         val deliverables = draft.sections.first { it.id == SectionIds.DELIVERABLES }.body.lines()
         assertEquals("- Your app, published in your App Store and Google Play accounts", deliverables.first())
         assertEquals("- " + com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE, deliverables.last())
-        assertTrue(draft.sections.first { it.id == SectionIds.OUT_OF_SCOPE }.body.contains("Your App Store and Google Play developer accounts (set up at Make it live)"))
         val doc = com.raviga.app.data.api.Document(title = draft.title, sections = draft.sections)
         val assumptions = BriefWriter.quote(doc, com.raviga.app.data.demo.DemoApi.demoConfig()).assumptions
         assertEquals(com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE, assumptions.last())
