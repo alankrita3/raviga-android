@@ -168,7 +168,7 @@ fun StatusScreen(nav: NavController, projectId: String) {
                         undatedDelivery = weeks?.let { "Ready in $it after payment" },
                     )
                     // R-113 item 6: the whole flow, by the timeline.
-                    InlineAction(com.raviga.app.ui.onboarding.HowItWorks.EYEBROW, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
+                    InlineAction(com.raviga.app.ui.onboarding.HowItWorks.TIMELINE_LINK, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
                 }
 
                 val deletedAt = project.contentDeletedAt
@@ -187,12 +187,17 @@ fun StatusScreen(nav: NavController, projectId: String) {
     }
 
     if (confirmPay && project != null) {
-        PayDialog(com.raviga.app.ui.credits.PayCopy.confirm(state.price.toDouble(), state.balance), onPay = { confirmPay = false; vm.pay() }, onCancel = { confirmPay = false })
+        PayDialog(
+            com.raviga.app.ui.credits.PayCopy.confirmTitle(state.price.toDouble()),
+            com.raviga.app.ui.credits.PayCopy.confirmMessage(state.price.toDouble(), state.balance),
+            onPay = { confirmPay = false; vm.pay() }, onCancel = { confirmPay = false },
+        )
     }
     // Credits landed and cover it: one tap to start building. Cancel leaves the Pay button as it was.
     if (creditsAdded && state.awaitingPayment && !state.priceExpired && state.shortBy <= 0.0 && !state.busy && !confirmPay) {
         PayDialog(
-            com.raviga.app.ui.credits.PayCopy.creditsAdded(state.price.toDouble()),
+            com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED_TITLE,
+            com.raviga.app.ui.credits.PayCopy.creditsAddedMessage(state.price.toDouble()),
             onPay = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false); vm.pay() },
             onCancel = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) },
         )
@@ -216,13 +221,14 @@ fun StatusScreen(nav: NavController, projectId: String) {
     }
 }
 
-/** R-113 (3a, 3b): a one-line question with Pay and Cancel (as iOS). */
+/** R-113 (3a, 3b): an alert with a title, its message, and Pay / Cancel (as iOS). */
 @Composable
-internal fun PayDialog(question: String, onPay: () -> Unit, onCancel: () -> Unit) {
+internal fun PayDialog(title: String, message: String, onPay: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(
         onDismissRequest = onCancel,
         containerColor = Ink.surface,
-        title = { Text(question, style = RaType.heading, color = Ink.ink) },
+        title = { Text(title, style = RaType.heading, color = Ink.ink) },
+        text = { Text(message, style = RaType.body, color = Ink.graphite) },
         confirmButton = { TextButton(onClick = onPay) { Text(com.raviga.app.ui.credits.PayCopy.PAY, style = RaType.button, color = Ink.ink) } },
         dismissButton = { TextButton(onClick = onCancel) { Text(com.raviga.app.ui.credits.PayCopy.CANCEL, style = RaType.button, color = Ink.ink) } },
     )

@@ -115,7 +115,8 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     PrimaryButton("Submit", loading = state.submitting, onClick = { vm.submit() })
                 }
                 Spacer(Modifier.height(10.dp))
-                LockedCaption("Private. We delete your brief from our servers after delivery.")
+                // R-113 (the PM, 2026-11-11): when the contract really deletes it (retention.briefDeletedOn: accepted).
+                LockedCaption(LOCK_LINE)
             }
         },
     ) { padding ->
@@ -226,14 +227,14 @@ fun QuoteScreen(nav: NavController, projectId: String) {
 
             // R-109 (B): nothing is asked before paying; "Where to deliver" is gone.
             PrivacyPromise()
-            // R-113 (her pick, 2026-11-10): a quiet line before payment, small, like the validity line under it.
-            Spacer(Modifier.height(20.dp))
-            Text(OWNERSHIP_LINE, style = RaType.caption, color = Ink.ash)
             // R-100: the price's date, small and grey, at the end of the quote (as iOS a5f8fc9).
             state.priceLine?.let {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(20.dp))
                 Text(it, style = RaType.caption, color = Ink.ash)
             }
+            // R-113 (her pick, 2026-11-10; as built on iOS): right below the validity line, same caption, always shown.
+            Spacer(Modifier.height(if (state.priceLine != null) 8.dp else 20.dp))
+            Text(OWNERSHIP_LINE, style = RaType.caption, color = Ink.ash)
             Spacer(Modifier.height(32.dp))
         }
     }
@@ -305,6 +306,9 @@ internal fun timelineText(minWeeks: Int, maxWeeks: Int, workingDays: Int): Strin
         else -> about((workingDays + 4) / 5)
     }
 }
+
+/** R-113 (the PM, 2026-11-11): under Submit, beside the lock; the brief goes at approval (contract section 21). */
+internal const val LOCK_LINE = "Private. We delete your brief from our servers once you approve your app."
 
 /** R-113 (her pick, 2026-11-10; also in How it works, step 3). */
 internal const val OWNERSHIP_LINE = "Your published app is yours. The editable code stays with us, so we can keep improving it for you."

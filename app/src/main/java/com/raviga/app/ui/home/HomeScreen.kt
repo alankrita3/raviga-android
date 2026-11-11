@@ -152,8 +152,7 @@ fun HomeScreen(nav: NavController) {
                         // R-113 item 6: before the first project, the whole flow is a tap away.
                         Spacer(Modifier.height(20.dp))
                         com.raviga.app.ui.components.RaRow(
-                            title = com.raviga.app.ui.onboarding.HowItWorks.EYEBROW,
-                            subtitle = com.raviga.app.ui.onboarding.HowItWorks.TITLE,
+                            title = com.raviga.app.ui.onboarding.HowItWorks.HOME_CARD,
                             onClick = { nav.navigate(Routes.HOW_IT_WORKS) },
                             modifier = Modifier.tile(padding = 0.dp),
                             hairline = false,

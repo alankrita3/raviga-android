@@ -241,7 +241,7 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                         Spacer(Modifier.height(Ra.sectionGap))
                         TimelineView(tl.milestones, note = "Projects are usually delivered well ahead of this date.", estimatedDeliveryDate = tl.estimatedDeliveryDate)
                         // R-113 item 6: the whole flow, by the timeline.
-                        InlineAction(com.raviga.app.ui.onboarding.HowItWorks.EYEBROW, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
+                        InlineAction(com.raviga.app.ui.onboarding.HowItWorks.TIMELINE_LINK, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
                     }
                     Spacer(Modifier.height(32.dp))
                 }
@@ -270,17 +270,38 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
             },
         )
     }
+    // v0.13.0 (as iOS): free fixes ended while the report sheet was open: the sheet closes, the project reloads,
+    // then an alert with the server's words, Request a change / OK.
+    val ended = state.freeFixesEndedMessage
+    androidx.compose.runtime.LaunchedEffect(ended) { if (ended != null) reportSheet = false }
+    if (ended != null && !reportSheet) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { vm.freeFixesEndedSeen() },
+            containerColor = Ink.surface,
+            title = { Text(ended, style = RaType.heading, color = Ink.ink) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { vm.freeFixesEndedSeen(); changeSheet = true }) {
+                    Text(DeliveryCopy.REQUEST_CHANGE, style = RaType.button, color = Ink.ink)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { vm.freeFixesEndedSeen() }) { Text("OK", style = RaType.button, color = Ink.ink) }
+            },
+        )
+    }
     val quoted = state.quotedChange?.quote?.credits
     if (confirmChangePay && quoted != null) {
         PayDialog(
-            com.raviga.app.ui.credits.PayCopy.confirm(quoted, state.balance),
+            com.raviga.app.ui.credits.PayCopy.confirmTitle(quoted),
+            com.raviga.app.ui.credits.PayCopy.confirmMessage(quoted, state.balance),
             onPay = { confirmChangePay = false; vm.payChange(onPaid = { changeSheet = false }) },
             onCancel = { confirmChangePay = false },
         )
     }
     if (creditsAdded && quoted != null && state.changeShortBy <= 0.0 && !state.busy && !confirmChangePay) {
         PayDialog(
-            com.raviga.app.ui.credits.PayCopy.creditsAdded(quoted),
+            com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED_TITLE,
+            com.raviga.app.ui.credits.PayCopy.creditsAddedMessage(quoted),
             onPay = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false); vm.payChange(onPaid = { changeSheet = false }) },
             onCancel = { handle?.set(com.raviga.app.ui.credits.PayCopy.CREDITS_ADDED, false) },
         )
@@ -331,11 +352,6 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                 Text(REPORT_HINT, style = RaType.secondary, color = Ink.graphite)
                 InlineNotice(state.error)
                 Spacer(Modifier.height(16.dp))
-                // v0.13.0: free fixes ended while the sheet was open: the server's words above, then Request a change.
-                if (state.freeFixesEnded) {
-                    PrimaryButton(DeliveryCopy.REQUEST_CHANGE, onClick = { reportSheet = false; vm.clearError(); changeSheet = true })
-                    return@Column
-                }
                 PrimaryButton(
                     "Send report",
                     enabled = category != null && description.isNotBlank(),

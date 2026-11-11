@@ -9,12 +9,14 @@ import com.raviga.app.util.Money
  * to two decimals rounded down; what's owed rounds up.
  */
 object PayCopy {
-    /** (a) "Pay 30 credits? You'll have 12 left." */
-    fun confirm(price: Double, balance: Double): String =
-        "Pay ${Money.credits(price)}? You'll have ${Money.creditsNumber((balance - price).coerceAtLeast(0.0))} left."
+    /** (a) An alert, as iOS: title "Pay 30 credits?", message "You'll have 12 left." */
+    fun confirmTitle(price: Double): String = "Pay ${Money.credits(price)}?"
+    fun confirmMessage(price: Double, balance: Double): String =
+        "You'll have ${Money.creditsNumber((balance - price).coerceAtLeast(0.0))} left."
 
-    /** (b) After a purchase that covers it: "Credits added. Pay 30 credits to start building?" */
-    fun creditsAdded(price: Double): String = "Credits added. Pay ${Money.credits(price)} to start building?"
+    /** (b) After a purchase that covers it: title "Credits added.", message "Pay 30 credits to start building?" */
+    const val CREDITS_ADDED_TITLE = "Credits added."
+    fun creditsAddedMessage(price: Double): String = "Pay ${Money.credits(price)} to start building?"
 
     const val PAY = "Pay"
     const val CANCEL = "Cancel"

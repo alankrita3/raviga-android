@@ -56,6 +56,8 @@ class StatusViewModel(
         val invitesSent: Boolean = false,
         /** v0.13.0: the server said 409 free_fixes_ended (the window closed while the screen was open). */
         val freeFixesEnded: Boolean = false,
+        /** Its message, for the alert (as iOS): the server's words as the title, Request a change / OK. */
+        val freeFixesEndedMessage: String? = null,
     ) {
         /**
          * R-113 (her decision 5b; contract v0.13.0): "Something's wrong" is offered from the demo until 7 days after
@@ -185,15 +187,18 @@ class StatusViewModel(
                 .onSuccess { onSent() }
                 .onFailure { e ->
                     val ended = (e as? ApiException)?.code == ApiException.FREE_FIXES_ENDED
-                    _state.update { it.copy(error = e.userLine(), freeFixesEnded = it.freeFixesEnded || ended) }
+                    _state.update {
+                        if (ended) it.copy(error = null, freeFixesEnded = true, freeFixesEndedMessage = e.userLine())
+                        else it.copy(error = e.userLine())
+                    }
                     runCatching { container.projects.refresh(projectId) }
                 }
             _state.update { it.copy(busy = false) }
         }
     }
 
-    /** The report sheet hands over to Request a change after free fixes ended: its error goes with it. */
-    fun clearError() = _state.update { it.copy(error = null) }
+    /** The free-fixes-ended alert was answered (Request a change or OK). */
+    fun freeFixesEndedSeen() = _state.update { it.copy(freeFixesEndedMessage = null) }
 
     /**
      * One key per price paid: a retry after a lost answer reuses it (the server answers the same), a new quote gets a

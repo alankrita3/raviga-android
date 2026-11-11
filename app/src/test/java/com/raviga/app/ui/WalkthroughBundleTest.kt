@@ -68,10 +68,18 @@ class WalkthroughBundleTest {
     // ----- 3. Pay -----
 
     @Test fun payingAsksFirstWithRealNumbers() {
-        assertEquals("Pay 30 credits? You'll have 12 left.", PayCopy.confirm(30.0, 42.0))
-        assertEquals("Pay 3 credits? You'll have 0.83 left.", PayCopy.confirm(3.0, 3.8333))
-        assertEquals("Pay 1 credit? You'll have 0 left.", PayCopy.confirm(1.0, 1.0))
-        assertEquals("Credits added. Pay 30 credits to start building?", PayCopy.creditsAdded(30.0))
+        // As iOS: an alert, its title and its message.
+        assertEquals("Pay 30 credits?", PayCopy.confirmTitle(30.0))
+        assertEquals("You'll have 12 left.", PayCopy.confirmMessage(30.0, 42.0))
+        assertEquals("You'll have 0.83 left.", PayCopy.confirmMessage(3.0, 3.8333))
+        assertEquals("Pay 1 credit?", PayCopy.confirmTitle(1.0))
+        assertEquals("Credits added.", PayCopy.CREDITS_ADDED_TITLE)
+        assertEquals("Pay 30 credits to start building?", PayCopy.creditsAddedMessage(30.0))
+    }
+
+    /** The PM, 2026-11-11: the lock line says when the brief really goes (contract: at approval). */
+    @Test fun theLockLineSaysWhenTheBriefGoes() {
+        assertEquals("Private. We delete your brief from our servers once you approve your app.", com.raviga.app.ui.quote.LOCK_LINE)
     }
 
     private val packs = listOf(
@@ -185,5 +193,20 @@ class WalkthroughBundleTest {
         assertEquals(listOf("It works, approved", "Something's wrong", "Request a change"), demo.choices.map { it.label })
         assertEquals(listOf(false, true, false), demo.choices.map { it.free })
         assertTrue(HowItWorks.steps[6].note!!.startsWith("Apple and Google charge their own account fees."))
+        // Sentence case (no all-caps labels), and the PM's words for the entry points.
+        assertEquals("How Raviga works", HowItWorks.LABEL)
+        assertEquals("Fixed free", HowItWorks.FIXED_FREE)
+        assertEquals("See how it works", HowItWorks.HOME_CARD)
+        assertEquals("How it works", HowItWorks.TIMELINE_LINK)
+        // Step 8's days follow /config.report.freeFixDays; at 7 the text is exactly hers.
+        assertEquals("For 7 days after launch, bugs and anything that doesn't match the brief are still fixed free.", HowItWorks.steps(7)[7].body)
+        assertEquals("For 1 day after launch, bugs and anything that doesn't match the brief are still fixed free.", HowItWorks.steps(1)[7].body)
+        // TalkBack: one element per step.
+        assertEquals(
+            "Step 3 of 8. We. You see the price. One price in credits, with what it covers and how long it's valid. " +
+                "Your published app is yours. The editable code stays with us, so we can keep improving it for you.",
+            HowItWorks.spoken(3, 8, HowItWorks.steps[2]),
+        )
+        assertTrue(HowItWorks.spoken(6, 8, demo).contains("Something's wrong, Fixed free: A bug, or it doesn't match the brief."))
     }
 }
