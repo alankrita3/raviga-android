@@ -1,9 +1,12 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-11 20:30.
+The PM reads this file if the session has closed. Updated 2026-11-11 21:00.
 
 ## In flight
+
+- **Keep open: building R-116** (her walkthrough round 2; iOS docs/walkthrough-round2-2026-11-11.md). Items 1-7 now;
+  item 8 (the five-section brief) when backend's R-115 contract lands.
 
 - **R-113 on main (48b904d, 1dfda1f; her GO 11-11): the walkthrough bundle, items 1-6**, from iOS
   docs/walkthrough-bundle-2026-11-10.md and contract v0.12.1/v0.13.0. Tests debug 278, release 246 (incl. the demo
