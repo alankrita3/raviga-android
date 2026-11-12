@@ -1,27 +1,11 @@
 package com.raviga.app.ui
 
-import com.raviga.app.ui.quote.complexitySentence
 import com.raviga.app.ui.quote.timelineText
 import com.raviga.app.util.Money
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class QuoteCopyTest {
-
-    @Test fun namesKeepTheirCapitals() {
-        assertEquals(
-            "Sized for Android app, iOS app, web app and admin panel.",
-            complexitySentence(listOf("Android app", "iOS app", "Web app", "Admin panel")),
-        )
-        assertEquals("Sized for payments and WhatsApp alerts.", complexitySentence(listOf("Payments.", "WhatsApp alerts")))
-        assertEquals("", complexitySentence(listOf(" ")))
-        // Same case as iOS 6c457ef.
-        assertEquals(
-            "Sized for Android app, iOS app, web app and Stripe payments.",
-            complexitySentence(listOf("Android app", "iOS app", "Web app", "Stripe payments")),
-        )
-        assertEquals("Sized for Zapier hooks and iPhone widgets.", complexitySentence(listOf("Zapier hooks", "iPhone widgets")))
-    }
 
     /** R-103 (the PM's final copy, as iOS): submitting is free; paying comes once it's accepted. */
     @Test fun submitIsFreeAndSaysSo() {
@@ -30,9 +14,11 @@ class QuoteCopyTest {
         // R-109 (B, PM-approved as iOS): the demo on the phone, then we publish it; no code, no AWS before paying.
         assertEquals(5, steps.size)
         assertEquals(
-            "You get the app on your phone to try, through TestFlight and Google Play. Approve it, tell us what's wrong, or ask for a change.",
+            // R-121 (the PM's call with her word "demo", 2026-11-12, as iOS).
+            "You get a demo on your phone to try. Approve it, tell us what's wrong, or ask for a change.",
             steps[3],
         )
+        org.junit.Assert.assertTrue(steps.none { "TestFlight" in it })
         assertEquals("Once you approve it, we publish it to your own App Store and Google Play accounts.", steps[4])
         org.junit.Assert.assertTrue(steps.none { "revision" in it || "comments" in it || "code" in it || "AWS" in it })
     }

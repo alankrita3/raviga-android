@@ -146,7 +146,8 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
                 "The brief you submit for us to build, and any reports or change requests you send. A random id for this phone. Your credit purchases and balance. The Apple ID and Google emails you give for test invites, and your AWS account id if your app has a backend.",
             )
             Block("Why", "To write your brief, quote it, build it and deliver it. We do not sell data or show ads.")
-            Block("What we don't keep", StatusCopy.LOCAL_FIRST_PROMISE)
+            // R-121 (her rule 2026-11-12, as iOS): no "What we don't keep" block; "What is sent." says recordings and
+            // files are never sent, and retention lives in the Privacy Policy and Terms.
             Block(
                 "What we won't build",
                 "Anything made to harm, deceive or track people, or that breaks the law. Every description is checked automatically, passwords and ID numbers are removed, and a refused project is never charged.",

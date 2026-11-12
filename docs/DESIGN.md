@@ -51,7 +51,7 @@ Sheets and dialogs sit on `surface`; the describe chooser sheet stays on `paper`
 | Document | `document/{projectId}?reveal=` | `DocumentScreen` (square plus beside "Get a quote" for Add more) |
 | SectionEditor, Regenerate | `section/{projectId}/{sectionId}` + bottom sheet | `SectionEditorScreen`, `RegenerateSheet` |
 | Versions | `versions/{projectId}`, `version/{projectId}/{v}` | `VersionsScreen`, `VersionPreviewScreen` |
-| Quote + DeliveryTargets inline | `quote/{projectId}` | `QuoteScreen` (breakdown tile, marigold bracket chip) |
+| Quote | `quote/{projectId}` | `QuoteScreen` (one price, R-121) |
 | ConnectAWS | `connect_aws` | `ConnectAwsScreen` |
 | ProjectStatus | `status/{projectId}` | `StatusScreen` |
 | Delivery, RevisionRequest | `delivery/{projectId}` + bottom sheet | `DeliveryScreen` (repository, handover guide and Make it live tiles) |
@@ -119,10 +119,10 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   permission isn't granted or asked before (`NotificationAsk`); Android 12 and earlier post without asking, so it
   never shows there. Home no longer asks. Settings > Notifications turns them on later.
 - Founder rule: no other copy about who builds the project (team, AI, agents or robots) unless she approves it.
-- Consent ("Before you start" / "We've updated our terms") and Privacy and data, R-066: "What we don't keep" is
-  `StatusCopy.LOCAL_FIRST_PROMISE` ("… its text is sent to an AI service, used once, and not stored by us. …", the
-  same words as iOS's `Retention.promise`; the AI consent screen's "How long it is kept" uses it too). "Your
-  rights": "You can download or delete everything from Settings at any time, withdraw consent, and raise a
+- Consent ("Before you start" / "We've updated our terms") and Privacy and data: R-121 (her rule 2026-11-12, both
+  apps) says nothing about keeping or deleting the brief; retention lives in the Privacy Policy and Terms (no "What
+  we don't keep" block, no "What we keep." AI line, no Privacy "What we keep" section). "Your
+  rights": "You can download or delete your data from Settings at any time, withdraw consent, and raise a
   grievance." Footer links `LegalLinks`: "Privacy policy · Terms of Use · Your rights" on one line where it
   fits, stacked without dots where it doesn't; Privacy and data has "Privacy policy · Your rights". "Your
   rights" opens `config.legal.rightsUrl` (v0.9.3) and is left out if a server doesn't send it.
@@ -168,14 +168,13 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
 - Sensitive data: "This looks like it includes <up to two kinds, then 'and other secrets'>." /
   "We never need passwords, keys or ID numbers to build your project, and it's safer not to share
   them." Buttons "Remove them", "Keep as is", "Edit".
-- Quote: "<N> credits" with "about $X", the bracket chip and blurb, "Ready in A to B weeks after
-  approval", "Sized for …" (names and platforms keep their capitals), the breakdown tile (ink, blue,
-  marigold, ash, ruleStrong, moss), "Assumes", "What happens next" (iOS wording, step 4 mentions the
-  handover guide and making it live), "Where to deliver", then the privacy promise (blueWash card, Privacy
-  picture, bold "Your idea stays yours", "We use your brief only to build this project. We never sell it
-  or use it to train AI, and we delete it from our servers when you accept the delivery."); under the
-  button a lock and "Private. We delete your brief from our servers after delivery." (resubmit: "Your
-  brief locks again until the team replies."). Resubmit: "You already paid N credits. This adds M credits." / "This returns M
+- Quote (R-121, contract v0.15.0, her words 2026-11-12): "<N> credits" with "about $X" (one price: no bracket chip,
+  no "Sized for …", no breakdown tile, no "Assumes"), "Ready in A to B weeks after payment" and its note, "What
+  happens next" (iOS wording; step 4 "You get a demo on your phone to try. Approve it, tell us what's wrong, or ask
+  for a change."), the privacy promise (blueWash card, Privacy picture, bold "Your idea stays yours", "We use your
+  brief only to build your project. We never sell it or use it to train AI."), then the validity date, the ownership
+  line and `config.report.freeFixesLine` in small captions; under the button a lock and "Private. Only our team sees
+  your brief." (resubmit: "Your brief locks again until the team replies."). Resubmit: "You already paid N credits. This adds M credits." / "This returns M
   credits to your balance." / "No change."
 - Delivery: "Your code is ready." / repository tile / "Handover guide" ("What we built and how to run
   it": `delivery.handoverUrl`, else `<repo>/blob/HEAD/HANDOVER.md`) / "Make it live" ("Steps to put it

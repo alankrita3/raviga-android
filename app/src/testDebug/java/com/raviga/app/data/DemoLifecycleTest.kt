@@ -10,6 +10,7 @@ import com.raviga.app.data.api.Project
 import com.raviga.app.data.api.ProjectStatus
 import com.raviga.app.data.api.QuoteRequest
 import com.raviga.app.data.api.QuoteResult
+import com.raviga.app.data.api.SectionIds
 import com.raviga.app.data.api.ReportRequest
 import com.raviga.app.data.api.SectionBody
 import com.raviga.app.data.api.SubmitProjectRequest
@@ -42,12 +43,18 @@ class DemoLifecycleTest {
         api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion, aiProcessing = true))
 
         // A native, no-backend brief; quoted and submitted.
-        // v0.14.0: five plain sections; nothing here needs a backend (no sign in, payments or admin).
+        // v0.15.0: three plain sections; nothing here needs a backend (no sign in, payments or owner tools).
         val doc = DocumentBody("Salon", listOf(SectionBody("summary", "An iPhone and Android app that shows a salon's price list"), SectionBody("features", "- Shows the price list")))
         var job = api.createQuote(QuoteRequest(doc)).job
         while (job.status != "done") { delay(300); job = api.job(job.jobId) }
         val quote = json.decodeFromJsonElement(QuoteResult.serializer(), job.result!!)
+        // v0.15.0 (R-118): one price for the client; the breakdown and drivers stay with the team.
+        assertTrue(quote.quote.breakdown.isEmpty())
+        assertTrue(quote.quote.complexity?.drivers.orEmpty().isEmpty())
+        assertEquals(com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE, quote.quote.assumptions.last())
         var p: Project = api.submitProject("sub-1", SubmitProjectRequest(document = doc, quoteToken = quote.quoteToken))
+        assertEquals("v0.15.0: no backend until the builder says", false, p.hasBackend)
+        assertEquals(SectionIds.ordered, p.document?.sections?.map { it.id })
         api.demoAdvanceLatest()
         p = api.project(p.id)
         assertEquals(ProjectStatus.APPROVED, p.status)
@@ -73,6 +80,10 @@ class DemoLifecycleTest {
         p = api.accept(p.id)
         assertEquals(ProjectStatus.ACCEPTED, p.status)
         assertEquals("none", p.delivery?.handover?.backend)
+        // v0.15.0 (R-119): approval deletes nothing.
+        assertNull(p.contentDeletedAt)
+        assertEquals("Salon", p.title)
+        assertNotNull(p.document)
 
         // Make it live: invites sent, both stores reviewed and published: live, and the 7 days start.
         p.delivery!!.handover!!.stores.keys.forEach { api.handoverInvited(p.id, HandoverInvitedRequest(it)) }
@@ -107,5 +118,54 @@ class DemoLifecycleTest {
         }
         val change = api.requestChange(p.id, ChangeRequest("Add a loyalty card")).change
         assertEquals("pricing", change.status)
+        assertNotNull("live keeps the brief", api.project(p.id).document)
+    }
+
+    /** v0.15.0 (R-118): the builder says at the first demo whether there's a backend; Make it live follows handover.backend. */
+    @Test
+    fun `a backend is declared at the demo, then Make it live asks for AWS`() = runBlocking {
+        val api = DemoApi(CacheStore(kotlin.io.path.createTempDirectory("demo").toFile(), json), json)
+        val legal = DemoApi.demoConfig().legal
+        api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion, aiProcessing = true))
+        val doc = DocumentBody("Salon", listOf(
+            SectionBody("summary", "A pair of native iPhone and Android apps for a salon"),
+            SectionBody("features", "- Sign in with Apple or Google\n- Book an appointment"),
+            // An older build's sections are dropped, as the server does.
+            SectionBody("screens", "- Home"), SectionBody("deliverables", "- Your app"),
+        ))
+        var job = api.createQuote(QuoteRequest(doc)).job
+        while (job.status != "done") { delay(300); job = api.job(job.jobId) }
+        val quote = json.decodeFromJsonElement(QuoteResult.serializer(), job.result!!)
+        var p: Project = api.submitProject("sub-2", SubmitProjectRequest(document = doc, quoteToken = quote.quoteToken))
+        assertEquals(SectionIds.ordered, p.document?.sections?.map { it.id })
+        assertEquals(false, p.hasBackend)
+        api.demoAdvanceLatest()
+        api.demoAddCredits(quote.quote.credits)
+        p = api.pay(p.id, "pay-b", PayRequest())
+        assertEquals(false, p.hasBackend)
+        api.demoAdvanceLatest()
+        p = api.project(p.id)
+        assertEquals(ProjectStatus.DELIVERED, p.status)
+        assertTrue("the builder said yes at the demo", p.hasBackend)
+        p = api.accept(p.id)
+        assertEquals("pending", p.delivery?.handover?.backend)
+        assertTrue(com.raviga.app.ui.status.GoLiveLogic.hasBackendStep(p.delivery?.handover))
+    }
+
+    /** v0.15.0 (R-119): cancel still deletes the brief at once. */
+    @Test
+    fun `cancel still deletes the brief`() = runBlocking {
+        val api = DemoApi(CacheStore(kotlin.io.path.createTempDirectory("demo").toFile(), json), json)
+        val legal = DemoApi.demoConfig().legal
+        api.putConsent(ConsentRequest(termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion, aiProcessing = true))
+        val doc = DocumentBody("Bakery", listOf(SectionBody("summary", "A native Android app for a bakery's menu"), SectionBody("features", "- Shows the menu")))
+        var job = api.createQuote(QuoteRequest(doc)).job
+        while (job.status != "done") { delay(300); job = api.job(job.jobId) }
+        val quote = json.decodeFromJsonElement(QuoteResult.serializer(), job.result!!)
+        val p = api.submitProject("sub-3", SubmitProjectRequest(document = doc, quoteToken = quote.quoteToken))
+        val cancelled = api.cancelProject(p.id, com.raviga.app.data.api.Empty())
+        assertEquals(ProjectStatus.CANCELLED, cancelled.status)
+        assertNull(cancelled.document)
+        assertNotNull(cancelled.contentDeletedAt)
     }
 }

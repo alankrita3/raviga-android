@@ -82,7 +82,8 @@ object HowItWorks {
         Step("You", "Tell us your idea", "Type it, say it out loud, or add files. A few sentences are enough to start."),
         Step(
             "We", "We write your brief",
-            "Your idea becomes a clear plan: the screens, the features and what the app does. Read it and change anything that isn't right.",
+            // v0.15.0 (as iOS): the brief names no screens.
+            "Your idea becomes a clear plan: the features and what the app does. Read it and change anything that isn't right.",
             ours = true,
         ),
         // R-116 (7, her call): no line about the code here; only the Quote screen says it.
@@ -108,7 +109,8 @@ object HowItWorks {
         Step(
             "You, then we", "Go live under your name",
             "Your app goes into your own App Store and Google Play accounts. You create the accounts and invite us; we publish and handle the store reviews.",
-            note = "Apple and Google charge their own account fees. If your app needs a backend, you connect your AWS account once and we set it up there.",
+            // v0.15.0 (as iOS): the builder decides about a backend; Make it live shows the AWS step only when there is one.
+            note = "Apple and Google charge their own account fees.",
         ),
         Step(
             "We", "Your app is live",

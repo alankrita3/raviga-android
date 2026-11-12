@@ -171,16 +171,12 @@ fun StatusScreen(nav: NavController, projectId: String) {
                     InlineAction(com.raviga.app.ui.onboarding.HowItWorks.TIMELINE_LINK, onClick = { nav.navigate(Routes.HOW_IT_WORKS) }, modifier = Modifier.offset(x = (-8).dp))
                 }
 
-                val deletedAt = project.contentDeletedAt
-                Spacer(Modifier.height(Ra.sectionGap))
-                Text(
-                    if (deletedAt != null) {
-                        StatusCopy.deletedLine(Time.shortDate(deletedAt), hasCopy = container.drafts.get(project.id) != null)
-                    } else {
-                        "We keep this brief only to review and build it, and delete it from our servers when you approve your app."
-                    },
-                    style = RaType.caption, color = Ink.graphite,
-                )
+                // R-121 (her rule 2026-11-12, as iOS): nothing about keeping or deleting the brief; one plain line only
+                // when the server no longer has it and this phone has no copy.
+                if (project.contentDeletedAt != null && container.drafts.get(project.id) == null) {
+                    Spacer(Modifier.height(Ra.sectionGap))
+                    Text(StatusCopy.BRIEF_GONE, style = RaType.caption, color = Ink.graphite)
+                }
                 Spacer(Modifier.height(32.dp))
             }
         }
@@ -203,17 +199,13 @@ fun StatusScreen(nav: NavController, projectId: String) {
         )
     }
     if (confirmCancel) {
-        // R-092 #37 (iOS review): no draft is made on cancel; say what really happens to the brief.
-        val hasCopy = project?.let { container.drafts.get(it.id) } != null
+        // R-121 (her rule 2026-11-12, as iOS): "Nothing was charged." only.
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             containerColor = Ink.surface,
             title = { Text("Cancel this project?", style = RaType.heading, color = Ink.ink) },
             text = {
-                Text(
-                    StatusCopy.cancelConfirmLine(hasCopy),
-                    style = RaType.body, color = Ink.graphite,
-                )
+                Text(StatusCopy.CANCEL_CONFIRM, style = RaType.body, color = Ink.graphite)
             },
             confirmButton = { TextButton(onClick = { confirmCancel = false; vm.cancel() }) { Text("Cancel project", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Keep it", style = RaType.button, color = Ink.ink) } },

@@ -264,6 +264,9 @@ fun PrivacyNote(text: String, modifier: Modifier = Modifier, title: String? = nu
     }
 }
 
+/** R-121 (R-119 copy by the PM, her rule 2026-11-12: nothing about keeping or deleting the brief; as iOS). */
+const val PRIVACY_PROMISE = "We use your brief only to build your project. We never sell it or use it to train AI."
+
 /** Said once, warmly, right before the client hands over their idea (Quote). */
 @Composable
 fun PrivacyPromise(modifier: Modifier = Modifier) {
@@ -282,7 +285,7 @@ fun PrivacyPromise(modifier: Modifier = Modifier) {
             Text("Your idea stays yours", style = RaType.bodyMedium, color = Ink.blueInk)
             Spacer(Modifier.height(6.dp))
             Text(
-                "We use your brief only to build this project. We never sell it or use it to train AI, and we delete it from our servers when you approve your app.",
+                PRIVACY_PROMISE,
                 style = RaType.secondary,
                 color = Ink.blueInk,
             )

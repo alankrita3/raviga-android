@@ -22,37 +22,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.raviga.app.ui.LocalAppContainer
-import com.raviga.app.ui.components.BodyText
 import com.raviga.app.ui.components.BottomBar
 import com.raviga.app.ui.components.RaTextField
 import com.raviga.app.ui.components.RaTopBar
 import com.raviga.app.ui.components.Hairline
 import com.raviga.app.ui.components.InlineNotice
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
 import com.raviga.app.ui.components.PrivacyPromise
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
-import com.raviga.app.ui.components.Chip
-import com.raviga.app.ui.components.ChipTone
 import com.raviga.app.ui.components.Illustration
 import com.raviga.app.ui.components.InlineAction
 import com.raviga.app.ui.components.Picture
 import com.raviga.app.ui.components.SpotIllustration
-import com.raviga.app.ui.components.tile
 import com.raviga.app.util.Money
 import com.raviga.app.ui.components.NumberedSteps
 import com.raviga.app.ui.components.PrimaryButton
@@ -115,7 +104,7 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                     PrimaryButton("Submit", loading = state.submitting, onClick = { vm.submit() })
                 }
                 Spacer(Modifier.height(10.dp))
-                // R-113 (the PM, 2026-11-11): when the contract really deletes it (retention.briefDeletedOn: accepted).
+                // R-121 (her rule 2026-11-12, the PM's line as iOS): nothing about keeping or deleting the brief.
                 LockedCaption(LOCK_LINE)
             }
         },
@@ -148,7 +137,6 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 TertiaryButton("Try again", onClick = { vm.requestQuote() })
                 return@Column
             }
-            val bracket = config.bracket(quote.bracketId)
             val usd = quote.usd ?: (quote.credits * config.credits.creditValueUsd)
 
             Spacer(Modifier.height(4.dp))
@@ -164,17 +152,8 @@ fun QuoteScreen(nav: NavController, projectId: String) {
                 Spacer(Modifier.width(12.dp))
                 Text("about ${Money.usd(usd)}", style = RaType.secondary, color = Ink.graphite, modifier = Modifier.alignByBaseline())
             }
-            Spacer(Modifier.height(14.dp))
-            if (bracket != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Chip(bracket.name, tone = ChipTone.Marigold)
-                    if (bracket.blurb.isNotBlank()) {
-                        Spacer(Modifier.width(10.dp))
-                        Text(bracket.blurb, style = RaType.secondary, color = Ink.graphite)
-                    }
-                }
-                Spacer(Modifier.height(20.dp))
-            }
+            // R-121 (contract v0.15.0, the PM's calls 2026-11-12): one price; no size chip.
+            Spacer(Modifier.height(20.dp))
             state.staleLine?.let { line ->
                 Text(line, style = RaType.secondary, color = Ink.amber)
                 Spacer(Modifier.height(20.dp))
@@ -197,27 +176,8 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             }
             Spacer(Modifier.height(20.dp))
 
-            quote.complexity?.drivers?.takeIf { it.isNotEmpty() }?.let { drivers ->
-                Hairline()
-                Spacer(Modifier.height(20.dp))
-                Text(complexitySentence(drivers), style = RaType.body, color = Ink.graphite)
-                Spacer(Modifier.height(20.dp))
-            }
-
-            if (quote.breakdown.isNotEmpty()) {
-                BreakdownTile(quote.breakdown.map { it.area to it.credits })
-                Spacer(Modifier.height(20.dp))
-            }
-
-            if (quote.assumptions.isNotEmpty()) {
-                Hairline()
-                Spacer(Modifier.height(20.dp))
-                Text("Assumes", style = RaType.bodyMedium, color = Ink.ink)
-                Spacer(Modifier.height(8.dp))
-                BodyText(quote.assumptions.joinToString("\n") { "- $it" })
-                Spacer(Modifier.height(20.dp))
-            }
-
+            // R-121 (contract v0.15.0, her words 2026-11-12): no breakdown, no drivers line, no Assumes list (the
+            // breakdown and drivers come empty; the free-fix line, the only assumption shown, is under the ownership line).
             Hairline()
             Spacer(Modifier.height(20.dp))
             Text("What happens next", style = RaType.bodyMedium, color = Ink.ink)
@@ -235,66 +195,12 @@ fun QuoteScreen(nav: NavController, projectId: String) {
             // R-113 (her pick, 2026-11-10; as built on iOS): right below the validity line, same caption, always shown.
             Spacer(Modifier.height(if (state.priceLine != null) 8.dp else 20.dp))
             Text(OWNERSHIP_LINE, style = RaType.caption, color = Ink.ash)
+            // R-121 (the PM's OK, as iOS): the free-fix line under the ownership line, since the assumptions aren't shown.
+            Spacer(Modifier.height(8.dp))
+            Text(freeFixesLine(config), style = RaType.caption, color = Ink.ash)
             Spacer(Modifier.height(32.dp))
         }
     }
-}
-
-/** What the credits pay for: one bar split by area, then each area with its share. */
-@Composable
-private fun BreakdownTile(parts: List<Pair<String, Int>>) {
-    val colors = listOf(Ink.ink, Ink.blue, Ink.marigold, Ink.ash, Ink.ruleStrong, Ink.moss)
-    val total = parts.sumOf { it.second }.coerceAtLeast(1)
-    Column(Modifier.tile(padding = 18.dp)) {
-        Row(Modifier.fillMaxWidth().height(10.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            parts.forEachIndexed { i, (_, credits) ->
-                Box(
-                    Modifier
-                        .weight(credits.coerceAtLeast(1).toFloat() / total)
-                        .fillMaxHeight()
-                        .clip(CircleShape)
-                        .background(colors[i % colors.size]),
-                )
-            }
-        }
-        parts.forEachIndexed { i, (area, credits) ->
-            Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(colors[i % colors.size]))
-                Spacer(Modifier.width(10.dp))
-                Text(area, style = RaType.body, color = Ink.ink, modifier = Modifier.weight(1f))
-                Text(Money.credits(credits), style = RaType.bodyMedium, color = Ink.ink)
-            }
-        }
-    }
-}
-
-/**
- * "Sized for payments, an Android app and two integrations." A leading capital is lowered unless
- * the word is a name: another capital inside it ("iOS app", "WhatsApp") or a platform or brand.
- */
-internal fun complexitySentence(drivers: List<String>): String {
-    val items = drivers.map { it.trim().trimEnd('.') }.filter { it.isNotEmpty() }
-    if (items.isEmpty()) return ""
-    val lowered = items.map { item ->
-        val first = item.substringBefore(' ')
-        val isName = first.drop(1).any(Char::isUpperCase) || first.lowercase() in NAMES
-        if (item.first().isUpperCase() && !isName) item.replaceFirstChar { it.lowercase() } else item
-    }
-    return "Sized for " + joinWords(lowered) + "."
-}
-
-private val NAMES = setOf(
-    "android", "apple", "google", "aws", "amazon", "stripe", "razorpay", "paypal", "shopify", "slack",
-    "firebase", "whatsapp", "instagram", "facebook", "twilio", "microsoft", "windows", "mac", "macos",
-    "openai", "salesforce", "hubspot", "zapier", "zoom", "upi", "sms", "api", "iphone", "ipad",
-)
-
-/** "payments, two platforms and an admin panel" */
-private fun joinWords(words: List<String>): String = when (words.size) {
-    0 -> ""
-    1 -> words[0]
-    else -> words.dropLast(1).joinToString(", ") + " and " + words.last()
 }
 
 /** "1 to 2 weeks", "about 3 weeks", "about a week" (never "about 1 weeks"). */
@@ -307,8 +213,12 @@ internal fun timelineText(minWeeks: Int, maxWeeks: Int, workingDays: Int): Strin
     }
 }
 
-/** R-113 (the PM, 2026-11-11): under Submit, beside the lock; the brief goes at approval (contract section 21). */
-internal const val LOCK_LINE = "Private. We delete your brief from our servers once you approve your app."
+/** R-121 (her rule 2026-11-12: no keep or delete words; the PM's line, as iOS): under Submit, beside the lock. */
+internal const val LOCK_LINE = "Private. Only our team sees your brief."
+
+/** The free-fix rule under the ownership line (contract v0.13.0: `config.report.freeFixesLine`). */
+internal fun freeFixesLine(config: com.raviga.app.data.api.AppConfig): String =
+    config.report.freeFixesLine.ifBlank { com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE }
 
 /** R-113 (her pick, 2026-11-10; also in How it works, step 3). */
 internal const val OWNERSHIP_LINE = "Your published app is yours. The editable code stays with us, so we can keep improving it for you."
@@ -316,12 +226,15 @@ internal const val OWNERSHIP_LINE = "Your published app is yours. The editable c
 /** R-103: above Submit (the PM's final copy, as iOS). */
 internal const val FREE_TO_SUBMIT = "Free to submit. You pay only once we accept it."
 
-/** "What happens next", contract v0.12.0 (R-109, B): the demo on the phone, then we publish it to the client's stores. */
+/**
+ * "What happens next", contract v0.12.0 (R-109, B): the demo on the phone, then we publish it to the client's stores.
+ * R-121 (the PM's call with her word "demo", 2026-11-12, as iOS): step 4 names no TestFlight or Google Play.
+ */
 internal fun nextSteps(): List<String> = listOf(
     "We check your brief against what we build.",
     "Once it's accepted, you pay the quoted credits and we start building.",
     "We build and test it. This screen shows each step.",
-    "You get the app on your phone to try, through TestFlight and Google Play. Approve it, tell us what's wrong, or ask for a change.",
+    "You get a demo on your phone to try. Approve it, tell us what's wrong, or ask for a change.",
     "Once you approve it, we publish it to your own App Store and Google Play accounts.",
 )
 

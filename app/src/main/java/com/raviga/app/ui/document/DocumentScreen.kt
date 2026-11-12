@@ -250,7 +250,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                 if (document == null && state.contentGone) {
                     item {
                         Column(Modifier.padding(horizontal = Ra.gutter)) {
-                            SectionHint("The brief was deleted from our servers when this project closed, and this phone has no copy of it.")
+                            SectionHint(StatusCopy.BRIEF_GONE)   // R-121 (her rule 2026-11-12, as iOS)
                             Spacer(Modifier.height(Ra.sectionGap))
                         }
                     }
@@ -386,7 +386,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             onDismissRequest = { confirmDelete = false },
             containerColor = Ink.surface,
             title = { Text("Delete this draft?", style = RaType.heading, color = Ink.ink) },
-            text = { Text("The description, the brief and all its versions are deleted. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
+            text = { Text(StatusCopy.DELETE_DRAFT_CONFIRM, style = RaType.body, color = Ink.graphite) },
             confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteDraft() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )
@@ -510,7 +510,7 @@ private fun NoteSheet(text: String, source: String, maxChars: Int, onSave: (Stri
             onDismissRequest = { confirm = false },
             containerColor = Ink.surface,
             title = { Text("Delete this note?", style = RaType.heading, color = Ink.ink) },
-            text = { Text("It's removed from this draft on your phone. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
+            text = { Text(StatusCopy.DELETE_NOTE_CONFIRM, style = RaType.body, color = Ink.graphite) },
             confirmButton = { TextButton(onClick = { confirm = false; onDelete() }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )
@@ -574,7 +574,8 @@ private fun StatusLine(state: DocumentViewModel.State, nav: NavController) {
     when {
         project?.contentDeletedAt != null && draft != null -> Text(
             // v0.10.0: the statusLine ends with its own full stop ("Approved by you."); never two.
-            "${StatusCopy.rowLine(project).trimEnd().trimEnd('.')}. Raviga deleted its copy; this one is kept only on this phone.",
+            // R-121 (her rule 2026-11-12): nothing about what the server kept; the phone-only words (iOS's View brief row).
+            "${StatusCopy.rowLine(project).trimEnd().trimEnd('.')}. Your copy, on this phone.",
             style = RaType.secondary, color = Ink.graphite,
         )
         project != null && project.submission?.submittedAt != null -> Text(

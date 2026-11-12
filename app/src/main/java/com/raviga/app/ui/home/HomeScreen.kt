@@ -106,7 +106,7 @@ fun HomeScreen(nav: NavController) {
             onDismissRequest = { confirmDelete = null },
             containerColor = Ink.surface,
             title = { Text("Delete this draft?", style = RaType.heading, color = Ink.ink) },
-            text = { Text("The description, the brief and all its versions are deleted. This cannot be undone.", style = RaType.body, color = Ink.graphite) },
+            text = { Text(StatusCopy.DELETE_DRAFT_CONFIRM, style = RaType.body, color = Ink.graphite) },
             confirmButton = { TextButton(onClick = { confirmDelete = null; vm.deleteDraft(row.id) }) { Text("Delete", style = RaType.button, color = Ink.brick) } },
             dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Keep", style = RaType.button, color = Ink.ink) } },
         )

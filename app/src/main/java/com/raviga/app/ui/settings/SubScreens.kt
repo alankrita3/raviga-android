@@ -196,15 +196,9 @@ fun PrivacyScreen(nav: NavController) {
                 }
                 Switch(checked = analyticsOn, enabled = !state.busy, onCheckedChange = null, colors = switchColors())
             }
+            // R-121 (her rule 2026-11-12, as iOS): no "What we keep" section; retention lives in the Privacy Policy.
             Hairline(Modifier.padding(horizontal = Ra.gutter))
-            Column(Modifier.padding(horizontal = Ra.gutter)) {
-                Spacer(Modifier.height(16.dp))
-                // R-066: the consent screen's words, so both say the same.
-                Text("What we don't keep", style = RaType.bodyMedium, color = Ink.ink)
-                Spacer(Modifier.height(6.dp))
-                Text(StatusCopy.LOCAL_FIRST_PROMISE, style = RaType.secondary, color = Ink.graphite)
-                Spacer(Modifier.height(24.dp))
-            }
+            Spacer(Modifier.height(8.dp))
             RaRow(
                 title = "Download my data",
                 // The drafts are named in the caption below (her copy), so the row names what comes from our servers.

@@ -51,7 +51,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
             get() {
                 val submittedCopy = draft?.submittedVersion?.takeIf { draft.isSubmitted && !editable }
                     ?.let { v -> draft.versions.firstOrNull { it.version == v }?.document }
-                return submittedCopy ?: draft?.document ?: project?.document?.asDocument()
+                // v0.15.0 (as iOS): a project submitted earlier shows the three sections the app knows.
+                return submittedCopy ?: draft?.document ?: project?.document?.asDocument()?.withoutRetired()
             }
         val status: String get() = project?.status ?: ProjectStatus.DRAFT
         /** Not submitted yet: it exists only on this phone. */

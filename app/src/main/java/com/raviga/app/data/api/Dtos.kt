@@ -264,8 +264,8 @@ data class RetentionConfig(
     val jobHours: Int = 24,
     /** AI job results are readable this long after they finish (cut short once read). */
     val aiResultMinutes: Int = 15,
-    /** Statuses at which the server deletes the brief and everything written about it. */
-    val briefDeletedOn: List<String> = listOf("accepted", "cancelled", "rejected"),
+    /** Statuses at which the server deletes the brief and everything written about it (v0.15.0, R-119: not approval). */
+    val briefDeletedOn: List<String> = listOf("cancelled", "rejected"),
 )
 
 @Serializable
@@ -386,23 +386,19 @@ object ProjectStatus {
 }
 
 object SectionIds {
-    // v0.14.0 (R-115, her decision 2026-11-11): the brief is a short plain document of five sections.
+    // v0.15.0 (R-118, her decision 2026-11-12): the brief is three plain sections that decide nothing technical.
     const val SUMMARY = "summary"
     const val TARGET_USERS = "target_users"
-    /** Everything that is built, one list (no nice-to-have: later wishes are paid changes). */
+    /** Everything that is built, one list, including what the owner and staff can do (later wishes are paid changes). */
     const val FEATURES = "features"
-    const val SCREENS = "screens"
-    const val DELIVERABLES = "deliverables"
 
-    /** The brief's five sections, in order (v0.14.0). */
-    val ordered = listOf(SUMMARY, TARGET_USERS, FEATURES, SCREENS, DELIVERABLES)
+    /** The brief's three sections, in order (v0.15.0). */
+    val ordered = listOf(SUMMARY, TARGET_USERS, FEATURES)
 
     val headings = mapOf(
         SUMMARY to "Summary",
         TARGET_USERS to "Who it's for",
         FEATURES to "Features",
-        SCREENS to "Screens",
-        DELIVERABLES to "What you get",
     )
 
     /** The server's hints (shown when a section is empty). */
@@ -410,17 +406,19 @@ object SectionIds {
         SUMMARY to "What is being built, for whom, and why, in a few sentences.",
         TARGET_USERS to "The people who use it: customers, staff, the owner.",
         FEATURES to "Everything that is built, in plain words.",
-        SCREENS to "Each screen and what it shows and does.",
-        DELIVERABLES to "iPhone and Android apps, backend, admin panel, store listings.",
     )
 
     /**
-     * Sections a draft from an older build may still carry: dropped quietly when drafts load (their text isn't moved,
-     * as the server does). Open questions went in v0.12.1 (R-111), the six others in v0.14.0 (R-115).
+     * Sections a draft or project from an older build may still carry: dropped quietly when they load (their text isn't
+     * moved, as the server does). Open questions went in v0.12.1 (R-111), six in v0.14.0 (R-115), Screens and What you
+     * get in v0.15.0 (R-118).
      */
     const val RETIRED_OPEN_QUESTIONS = "open_questions"
+    const val RETIRED_SCREENS = "screens"
+    const val RETIRED_DELIVERABLES = "deliverables"
     val RETIRED = setOf(
         RETIRED_OPEN_QUESTIONS, "platforms", "features_nice", "integrations", "data_auth", "non_functional", "out_of_scope",
+        RETIRED_SCREENS, RETIRED_DELIVERABLES,
     )
 
     /** v0.14.0: an older draft's must-have list becomes Features when it has none. */
@@ -437,7 +435,7 @@ data class Project(
     val updatedAt: String? = null,
     /** When the project entered its current status (contract v0.8.1); `updatedAt` also moves on other changes. */
     val statusChangedAt: String? = null,
-    /** The brief, held only from submit until the project closes (contract v0.6). */
+    /** The brief, from submit on (contract v0.6; v0.15.0: gone only when the project is cancelled or declined). */
     val document: ProjectDocument? = null,
     /** v0.10.0: the fixed line for the status, filled in by the server (credits, dates). Show it as it comes. */
     val statusLine: String = "",
@@ -541,7 +539,7 @@ data class Document(
     fun body() = DocumentBody(title = title, sections = sections.map { SectionBody(it.id, it.body) })
 
     /**
-     * v0.12.1 and v0.14.0: an older draft in today's sections, as the server reads it: the retired sections dropped
+     * v0.12.1, v0.14.0 and v0.15.0: an older draft in today's sections, as the server reads it: the retired sections dropped
      * (their text isn't moved), and "Must-have features" read as Features when there's no Features yet.
      */
     fun withoutRetired(): Document {
@@ -553,7 +551,7 @@ data class Document(
                 s.id == SectionIds.RENAMED_FEATURES_MUST -> if (hasFeatures) return@mapNotNull null else SectionIds.FEATURES
                 else -> s.id
             }
-            // Today's headings and hints ("Who it's for", "What you get"), as the server sends them now.
+            // Today's headings and hints ("Who it's for"), as the server sends them now.
             SectionIds.headings[id]?.let { heading -> s.copy(id = id, heading = heading, hint = SectionIds.hints[id]) } ?: s
         }
         return copy(sections = mapped.sortedBy { SectionIds.ordered.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } })

@@ -127,7 +127,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
     private fun transition(s: State, project: Project, status: String, by: String): Pair<State, Project> {
         val now = Time.nowIso()
         var p = project.copy(status = status, statusChangedAt = now, history = project.history + HistoryEntry(status, now, by))
-        // v0.6: closing deletes the brief and everything written about it; dates and counts stay.
+        // v0.6: closing deletes the brief and everything written about it; dates and counts stay. v0.15.0 (R-119):
+        // only cancel and decline close it that way; approval and live keep the brief.
         if (status in config.retention.briefDeletedOn) {
             p = p.copy(
                 document = null,
@@ -223,9 +224,20 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         )
     }
 
-    /** All a brief's words, for what the demo works out from the text (apps, a backend, the native-only rule). */
+    /** All a brief's words, for what the demo works out from the text (apps, the native-only rule). */
     private fun textOf(doc: DocumentBody): String =
-        doc.title + "\n" + normalised(doc).sections.filter { it.id != SectionIds.DELIVERABLES }.joinToString("\n") { it.body }
+        doc.title + "\n" + normalised(doc).sections.joinToString("\n") { it.body }
+
+    /**
+     * The demo builder's answer at the first demo (v0.15.0, R-118; as iOS's mock): a backend when the brief has anything
+     * signed in to, paid, stored or managed by an owner.
+     */
+    private fun builderSaysBackend(p: Project): Boolean {
+        val text = p.document?.sections.orEmpty().filter { it.id == SectionIds.FEATURES || it.id == SectionIds.TARGET_USERS }
+            .joinToString("\n") { it.body }.lowercase()
+        return listOf("sign in", "sign-in", "account", "pay", "book", "order", "save", "history", "owner", "admin", "staff",
+            "notification", "message", "chat").any { it in text }
+    }
 
     // ----- lifecycle simulation -----
 
@@ -247,6 +259,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 p = p.copy(
                     reports = p.reports.map { r -> if (r.resolvedAt == null) r.copy(resolvedAt = now) else r },
                     delivery = demoDelivery(s, p, now),
+                    // v0.15.0 (R-118): the builder says at the demo whether the app has a backend (false until then).
+                    hasBackend = p.hasBackend || builderSaysBackend(p),
                 )
                 val (n, t) = transition(next, p, ProjectStatus.DELIVERED, "team")
                 next = n; p = t
@@ -601,8 +615,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 bracketId = parts.bracketId,
                 estimatedWorkingDays = parts.workingDays,
                 timeline = parts.timeline,
-                complexity = Complexity(parts.score, parts.drivers),
-                breakdown = parts.breakdown.map { BreakdownItem(it.first, it.second) },
+                // v0.15.0 (R-118): the client sees one price; the team keeps the breakdown and drivers.
+                complexity = Complexity(parts.score, emptyList()),
+                breakdown = emptyList(),
                 assumptions = parts.assumptions,
                 createdAt = Time.nowIso(),
                 expiresAt = Instant.now().plusSeconds(config.quote.validDays * 86_400L).toString(),
@@ -656,7 +671,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             submission = Submission(submittedAt = now, awsAccountId = next.deliveryTargets.aws?.accountId, creditsCharged = 0),
             // v0.14.0: from the brief's own words (the server decides from the same text).
             apps = appsOf(textOf(body.document)),
-            hasBackend = Regex("(?i)admin|dashboard|account|sign in|log ?in|sync|payment|booking").containsMatchIn(textOf(body.document)),
+            // v0.15.0 (R-118): false until the builder says, at the first demo.
+            hasBackend = false,
             timeline = Timeline(estimatedWorkingDays = quote.estimatedWorkingDays, estimatedDeliveryDate = null, milestones = emptyList()),
             history = emptyList(),
         )
@@ -837,7 +853,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     /** v0.12.0: the store apps a brief's Platforms section asks for; none means it's not a native app (declined). */
     /**
-     * v0.14.0: the store apps a brief's words ask for (its "What you get" lines left out). None only when it plans a
+     * v0.14.0: the store apps a brief's words ask for. None only when it plans a
      * website or desktop app and no app at all: declined at the quote, as the server's native-only rule.
      */
     private fun appsOf(text: String): List<String> {
