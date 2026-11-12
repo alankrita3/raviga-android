@@ -13,7 +13,8 @@ The PM reads this file if the session has closed. Updated 2026-11-12.
   Delete draft/note); hasBackend false until the builder says; demo drafter on the v0.15.0 rules. Tests debug 287,
   release 251. OnePlus on dev: all of it seen, incl. RA-0NA02Y paid, demo with --backend yes, approved, AWS step.
   Android-only call: the download caption stops at "…in a drafts folder." (no Save my drafts button here).
-  RA-0NA02Y now sits approved on dev (Make it live, AWS connected); cleanup list.
+  Accepted by the PM 2026-11-12 with all three decisions (no Save my drafts button needed). RA-0NA02Y (approved on
+  dev, Make it live) is on the PM's cleanup list. Nothing in flight; next work comes from the PM.
 
 - **R-116 items 1-7 on main (her walkthrough round 2; iOS docs/walkthrough-round2-2026-11-11.md).** Welcome (no
   brief-price line, step 3 body, "By Raviga Apps", page 1 body), Home's empty line, keep/delete wording (AI "What we
