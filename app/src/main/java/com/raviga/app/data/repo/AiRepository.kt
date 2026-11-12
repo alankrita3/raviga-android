@@ -31,33 +31,51 @@ class AiRepository(
         inputs: List<AiInput>,
         title: String?,
         onProgress: (JobState) -> Unit = {},
-        onStarted: suspend (String) -> Unit = {},
+        onStarted: suspend (JobEnvelope) -> Unit = {},
     ): AiDocumentResult =
         run(AiDocumentResult.serializer(), onProgress, onStarted) { api.aiDraft(AiDraftRequest(inputs, title?.ifBlank { null })) }
 
+    /** v0.16.0: one of the brief's AI edits; [buyEditPack] only after the person agreed to buy 5 more. */
     suspend fun append(
+        briefId: String,
         document: DocumentBody,
         inputs: List<AiInput>,
+        buyEditPack: Boolean = false,
         onProgress: (JobState) -> Unit = {},
-        onStarted: suspend (String) -> Unit = {},
+        onStarted: suspend (JobEnvelope) -> Unit = {},
     ): AiDocumentResult =
-        run(AiDocumentResult.serializer(), onProgress, onStarted) { api.aiAppend(AiAppendRequest(document, inputs)) }
+        run(AiDocumentResult.serializer(), onProgress, onStarted) {
+            api.aiAppend(AiAppendRequest(briefId, document, inputs, buyEditPack.takeIf { it }))
+        }
 
     suspend fun regenerate(
+        briefId: String,
         document: DocumentBody,
         sectionId: String,
         instruction: String,
         context: List<AiInput>?,
+        buyEditPack: Boolean = false,
         onProgress: (JobState) -> Unit = {},
-        onStarted: suspend (String) -> Unit = {},
+        onStarted: suspend (JobEnvelope) -> Unit = {},
     ): AiDocumentResult = run(AiDocumentResult.serializer(), onProgress, onStarted) {
-        api.aiRegenerate(AiRegenerateRequest(document, sectionId, instruction.trim().ifBlank { null }, context?.takeIf { it.isNotEmpty() }))
+        api.aiRegenerate(
+            AiRegenerateRequest(
+                briefId, document, sectionId, instruction.trim().ifBlank { null }, context?.takeIf { it.isNotEmpty() },
+                buyEditPack.takeIf { it },
+            ),
+        )
     }
+
+    /** v0.16.0: a new id for a brief the server doesn't know (made before v0.16.0, or forgotten); no free edits. */
+    suspend fun registerBrief(): com.raviga.app.data.api.BriefRegistration = apiCall(json) { api.registerBrief() }
+
+    /** v0.16.0: what's left on a brief. */
+    suspend fun aiEdits(briefId: String): com.raviga.app.data.api.AiEditsCount = apiCall(json) { api.aiEdits(briefId) }
 
     suspend fun quote(
         document: DocumentBody,
         onProgress: (JobState) -> Unit = {},
-        onStarted: suspend (String) -> Unit = {},
+        onStarted: suspend (JobEnvelope) -> Unit = {},
     ): QuoteResult =
         run(QuoteResult.serializer(), onProgress, onStarted) { api.createQuote(QuoteRequest(document)) }
 
@@ -71,15 +89,16 @@ class AiRepository(
     private suspend fun <T> run(
         deserializer: DeserializationStrategy<T>,
         onProgress: (JobState) -> Unit,
-        onStarted: suspend (String) -> Unit,
+        onStarted: suspend (JobEnvelope) -> Unit,
         start: suspend () -> JobEnvelope,
     ): T {
         var attempt = 0
         while (true) {
             try {
-                val job = apiCall(json) { start() }.job
-                onStarted(job.jobId)   // R-083: kept on the draft until the result lands
-                return jobs.await(job, deserializer, onProgress)
+                val envelope = apiCall(json) { start() }
+                // R-083: the job id is kept on the draft until the result lands; v0.16.0: so are the brief's id and edits.
+                onStarted(envelope)
+                return jobs.await(envelope.job, deserializer, onProgress)
             } catch (e: ApiException) {
                 if (e.code != ApiException.JOB_EXPIRED || ++attempt > 1) throw e
             }

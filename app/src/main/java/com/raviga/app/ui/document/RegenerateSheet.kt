@@ -25,7 +25,10 @@ import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 
-/** Optional instruction, then "Regenerate". Stays open while the job runs. */
+/**
+ * Optional instruction, then "Regenerate". Stays open while the job runs. [editsLine]: the brief's AI edits left
+ * (R-124, v0.16.0, iOS's words), e.g. "3 of 5 free AI edits left. Typing your own changes is always free."
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegenerateSheet(
@@ -34,6 +37,7 @@ fun RegenerateSheet(
     busyProgress: Float?,
     onDismiss: () -> Unit,
     onRegenerate: (String) -> Unit,
+    editsLine: String? = null,
 ) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var instruction by rememberSaveable { mutableStateOf("") }   // review #3: kept through a rebuild
@@ -48,6 +52,10 @@ fun RegenerateSheet(
             Text("Regenerate $heading", style = RaType.heading, color = Ink.ink)
             Spacer(Modifier.height(8.dp))
             Text("Tell the AI what to change, or leave it blank for a fresh take.", style = RaType.secondary, color = Ink.graphite)
+            if (editsLine != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(editsLine, style = RaType.secondary, color = Ink.graphite)
+            }
             Spacer(Modifier.height(16.dp))
             if (busyMessage != null) {
                 ProgressRule(progress = busyProgress?.takeIf { it > 0f })

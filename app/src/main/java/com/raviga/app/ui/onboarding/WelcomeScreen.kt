@@ -62,31 +62,31 @@ import com.raviga.app.ui.theme.Ink
 import kotlinx.coroutines.launch
 
 /** One step of the flow on Welcome: its picture, a title, one line, and an optional small line under it. */
-private data class Step(val title: String, val body: String, val picture: Picture, val small: String? = null)
+internal data class WelcomeStep(val title: String, val body: String, val picture: Picture, val small: String? = null)
 
 /**
  * Her walkthrough decisions (2026-11-04, via the PM): four pages in all, no mention of AI; "Built by AI, quality
  * checked" and "Ready before you know it" are gone. Her words; don't edit them without her approval.
  */
-private val steps = listOf(
-    Step(
+internal val welcomeSteps = listOf(
+    WelcomeStep(
         "Describe it your way.",
         "Say it, type it, or upload a document you already have. We turn it into a clear brief you can edit.",
         Picture.Describe,
     ),
-    Step(
+    WelcomeStep(
         "See the price first.",
-        "You pay for the build only once your project is accepted.",
-        // R-116 (1, her words): no brief-price line here; Describe says it before each new brief.
+        // R-124 (her final OK 11-12, iOS doc "11-12 copy" #1). R-116 (1): no brief-price line here.
+        "You see the price as soon as your brief is ready. Pay only if you want us to build your app and make it live.",
         Picture.Quote,
     ),
-    // R-109 (her final page 4, via the PM 2026-11-09): no Apple or Google names on the Welcome pages.
-    Step(
+    // R-109 (her final page 4, via the PM 2026-11-09); R-124 (11-12 copy #2): the last line names the stores.
+    WelcomeStep(
         "We make it live.",
         // R-116 (2, her yes).
         "You try a working demo on your phone. When you're happy, we publish it under your name.",
         Picture.Delivered,
-        small = "Your app, in your own store accounts.",
+        small = "Your app, in your own App Store and Google Play accounts.",
     ),
 )
 
@@ -104,8 +104,8 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val pager = rememberPagerState(pageCount = { steps.size + 1 })
-    val last = steps.size
+    val pager = rememberPagerState(pageCount = { welcomeSteps.size + 1 })
+    val last = welcomeSteps.size
     val onTop = nav.rememberIsOnTop()
     val finish: () -> Unit = {
         scope.launch {
@@ -132,10 +132,10 @@ fun WelcomeScreen(nav: NavController, replay: Boolean = false) {
         val picture = (maxHeight * 0.34f).coerceIn(200.dp, 320.dp)
         Column(Modifier.fillMaxSize()) {
             HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth()) { page ->
-                if (page == 0) Intro(hero) else StepPage(steps[page - 1], number = page, pictureHeight = picture)
+                if (page == 0) Intro(hero) else StepPage(welcomeSteps[page - 1], number = page, pictureHeight = picture)
             }
             PageDots(
-                count = steps.size + 1,
+                count = welcomeSteps.size + 1,
                 current = pager.currentPage,
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp, bottom = 12.dp),
             )
@@ -229,7 +229,7 @@ private fun IntroWords() {
 }
 
 @Composable
-private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
+private fun StepPage(step: WelcomeStep, number: Int, pictureHeight: Dp) {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Column(
         Modifier
@@ -240,7 +240,7 @@ private fun StepPage(step: Step, number: Int, pictureHeight: Dp) {
     ) {
         Illustration(step.picture, height = pictureHeight, radius = Ra.tileRadius)
         Spacer(Modifier.height(28.dp))
-        Text("Step $number of ${steps.size}", style = RaType.secondaryMedium, color = Ink.link)
+        Text("Step $number of ${welcomeSteps.size}", style = RaType.secondaryMedium, color = Ink.link)
         Spacer(Modifier.height(8.dp))
         Text(step.title, style = RaType.hero, color = Ink.ink)
         Spacer(Modifier.height(12.dp))

@@ -202,7 +202,9 @@ fun CreditsScreen(nav: NavController, buy: String? = null, forProject: String? =
 
     // R-113 (her yes, 3b): bought for a project: straight back to it, which asks to pay once the credits cover it.
     LaunchedEffect(state.purchased) {
-        if (state.purchased > 0 && forProject != null) {
+        // R-124: bought from the AI edits sheet: back to the edit, which goes again with the pack.
+        val forEdit = nav.previousBackStackEntry?.savedStateHandle?.get<Boolean>(PayCopy.RETURN_AFTER_BUY) == true
+        if (state.purchased > 0 && (forProject != null || forEdit)) {
             nav.previousBackStackEntry?.savedStateHandle?.set(PayCopy.CREDITS_ADDED, true)
             nav.popBackStack()
         }
@@ -337,6 +339,9 @@ private fun LedgerRow(entry: LedgerEntry) {
         "brief" -> "Brief written"
         // v0.11.3: a draft that failed on the server's side gives its twelfth back.
         "brief_refund" -> "Brief refunded"
+        // v0.16.0 (R-123, iOS's words): 5 more AI edits on a brief, and its refund when that call failed on our side.
+        "ai_edit_pack" -> "More AI edits"
+        "ai_edit_pack_refund" -> "AI edits refunded"
         "charge" -> entry.note.ifBlank { "Project submitted" }
         "refund_project" -> entry.note.ifBlank { "Project refund" }
         "refund_store" -> "Store refund"
@@ -345,8 +350,8 @@ private fun LedgerRow(entry: LedgerEntry) {
     }
     val signed = when {
         // A real minus sign, never a hyphen (as iOS's LedgerFormat).
-        entry.type == "brief" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
-        entry.type == "brief_refund" -> "+" + BriefPricing.briefPrice(entry.credits)
+        entry.type == "brief" || entry.type == "ai_edit_pack" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
+        entry.type == "brief_refund" || entry.type == "ai_edit_pack_refund" -> "+" + BriefPricing.briefPrice(entry.credits)
         entry.credits > 0.0 -> "+${Money.creditsNumber(entry.credits)}"
         else -> "\u2212${Money.creditsNumber(-entry.credits)}"
     }

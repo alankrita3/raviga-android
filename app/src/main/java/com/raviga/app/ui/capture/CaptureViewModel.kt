@@ -73,6 +73,8 @@ class CaptureViewModel(
         val briefLine: String? = null,
         /** R-099: the server said 402 for a new brief; the screen offers credits (L). */
         val needCredits: Boolean = false,
+        /** R-124 (v0.16.0): adding to a written brief is an AI edit: what's left. */
+        val editsLine: String? = null,
         val phase: Phase = Phase.CAPTURE,
         val tab: Int = 0,                       // 0 speak, 1 type, 2 upload
         val speech: Speech = Speech.Checking,
@@ -148,6 +150,9 @@ class CaptureViewModel(
 
     fun dismissNeedCredits() = _state.update { it.copy(needCredits = false) }
 
+    /** R-124: this brief's AI edits used up (buy 5 more?), or short of the pack; only "Buy" charges. */
+    val packs = com.raviga.app.ui.document.EditPackFlow(container, viewModelScope)
+
     val isAppend: Boolean get() = mode == "append"
 
     private val notes = WorkingNotes(
@@ -203,10 +208,12 @@ class CaptureViewModel(
                 val wroteBefore = drafts.any { (id, d) -> id != draftId && d.document != null } || projects.isNotEmpty() ||
                     credits?.ledger?.any { it.type == "brief" } == true
                 val free = com.raviga.app.ui.credits.BriefPricing.freeLeft(credits?.freeBriefsLeft ?: me?.credits?.freeBriefsLeft, wroteBefore)
-                // No line when this draft already has a brief (a rewrite is free) or on a server without brief pricing.
-                if (draftId?.let { drafts[it]?.document } != null) null
-                else com.raviga.app.ui.credits.BriefPricing.line(free, config.credits, credits?.balance ?: me?.credits?.balance ?: 0.0)
-            }.collect { line -> _state.update { it.copy(briefLine = line) } }
+                // No price line when this draft already has a brief or on a server without brief pricing; adding to a
+                // brief says its AI edits left instead (R-124, v0.16.0).
+                val draft = draftId?.let { drafts[it] }
+                if (draft?.document != null) null to com.raviga.app.ui.document.AiEditsCopy.countLine(draft.aiEdits, config.credits.aiEdits)
+                else com.raviga.app.ui.credits.BriefPricing.line(free, config.credits, credits?.balance ?: me?.credits?.balance ?: 0.0) to null
+            }.collect { (line, edits) -> _state.update { it.copy(briefLine = line, editsLine = edits) } }
         }
         // R-108: the parts of this description, in order, for the review and the choices.
         viewModelScope.launch {
@@ -544,7 +551,7 @@ class CaptureViewModel(
 
     // ----- Review → Drafting -----
 
-    fun writeBrief() {
+    fun writeBrief(buyEditPack: Boolean = false) {
         val s = _state.value
         val text = s.transcript.trim()
         if (text.isBlank()) {
@@ -574,14 +581,14 @@ class CaptureViewModel(
                 return@launch
             }
             try {
-                drafts.writeBrief(id) { st ->
+                drafts.writeBrief(id, buyEditPack) { st ->
                     _state.update { it.copy(progress = st.progress, progressMessage = st.message ?: it.progressMessage) }
                 }
                 _state.update { it.copy(done = id) }
                 // R-099: the free brief may be used now, and a later one booked a twelfth of a credit.
                 container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
             } catch (e: Exception) {
-                onWriteFailed(id, e)
+                onWriteFailed(id, e, buying = buyEditPack)
             }
         }
     }
@@ -652,14 +659,18 @@ class CaptureViewModel(
         )
     }
 
-    private suspend fun onWriteFailed(id: String, e: Exception, back: Phase = Phase.TRANSCRIPT) {
+    private suspend fun onWriteFailed(id: String, e: Exception, back: Phase = Phase.TRANSCRIPT, buying: Boolean = false) {
         val api = e as? ApiException
         // v0.11.3: a draft that failed on the server's side gave back its twelfth (or the free brief); show the new count.
         if (api?.code == ApiException.AI_UNAVAILABLE || api?.code == ApiException.INTERNAL) {
             container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
         }
         val legal = api?.detailStrings("missing")?.any { it == "terms" || it == "privacy" } == true
+        // R-124 (v0.16.0): this brief's AI edits are used up (buy 5 more?), or short of the pack. Nothing ran. (A
+        // call that carried the flag reads the balance again either way.)
+        val asked = packs.handle(e, buying) { writeBrief(buyEditPack = true) }
         when {
+            asked -> _state.update { it.copy(phase = back, error = null, progress = null, progressMessage = null) }
             // Terms out of date: the app shows them (ConsentInterceptor). AI consent is asked here.
             api?.code == ApiException.CONSENT_REQUIRED && !legal -> {
                 pendingAfterConsent = { writeBrief() }

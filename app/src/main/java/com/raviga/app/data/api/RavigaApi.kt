@@ -85,6 +85,14 @@ interface RavigaApi {
     @POST("ai/regenerate")
     suspend fun aiRegenerate(@Body body: AiRegenerateRequest): JobEnvelope
 
+    /** v0.16.0 (R-123): an id for a draft from before v0.16.0 (or one the server forgot), with no free AI edits. */
+    @POST("briefs")
+    suspend fun registerBrief(@Body body: Empty = Empty()): BriefRegistration
+
+    /** v0.16.0: what's left on a brief, when its draft is reopened. */
+    @GET("briefs/{briefId}/ai-edits")
+    suspend fun aiEdits(@Path("briefId") briefId: String): AiEditsCount
+
     @POST("quotes")
     suspend fun createQuote(@Body body: QuoteRequest): JobEnvelope
 

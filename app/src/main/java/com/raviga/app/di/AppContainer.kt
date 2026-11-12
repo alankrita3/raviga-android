@@ -135,6 +135,7 @@ class AppContainer(private val app: Application) {
         // R-082: Gemini Nano names drafts where the phone has it; the fallback rules everywhere else.
         titleModel = com.raviga.app.data.drafts.NanoTitles()::title,
         scope = appScope,
+        aiEditsConfig = { session.config.value.credits.aiEdits },
     )
     val billing = BillingManager(app, BuildConfig.REVENUECAT_API_KEY)
     val credits = CreditsRepository(api, json, cache, billing, demo, syncDue = { prefs.setCreditsSyncDue(it) })

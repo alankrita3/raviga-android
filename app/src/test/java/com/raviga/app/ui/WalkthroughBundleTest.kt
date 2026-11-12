@@ -235,7 +235,7 @@ class WalkthroughBundleTest {
         assertEquals("For 1 day after launch, bugs and anything that doesn't match the brief are still fixed free.", HowItWorks.steps(1)[7].body)
         // TalkBack: one element per step.
         assertEquals(
-            "Step 3 of 8. We. You see the price. One price in credits, with what it covers and how long it's valid.",
+            "Step 3 of 8. We. You see the price. One price in credits, and how long it's valid.",
             HowItWorks.spoken(3, 8, HowItWorks.steps[2]),
         )
         assertTrue(HowItWorks.spoken(6, 8, demo).contains("Something's wrong, Fixed free: A bug, or it doesn't match the brief."))

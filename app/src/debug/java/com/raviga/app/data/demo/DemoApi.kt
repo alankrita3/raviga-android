@@ -50,7 +50,13 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         val pendingEmail: String? = null,
         /** v0.12.0 (R-109): where the TestFlight and Play test invites go. */
         val storeEmails: StoreEmails = StoreEmails(),
+        /** v0.16.0 (R-123): each brief's AI edits, by its id (counts only, as the server). */
+        val aiEditBriefs: Map<String, DemoBriefEdits> = emptyMap(),
     )
+
+    /** As the server's aiedits#<briefId> row: [free] is how many free edits it started with (0 for POST /briefs). */
+    @Serializable
+    private data class DemoBriefEdits(val left: Int, val used: Int = 0, val packs: Int = 0, val free: Int)
 
     @Serializable
     private data class DemoQuote(val quote: Quote, val documentHash: String, val used: Boolean = false)
@@ -539,14 +545,63 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         return texts to notices
     }
 
-    private fun aiResult(title: String, sections: List<Section>, summary: String, notices: List<String>): JsonElement =
-        json.encodeToJsonElement(AiDocumentResult.serializer(), AiDocumentResult(AiDocument(title, sections, summary), notices))
+    private fun aiResult(title: String, sections: List<Section>, summary: String, notices: List<String>, edit: BriefRegistration? = null): JsonElement =
+        json.encodeToJsonElement(
+            AiDocumentResult.serializer(),
+            AiDocumentResult(AiDocument(title, sections, summary), notices, briefId = edit?.briefId, aiEdits = edit?.aiEdits),
+        )
+
+    // ----- v0.16.0 (R-123): AI edits, as the server's services/ai_edits.py -----
+
+    private fun newBrief(s: State, free: Int): Pair<State, BriefRegistration> {
+        val id = "br_" + UUID.randomUUID().toString().replace("-", "").take(16)
+        return s.copy(aiEditBriefs = s.aiEditBriefs + (id to DemoBriefEdits(left = free, free = free))) to
+            BriefRegistration(id, AiEdits(free, free > 0))
+    }
+
+    /** One AI edit on [briefId]; with none left, a pack only when the app sent buyEditPack after asking. */
+    private suspend fun useAiEdit(briefId: String?, buyEditPack: Boolean?): BriefRegistration = mutate { s ->
+        if (briefId.isNullOrBlank()) throw ApiException(
+            ApiException.BRIEF_ID_REQUIRED, 400, "briefId is required: the id POST /ai/draft gave this brief (or POST /briefs)",
+        )
+        val row = s.aiEditBriefs[briefId] ?: throw ApiException(
+            ApiException.BRIEF_NOT_FOUND, 404, "We don't know this brief. Start a new brief, or get a new id for this one (POST /briefs).",
+        )
+        val pack = config.credits.aiEdits
+        val balance = balanceOf(s)
+        val next: Pair<State, DemoBriefEdits> = when {
+            row.left > 0 -> s to row.copy(left = row.left - 1, used = row.used + 1)
+            buyEditPack != true -> throw ApiException(
+                ApiException.AI_EDIT_PACK_REQUIRED, 402,
+                if (row.free > 0) "You've used this brief's ${row.free} free AI edits. ${pack.packSize} more cost a twelfth of a credit."
+                else "This brief has no free AI edits. ${pack.packSize} AI edits cost a twelfth of a credit.",
+                details = buildJsonObject { put("packSize", pack.packSize); put("packPriceCredits", pack.packPriceCredits); put("balance", balance) },
+            )
+            balance < pack.packPriceCredits -> throw ApiException(
+                ApiException.INSUFFICIENT_CREDITS, 402, "You need a twelfth of a credit for ${pack.packSize} more AI edits. Buy credits to continue.",
+                details = buildJsonObject { put("required", pack.packPriceCredits); put("balance", balance) },
+            )
+            else -> ledger(s, "ai_edit_pack", -pack.packPriceCredits, null, "AI edits for a brief") to
+                row.copy(left = row.left + pack.packSize - 1, used = row.used + 1, packs = row.packs + 1)
+        }
+        val (state, used) = next
+        state.copy(aiEditBriefs = state.aiEditBriefs + (briefId to used)) to BriefRegistration(briefId, AiEdits(used.left, used.packs == 0 && used.free > 0))
+    }
+
+    override suspend fun registerBrief(body: Empty): BriefRegistration = mutate { s -> newBrief(s, free = 0) }
+
+    override suspend fun aiEdits(briefId: String): AiEditsCount = readState { s ->
+        val row = s.aiEditBriefs[briefId] ?: throw ApiException(
+            ApiException.BRIEF_NOT_FOUND, 404, "We don't know this brief. Start a new brief, or get a new id for this one (POST /briefs).",
+        )
+        AiEditsCount(briefId, row.left, row.used, row.packs)
+    }
 
     override suspend fun aiDraft(body: AiDraftRequest): JobEnvelope {
         readState { requireConsent(it) }
         // v0.11.1 (R-099): the first config.credits.freeBriefs drafts are free, then a twelfth of a credit each,
         // booked before the job and never refunded; short of it, 402 and nothing counted.
-        mutate { s ->
+        val brief = mutate { s ->
             var next = s.copy(briefsWritten = s.briefsWritten + 1)
             if (s.briefsWritten >= config.credits.freeBriefs) {
                 val price = config.credits.briefPriceCredits
@@ -557,28 +612,33 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 )
                 next = ledger(next, "brief", -price, null, "New brief") // as dev: the server never sees a title
             }
-            next to Unit
+            // v0.16.0: the brief's id and its free AI edits.
+            newBrief(next, config.credits.aiEdits.freePerBrief)
         }
         return startJob("draft", null, listOf("Reading your notes", "Finding the features", "Writing the brief"), 1_100) {
             screenInputs(body.inputs)
             val (texts, notices) = redacted(body.inputs)
             val draft = BriefWriter.write(texts)
-            aiResult(body.title?.ifBlank { null } ?: draft.title, draft.sections, "Written from your notes", notices)
-        }
+            aiResult(body.title?.ifBlank { null } ?: draft.title, draft.sections, "Written from your notes", notices, brief)
+        }.copy(briefId = brief.briefId, aiEdits = brief.aiEdits)
     }
 
     override suspend fun aiAppend(body: AiAppendRequest): JobEnvelope {
         readState { requireConsent(it) }
+        val edit = useAiEdit(body.briefId, body.buyEditPack)   // v0.16.0: one of the brief's AI edits
         return startJob("append", null, listOf("Reading your notes", "Adding to the brief"), 1_100) {
             screenInputs(body.inputs)
             val (texts, notices) = redacted(body.inputs)
             val current = fullDocument(body.document)
-            aiResult(current.title, BriefWriter.append(current, texts), "Added from your new notes", notices)
-        }
+            aiResult(current.title, BriefWriter.append(current, texts), "Added from your new notes", notices, edit)
+        }.copy(briefId = edit.briefId, aiEdits = edit.aiEdits)
     }
 
     override suspend fun aiRegenerate(body: AiRegenerateRequest): JobEnvelope {
         readState { requireConsent(it) }
+        // As the server: the section is checked before the edit is counted (400 costs nothing).
+        if (body.sectionId !in SectionIds.ordered) throw ApiException(ApiException.INVALID_ARGUMENT, 400, "sectionId is not a document section")
+        val edit = useAiEdit(body.briefId, body.buyEditPack)
         return startJob("regenerate", null, listOf("Rereading the section", "Rewriting"), 900) {
             // v0.14.0: only the five sections can be rewritten; a removed one is 400, as the server.
             if (body.sectionId !in SectionIds.ordered) throw ApiException(ApiException.INVALID_ARGUMENT, 400, "That section isn't part of the brief any more.")
@@ -587,8 +647,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             if (demoPolicyHit(body.instruction.orEmpty())) throw policyRefusal("This isn't something Raviga can build. It falls outside our Acceptable use policy.")
             val context = body.inputs.orEmpty().map { it.text }.ifEmpty { current.sections.map { it.body } }
             val rewritten = BriefWriter.regenerate(section, context, body.instruction)
-            aiResult(current.title, current.sections.map { if (it.id == body.sectionId) rewritten else it }, "Regenerated ${section.heading}", emptyList())
-        }
+            aiResult(current.title, current.sections.map { if (it.id == body.sectionId) rewritten else it }, "Regenerated ${section.heading}", emptyList(), edit)
+        }.copy(briefId = edit.briefId, aiEdits = edit.aiEdits)
     }
 
     override suspend fun createQuote(body: QuoteRequest): JobEnvelope {
@@ -1016,6 +1076,7 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 ),
                 briefPriceCredits = 0.0833,
                 freeBriefs = 1,
+                aiEdits = AiEditsConfig(freePerBrief = 5, packSize = 5, packPriceCredits = 0.0833),   // v0.16.0
             ),
             quote = QuoteConfig(
                 brackets = listOf(

@@ -99,6 +99,9 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     val project = state.project
     val draft = state.draft
     val document = state.document
+    // R-124 (v0.16.0): this brief's AI edits left, on Regenerate and on adding notes to it.
+    val credits = container.session.config.collectAsStateWithLifecycle().value.credits
+    val editsLine = AiEditsCopy.countLine(draft?.aiEdits, credits.aiEdits)
     val rejected = state.refused
     // A refused brief is frozen: nothing to edit, quote or add.
     val editable = state.editable
@@ -235,6 +238,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         )
                         Spacer(Modifier.height(8.dp))
                         StatusLine(state, nav)
+                        // R-124 (iOS): the brief's AI edits left, under the status line, while it can be edited.
+                        if (editable && document != null && editsLine != null) Text(editsLine, style = RaType.secondary, color = Ink.graphite)
                         state.notices.forEach { InlineNotice(it, color = Ink.graphite) }
                         if (pendingNotes.isNotEmpty()) {
                             Spacer(Modifier.height(16.dp))
@@ -340,8 +345,12 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             busyProgress = state.busyProgress,
             onDismiss = { vm.closeRegenerate() },
             onRegenerate = { vm.regenerate(sectionId, it) },
+            editsLine = AiEditsCopy.regenerateLine(draft?.aiEdits, credits.aiEdits),
         )
     }
+
+    // R-124 (v0.16.0): the pack's confirm, or the short-of-credits sheet. Nothing ran or was charged.
+    EditPackDialogs(vm.packs, credits, nav)
 
     if (chooser && draft != null) {
         DescribeChooserSheet(
@@ -360,6 +369,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             onOpen = { pendingSheet = false; backToPending = true; openNote = it },
             onAdd = { pendingSheet = false; vm.generate() },
             onDismiss = { pendingSheet = false },
+            editsLine = editsLine.takeIf { document != null },
         )
     }
 
@@ -416,6 +426,8 @@ private fun PendingNotesSheet(
     onOpen: (String) -> Unit,
     onAdd: () -> Unit,
     onDismiss: () -> Unit,
+    /** R-124: adding notes to a written brief is an AI edit; what's left. */
+    editsLine: String? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -445,6 +457,12 @@ private fun PendingNotesSheet(
                 Spacer(Modifier.height(Ra.tileGap))
             }
             Spacer(Modifier.height(8.dp))
+            if (editsLine != null) {
+                Text(
+                    editsLine, style = RaType.caption, color = Ink.graphite, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                )
+            }
             PrimaryButton(StatusCopy.addNotesToBrief(notes.size), onClick = onAdd)
         }
     }

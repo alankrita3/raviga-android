@@ -111,6 +111,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     fun refresh() {
         viewModelScope.launch {
             container.drafts.load()
+            // v0.16.0: what's left on this brief's AI edits (a free read; no AI runs).
+            if (serverId.value == null) launch { runCatching { container.drafts.refreshAiEdits(id) } }
             val sid = serverId.value ?: return@launch
             container.projects.warmProject(sid)
             runCatching { container.projects.refresh(sid) }
@@ -127,14 +129,17 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         regenerateNow(sectionId, instruction)
     }
 
-    private fun regenerateNow(sectionId: String, instruction: String) = withAiConsent {
+    private fun regenerateNow(sectionId: String, instruction: String, buyEditPack: Boolean = false): Unit = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
-        busy("Rereading the section", close = true) {
-            container.drafts.regenerate(draftId, sectionId, instruction) { st ->
+        busy("Rereading the section", close = true, buying = buyEditPack, retry = { regenerateNow(sectionId, instruction, buyEditPack = true) }) {
+            container.drafts.regenerate(draftId, sectionId, instruction, buyEditPack) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
             }
         }
     }
+
+    /** R-124 (v0.16.0): the brief's AI edits used up (buy 5 more?), or short of the pack; only "Buy" charges. */
+    val packs = EditPackFlow(container, viewModelScope)
 
     fun saveTitle(title: String) {
         val draft = _state.value.draft ?: return
@@ -163,10 +168,11 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         writeBrief()
     }
 
-    private fun writeBrief() = withAiConsent {
+    private fun writeBrief(buyEditPack: Boolean = false): Unit = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
-        busy("Reading your notes") {
-            container.drafts.writeBrief(draftId) { st ->
+        // Adding notes to a written brief is an AI edit (v0.16.0); writing the first brief isn't.
+        busy("Reading your notes", buying = buyEditPack, retry = { writeBrief(buyEditPack = true) }) {
+            container.drafts.writeBrief(draftId, buyEditPack) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
             }
         }
@@ -258,11 +264,29 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         }
     }
 
-    private fun busy(message: String, close: Boolean = false, block: suspend () -> Unit) {
+    /**
+     * [buying]: this call buys 5 more AI edits (the person said yes). [retry] runs the same call buying them, after
+     * the confirm. A pack ask keeps the Regenerate sheet open, so what was typed in it stays.
+     */
+    private fun busy(
+        message: String,
+        close: Boolean = false,
+        buying: Boolean = false,
+        retry: (() -> Unit)? = null,
+        block: suspend () -> Unit,
+    ) {
         viewModelScope.launch {
             _state.update { it.copy(busyMessage = message, busyProgress = null, error = null) }
-            runCatching { block() }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busyMessage = null, busyProgress = null, sheetSection = if (close) null else it.sheetSection) }
+            val failure = runCatching { block() }.exceptionOrNull()
+            val asked = packs.handle(failure, buying) { retry?.invoke() }
+            _state.update {
+                it.copy(
+                    busyMessage = null,
+                    busyProgress = null,
+                    error = failure?.takeIf { !asked }?.userLine(),
+                    sheetSection = if (close && !asked) null else it.sheetSection,
+                )
+            }
         }
     }
 }

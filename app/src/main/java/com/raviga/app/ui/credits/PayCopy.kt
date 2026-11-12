@@ -23,6 +23,9 @@ object PayCopy {
 
     /** The saved-state key a project screen reads when Credits comes back from a purchase made for it. */
     const val CREDITS_ADDED = "credits_added"
+
+    /** R-124: set by a screen that sends Credits to buy for an AI edit pack; the purchase comes straight back to it. */
+    const val RETURN_AFTER_BUY = "return_after_buy"
 }
 
 /**
