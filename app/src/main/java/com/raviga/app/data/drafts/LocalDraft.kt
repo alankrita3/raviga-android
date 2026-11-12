@@ -43,6 +43,13 @@ data class LocalDraft(
      * edit: the server decides (contract v0.9.7: a used token answers with its project for 90 days).
      */
     val sentSubmit: SentSubmit? = null,
+    /**
+     * v0.16.0 (R-123): the server's id for this brief (`br_...`), from its first draft or POST /briefs. Regenerate and
+     * Add more send it; it travels with the draft in exports. Null for a draft from before v0.16.0 (or no brief yet).
+     */
+    val briefId: String? = null,
+    /** v0.16.0: this brief's AI edits left, as the server last said. Null when not known yet. */
+    val aiEdits: com.raviga.app.data.api.AiEdits? = null,
 ) {
     /** A send with the current token is out and unanswered: it is retried as it was, never re-quoted. */
     val holdsSentSubmit: Boolean get() = sentSubmit != null && sentSubmit.quoteToken == quoteToken

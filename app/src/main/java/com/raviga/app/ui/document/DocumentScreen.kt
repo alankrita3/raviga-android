@@ -99,6 +99,9 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     val project = state.project
     val draft = state.draft
     val document = state.document
+    // R-124 (v0.16.0): this brief's AI edits left, on Regenerate and on adding notes to it.
+    val credits = container.session.config.collectAsStateWithLifecycle().value.credits
+    val editsLine = AiEditsCopy.countLine(draft?.aiEdits, credits.aiEdits)
     val rejected = state.refused
     // A refused brief is frozen: nothing to edit, quote or add.
     val editable = state.editable
@@ -340,8 +343,19 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             busyProgress = state.busyProgress,
             onDismiss = { vm.closeRegenerate() },
             onRegenerate = { vm.regenerate(sectionId, it) },
+            editsLine = editsLine,
         )
     }
+
+    // R-124 (v0.16.0): the pack's confirm, or the short-of-credits sheet. Nothing ran or was charged.
+    EditPackDialogs(
+        ask = state.editPack,
+        credits = credits,
+        onBuyEdits = { vm.confirmEditPack() },
+        onBuyCredits = { productId -> vm.dismissEditPack(); nav.navigate(Routes.creditsBuy(productId)) },
+        onAllPacks = { vm.dismissEditPack(); nav.navigate(Routes.CREDITS) },
+        onDismiss = { vm.dismissEditPack() },
+    )
 
     if (chooser && draft != null) {
         DescribeChooserSheet(
@@ -360,6 +374,7 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             onOpen = { pendingSheet = false; backToPending = true; openNote = it },
             onAdd = { pendingSheet = false; vm.generate() },
             onDismiss = { pendingSheet = false },
+            editsLine = editsLine.takeIf { document != null },
         )
     }
 
@@ -416,6 +431,8 @@ private fun PendingNotesSheet(
     onOpen: (String) -> Unit,
     onAdd: () -> Unit,
     onDismiss: () -> Unit,
+    /** R-124: adding notes to a written brief is an AI edit; what's left. */
+    editsLine: String? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -445,6 +462,12 @@ private fun PendingNotesSheet(
                 Spacer(Modifier.height(Ra.tileGap))
             }
             Spacer(Modifier.height(8.dp))
+            if (editsLine != null) {
+                Text(
+                    editsLine, style = RaType.caption, color = Ink.graphite, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                )
+            }
             PrimaryButton(StatusCopy.addNotesToBrief(notes.size), onClick = onAdd)
         }
     }

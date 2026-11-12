@@ -144,6 +144,9 @@ object StatusCopy {
         "decode" -> "Raviga sent something this version can't read. Try again later."
         "consent_required" -> "Allow AI processing before continuing."
         "insufficient_credits" -> fallback ?: "You need more credits to pay for this project."
+        // v0.16.0 (R-123): the server's words ("You've used this brief's 5 free AI edits. 5 more cost a twelfth of a credit.").
+        "ai_edit_pack_required" -> fallback ?: "You've used this brief's free AI edits. 5 more cost a twelfth of a credit."
+        "brief_not_found", "brief_id_required" -> "Something went wrong on our side. Try again in a moment."
         "version_conflict" -> "The brief changed elsewhere. Reload and try again."
         // The server's message says which case (expired, used, brief changed; contract 11 step 3), as on iOS.
         "quote_stale" -> fallback ?: "The brief changed since this quote. Get a new quote."

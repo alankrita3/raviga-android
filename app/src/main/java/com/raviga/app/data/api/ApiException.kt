@@ -49,6 +49,11 @@ open class ApiException(
         const val VERSION_CONFLICT = "version_conflict"
         const val QUOTE_STALE = "quote_stale"
         const val INSUFFICIENT_CREDITS = "insufficient_credits"
+        /** v0.16.0 (R-123): the brief's AI edits are used up; ask, then resend with buyEditPack. Nothing ran. */
+        const val AI_EDIT_PACK_REQUIRED = "ai_edit_pack_required"
+        const val BRIEF_ID_REQUIRED = "brief_id_required"
+        /** v0.16.0: the server doesn't know this brief's id; POST /briefs gives a new one (with no free edits). */
+        const val BRIEF_NOT_FOUND = "brief_not_found"
         const val ACTIVE_PROJECTS = "active_projects"
         const val AWS_ROLE_NOT_READY = "aws_role_not_ready"
         /** v0.13.0 (R-112): a problem report after the free-fix window; details.freeFixesUntil, details.status. */

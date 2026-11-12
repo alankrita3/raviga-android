@@ -75,6 +75,9 @@ class SectionEditorViewModel(
         val confirmDiscard: Boolean = false,
         /** AI processing isn't allowed yet: the screen opens the consent screen, then the rewrite runs. */
         val needsAiConsent: Boolean = false,
+        /** R-124 (v0.16.0): this brief's AI edits left, and a pack to confirm (or credits to buy) when they're used up. */
+        val aiEdits: com.raviga.app.data.api.AiEdits? = null,
+        val editPack: EditPackAsk? = null,
     ) {
         val changed: Boolean get() = document != null && body.trim() != savedBody.trim()
     }
@@ -94,6 +97,7 @@ class SectionEditorViewModel(
                 it.copy(document = doc, heading = section?.heading ?: it.heading, hint = section?.hint, body = unsaved ?: savedBody, savedBody = savedBody)
             }
         }
+        viewModelScope.launch { container.drafts.draft(projectId).collect { d -> _state.update { it.copy(aiEdits = d?.aiEdits) } } }
     }
 
     fun setBody(text: String) {
@@ -170,7 +174,22 @@ class SectionEditorViewModel(
         regenerate(instruction)
     }
 
-    fun regenerate(instruction: String) {
+    private var packInstruction: String? = null
+
+    /** R-124: "Buy 5 AI edits": the same rewrite, this time buying the pack. */
+    fun confirmEditPack() {
+        val instruction = packInstruction
+        packInstruction = null
+        _state.update { it.copy(editPack = null) }
+        if (instruction != null) regenerate(instruction, buyEditPack = true)
+    }
+
+    fun dismissEditPack() {
+        packInstruction = null
+        _state.update { it.copy(editPack = null) }
+    }
+
+    fun regenerate(instruction: String, buyEditPack: Boolean = false) {
         // The same checks as the brief's Regenerate: AI consent, then the length the AI call takes.
         if (container.session.needsAiConsent(container.session.me.value)) {
             pendingInstruction = instruction
@@ -187,15 +206,25 @@ class SectionEditorViewModel(
                     saved.remove<String>(KEY_BODY)
                     _state.update { it.copy(savedBody = it.body) }
                 }
-                container.drafts.regenerate(projectId, sectionId, instruction) { st ->
+                container.drafts.regenerate(projectId, sectionId, instruction, buyEditPack) { st ->
                     _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
                 }
             }.onSuccess { draft ->
                 val doc = draft.document
                 val body = doc?.section(sectionId)?.body.orEmpty()
-                _state.update { it.copy(document = doc, body = body, savedBody = body) }
-            }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busyMessage = null, busyProgress = null, sheet = false) }
+                _state.update { it.copy(document = doc, body = body, savedBody = body, busyMessage = null, busyProgress = null, sheet = false) }
+            }.onFailure { e ->
+                // R-124: none left (or short of the pack): ask, with the sheet and what was typed in it kept.
+                val ask = EditPackAsk.from(e, buyEditPack, container.session.config.value.credits.aiEdits)
+                if (ask is EditPackAsk.Confirm) packInstruction = instruction
+                _state.update {
+                    it.copy(
+                        error = if (ask == null) e.userLine() else null, editPack = ask,
+                        busyMessage = null, busyProgress = null, sheet = ask != null && it.sheet,
+                    )
+                }
+            }
+            if (buyEditPack) container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
         }
     }
 
@@ -211,6 +240,7 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
         SectionEditorViewModel(container, projectId, sectionId, createSavedStateHandle())
     }
     val state by vm.state.collectAsStateWithLifecycle()
+    val credits = container.session.config.collectAsStateWithLifecycle().value.credits
 
     LaunchedEffect(state.saved) { if (state.saved) nav.popBackStack() }
     androidx.activity.compose.BackHandler(enabled = state.changed && !state.saved) { vm.leave() }
@@ -282,6 +312,16 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
             busyProgress = state.busyProgress,
             onDismiss = { vm.closeSheet() },
             onRegenerate = { vm.regenerate(it) },
+            editsLine = AiEditsCopy.countLine(state.aiEdits, credits.aiEdits),
         )
     }
+
+    EditPackDialogs(
+        ask = state.editPack,
+        credits = credits,
+        onBuyEdits = { vm.confirmEditPack() },
+        onBuyCredits = { productId -> vm.dismissEditPack(); nav.navigate(Routes.creditsBuy(productId)) },
+        onAllPacks = { vm.dismissEditPack(); nav.navigate(Routes.CREDITS) },
+        onDismiss = { vm.dismissEditPack() },
+    )
 }

@@ -165,6 +165,15 @@ Status vocabulary (mark colours, row lines, detail titles, push lines) is in `ui
   tiles (each opens "Your note", then comes back to the list) and "Add it to the brief" / "Add them to the brief",
   which folds them in (`/ai/append`). Copy in `StatusCopy.notesNotInBrief` / `addNotesToBrief`; same spec as iOS.
 - Writing: "Writing your brief" with the job's step line in link blue; pricing: "Pricing your brief".
+- AI edits (R-124, contract v0.16.0, her decision 2026-11-12; copy pending iOS's app-side spec): Regenerate and adding
+  notes to a written brief each use one of its AI edits; typing is free. A caption above the button says what's left
+  (`AiEditsCopy.countLine`: "3 of 5 free AI edits left", "4 AI edits left", "5 more AI edits cost 1/12 credit") on the
+  Regenerate sheet (brief and section editor), Capture's "Looks right, add it to the brief" and the not-in-the-brief
+  sheet. None left: the server's 402 opens "5 more AI edits for 1/12 credit?" with its sentence and "Typing your own
+  changes is always free.", "Buy 5 AI edits" / "Not now"; only Buy resends with `buyEditPack`. Short of the twelfth:
+  `NeedCreditsSheet` ("Add credits for more AI edits", the server's sentence, the smallest pack, all packs, Not now).
+  `briefId` lives on the draft (export too); an old draft gets one from `POST /briefs` (no free edits) at its first AI
+  edit, and `brief_not_found` swaps it once. Ledger: "More AI edits" / "AI edits refunded" (iOS's words).
 - Sensitive data: "This looks like it includes <up to two kinds, then 'and other secrets'>." /
   "We never need passwords, keys or ID numbers to build your project, and it's safer not to share
   them." Buttons "Remove them", "Keep as is", "Edit".

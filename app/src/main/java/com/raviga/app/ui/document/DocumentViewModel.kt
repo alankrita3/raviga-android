@@ -42,6 +42,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         /** What the AI took out of the notes on the last write, shown once. */
         val notices: List<String> = emptyList(),
         val supportEmail: String = "",
+        /** R-124 (v0.16.0): the brief's AI edits are used up (buy 5 more?), or the account is short of the pack. */
+        val editPack: EditPackAsk? = null,
     ) {
         /**
          * The brief shown. R-092 #34 (iOS review): a submitted brief that can't be edited (cancelled, closed, or a
@@ -111,6 +113,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     fun refresh() {
         viewModelScope.launch {
             container.drafts.load()
+            // v0.16.0: what's left on this brief's AI edits (a free read; no AI runs).
+            if (serverId.value == null) launch { runCatching { container.drafts.refreshAiEdits(id) } }
             val sid = serverId.value ?: return@launch
             container.projects.warmProject(sid)
             runCatching { container.projects.refresh(sid) }
@@ -127,13 +131,30 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         regenerateNow(sectionId, instruction)
     }
 
-    private fun regenerateNow(sectionId: String, instruction: String) = withAiConsent {
+    private fun regenerateNow(sectionId: String, instruction: String, buyEditPack: Boolean = false): Unit = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
-        busy("Rereading the section", close = true) {
-            container.drafts.regenerate(draftId, sectionId, instruction) { st ->
+        busy("Rereading the section", close = true, buying = buyEditPack, retry = { regenerateNow(sectionId, instruction, buyEditPack = true) }) {
+            container.drafts.regenerate(draftId, sectionId, instruction, buyEditPack) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
             }
         }
+    }
+
+    // ----- R-124 (v0.16.0): 5 more AI edits, only after a yes -----
+
+    private var packRetry: (() -> Unit)? = null
+
+    /** "Buy 5 AI edits": the same AI edit again, this time buying the pack. */
+    fun confirmEditPack() {
+        val retry = packRetry
+        packRetry = null
+        _state.update { it.copy(editPack = null) }
+        retry?.invoke()
+    }
+
+    fun dismissEditPack() {
+        packRetry = null
+        _state.update { it.copy(editPack = null) }
     }
 
     fun saveTitle(title: String) {
@@ -163,10 +184,11 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         writeBrief()
     }
 
-    private fun writeBrief() = withAiConsent {
+    private fun writeBrief(buyEditPack: Boolean = false): Unit = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
-        busy("Reading your notes") {
-            container.drafts.writeBrief(draftId) { st ->
+        // Adding notes to a written brief is an AI edit (v0.16.0); writing the first brief isn't.
+        busy("Reading your notes", buying = buyEditPack, retry = { writeBrief(buyEditPack = true) }) {
+            container.drafts.writeBrief(draftId, buyEditPack) { st ->
                 _state.update { it.copy(busyMessage = st.message ?: it.busyMessage, busyProgress = st.progress) }
             }
         }
@@ -258,11 +280,33 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         }
     }
 
-    private fun busy(message: String, close: Boolean = false, block: suspend () -> Unit) {
+    /**
+     * [buying]: this call buys 5 more AI edits (the person said yes). [retry] runs the same call buying them, after
+     * the confirm. A pack ask keeps the Regenerate sheet open, so what was typed in it stays.
+     */
+    private fun busy(
+        message: String,
+        close: Boolean = false,
+        buying: Boolean = false,
+        retry: (() -> Unit)? = null,
+        block: suspend () -> Unit,
+    ) {
         viewModelScope.launch {
             _state.update { it.copy(busyMessage = message, busyProgress = null, error = null) }
-            runCatching { block() }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
-            _state.update { it.copy(busyMessage = null, busyProgress = null, sheetSection = if (close) null else it.sheetSection) }
+            val failure = runCatching { block() }.exceptionOrNull()
+            val ask = failure?.let { EditPackAsk.from(it, buying, container.session.config.value.credits.aiEdits) }
+            if (ask is EditPackAsk.Confirm) packRetry = retry
+            _state.update {
+                it.copy(
+                    busyMessage = null,
+                    busyProgress = null,
+                    error = failure?.takeIf { ask == null }?.userLine(),
+                    editPack = ask,
+                    sheetSection = if (close && ask == null) null else it.sheetSection,
+                )
+            }
+            // A bought pack (or one refunded on our side) changes the balance.
+            if (buying) container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
         }
     }
 }

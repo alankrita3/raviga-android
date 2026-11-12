@@ -337,6 +337,9 @@ private fun LedgerRow(entry: LedgerEntry) {
         "brief" -> "Brief written"
         // v0.11.3: a draft that failed on the server's side gives its twelfth back.
         "brief_refund" -> "Brief refunded"
+        // v0.16.0 (R-123, iOS's words): 5 more AI edits on a brief, and its refund when that call failed on our side.
+        "ai_edit_pack" -> "More AI edits"
+        "ai_edit_pack_refund" -> "AI edits refunded"
         "charge" -> entry.note.ifBlank { "Project submitted" }
         "refund_project" -> entry.note.ifBlank { "Project refund" }
         "refund_store" -> "Store refund"
@@ -345,8 +348,8 @@ private fun LedgerRow(entry: LedgerEntry) {
     }
     val signed = when {
         // A real minus sign, never a hyphen (as iOS's LedgerFormat).
-        entry.type == "brief" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
-        entry.type == "brief_refund" -> "+" + BriefPricing.briefPrice(entry.credits)
+        entry.type == "brief" || entry.type == "ai_edit_pack" -> "\u2212" + BriefPricing.briefPrice(-entry.credits)
+        entry.type == "brief_refund" || entry.type == "ai_edit_pack_refund" -> "+" + BriefPricing.briefPrice(entry.credits)
         entry.credits > 0.0 -> "+${Money.creditsNumber(entry.credits)}"
         else -> "\u2212${Money.creditsNumber(-entry.credits)}"
     }

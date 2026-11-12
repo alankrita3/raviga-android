@@ -192,6 +192,16 @@ data class CreditsConfig(
     val briefPriceCredits: Double = 0.0,
     /** v0.11.1: new briefs per account that cost nothing. */
     val freeBriefs: Int = 1,
+    /** v0.16.0 (R-123): each brief's free AI edits, and the pack that buys more. */
+    val aiEdits: AiEditsConfig = AiEditsConfig(),
+)
+
+/** v0.16.0 (R-123, her decision 2026-11-12): 5 free AI edits per brief, then 5 more for a twelfth of a credit. */
+@Serializable
+data class AiEditsConfig(
+    val freePerBrief: Int = 5,
+    val packSize: Int = 5,
+    val packPriceCredits: Double = 0.0833,
 )
 
 @Serializable
@@ -779,16 +789,42 @@ data class AiDraftRequest(
     val instruction: String? = null,
 )
 
+/**
+ * v0.16.0 (R-123): append and regenerate each use one of the brief's AI edits ([briefId], from its draft or POST
+ * /briefs). [buyEditPack] is sent only after the person agreed to buy 5 more; it is the only thing that charges.
+ */
 @Serializable
-data class AiAppendRequest(val document: DocumentBody, val inputs: List<AiInput>)
+data class AiAppendRequest(
+    val briefId: String,
+    val document: DocumentBody,
+    val inputs: List<AiInput>,
+    val buyEditPack: Boolean? = null,
+)
 
 @Serializable
 data class AiRegenerateRequest(
+    val briefId: String,
     val document: DocumentBody,
     val sectionId: String,
     val instruction: String? = null,
     val inputs: List<AiInput>? = null,
+    val buyEditPack: Boolean? = null,
 )
+
+/** v0.16.0: a brief's AI edits left; [free] while the free ones last. Hand-typed edits never count. */
+@Serializable
+data class AiEdits(val left: Int, val free: Boolean)
+
+/** `POST /briefs` (v0.16.0): an id for a draft from before v0.16.0, or one the server forgot. It has no free edits. */
+@Serializable
+data class BriefRegistration(val briefId: String, val aiEdits: AiEdits)
+
+/** `GET /briefs/{briefId}/ai-edits` (v0.16.0), when a draft is reopened. */
+@Serializable
+data class AiEditsCount(val briefId: String, val left: Int = 0, val used: Int = 0, val packs: Int = 0) {
+    /** The wire has no `free` (as iOS): still on the free ones while no pack was bought and the brief began with them. */
+    fun edits(freePerBrief: Int): AiEdits = AiEdits(left, packs == 0 && freePerBrief > 0 && left + used >= freePerBrief)
+}
 
 @Serializable
 data class AiDocument(
@@ -797,9 +833,17 @@ data class AiDocument(
     val changeSummary: String? = null,
 )
 
-/** Result of the draft, append and regenerate jobs. [notices] name redactions to repeat locally. */
+/**
+ * Result of the draft, append and regenerate jobs. [notices] name redactions to repeat locally. v0.16.0: the brief's
+ * server id (issued by the draft) and its AI edits left after this call.
+ */
 @Serializable
-data class AiDocumentResult(val document: AiDocument, val notices: List<String> = emptyList())
+data class AiDocumentResult(
+    val document: AiDocument,
+    val notices: List<String> = emptyList(),
+    val briefId: String? = null,
+    val aiEdits: AiEdits? = null,
+)
 
 @Serializable
 data class QuoteRequest(val document: DocumentBody)
@@ -898,7 +942,12 @@ data class DeleteMeResponse(val requestedAt: String? = null, val purgeAt: String
 // ---------- Jobs & errors (sections 2, 5) ----------
 
 @Serializable
-data class JobEnvelope(val job: Job)
+data class JobEnvelope(
+    val job: Job,
+    /** v0.16.0: draft, append and regenerate also say the brief's id and its AI edits left, as soon as they start. */
+    val briefId: String? = null,
+    val aiEdits: AiEdits? = null,
+)
 
 @Serializable
 data class Job(

@@ -2,6 +2,8 @@ package com.raviga.app.data.repo
 
 import com.raviga.app.data.drafts.SentSubmit
 import com.raviga.app.data.api.AiDocument
+import com.raviga.app.data.api.AiEdits
+import com.raviga.app.data.api.JobEnvelope
 import com.raviga.app.data.api.AiInput
 import com.raviga.app.data.api.ApiException
 import com.raviga.app.data.api.Document
@@ -49,6 +51,8 @@ class DraftRepository(
     /** Where the model's title is asked for, a moment after the first note stops changing. */
     private val scope: CoroutineScope? = null,
     private val titleDelayMs: Long = 1_500,
+    /** v0.16.0: config.credits.aiEdits (free AI edits per brief, the pack). */
+    private val aiEditsConfig: () -> com.raviga.app.data.api.AiEditsConfig = { com.raviga.app.data.api.AiEditsConfig() },
 ) {
     val drafts: StateFlow<Map<String, LocalDraft>> = store.drafts
 
@@ -181,9 +185,10 @@ class DraftRepository(
 
     /**
      * Writes the brief from every input (first time), or folds the inputs it
-     * doesn't reflect yet into the current brief.
+     * doesn't reflect yet into the current brief. Folding in is an AI edit (v0.16.0); [buyEditPack] only after the
+     * person agreed to buy 5 more.
      */
-    suspend fun writeBrief(id: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+    suspend fun writeBrief(id: String, buyEditPack: Boolean = false, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
         notHeld(id)
         // R-083: a draft or append job from before the app closed is collected, not paid for twice.
         if (require(id).pendingJob?.kind.let { it == PendingJob.DRAFT || it == PendingJob.APPEND }) {
@@ -200,21 +205,84 @@ class DraftRepository(
         } else {
             val fresh = draft.newInputs
             if (fresh.isEmpty()) return@guarded draft
-            val result = tracked(id, { PendingJob(it, PendingJob.APPEND, Time.nowIso(), inputsUsed) }) { started ->
-                ai.append(current.body(), fresh.map { it.ai() }, onProgress, started)
+            val result = aiEdit(id) { briefId ->
+                tracked(id, { PendingJob(it, PendingJob.APPEND, Time.nowIso(), inputsUsed) }) { started ->
+                    ai.append(briefId, current.body(), fresh.map { it.ai() }, buyEditPack, onProgress, started)
+                }
             }
-            commit(id, result.document, "append", inputsUsed = inputsUsed, notices = result.notices)
+            commit(id, result.document, "append", inputsUsed = inputsUsed, notices = result.notices, result = result)
         }
     }
 
-    suspend fun regenerate(id: String, sectionId: String, instruction: String, onProgress: (JobState) -> Unit = {}): LocalDraft = guarded(id) {
+    /** One section rewritten: an AI edit (v0.16.0); [buyEditPack] only after the person agreed to buy 5 more. */
+    suspend fun regenerate(
+        id: String,
+        sectionId: String,
+        instruction: String,
+        buyEditPack: Boolean = false,
+        onProgress: (JobState) -> Unit = {},
+    ): LocalDraft = guarded(id) {
         notHeld(id)
         val draft = require(id)
         val current = draft.document ?: throw ApiException(ApiException.INVALID_STATE, message = "Write the brief first.")
-        val result = tracked(id, { PendingJob(it, PendingJob.REGENERATE, Time.nowIso(), sectionId = sectionId) }) { started ->
-            ai.regenerate(current.body(), sectionId, instruction, draft.inputs.map { it.ai() }, onProgress, started)
+        val result = aiEdit(id) { briefId ->
+            tracked(id, { PendingJob(it, PendingJob.REGENERATE, Time.nowIso(), sectionId = sectionId) }) { started ->
+                ai.regenerate(briefId, current.body(), sectionId, instruction, draft.inputs.map { it.ai() }, buyEditPack, onProgress, started)
+            }
         }
         finishRegenerate(id, result, sectionId)
+    }
+
+    // ----- v0.16.0 (R-123): AI edits -----
+
+    /**
+     * Runs an AI edit (Regenerate, Add more) with this brief's server id. A draft from before v0.16.0 gets one first
+     * (POST /briefs, with no free edits, so the server then asks for a pack); an id the server no longer knows is
+     * replaced the same way and the call sent once more. A call that failed after it started is counted again from
+     * the server, since a failure on Raviga's side gives the edit back.
+     */
+    private suspend fun <T> aiEdit(id: String, call: suspend (String) -> T): T {
+        var briefId = require(id).briefId ?: registerBrief(id)
+        var renewed = false
+        while (true) {
+            try {
+                return call(briefId)
+            } catch (e: ApiException) {
+                when (e.code) {
+                    ApiException.BRIEF_NOT_FOUND -> if (!renewed) { renewed = true; briefId = registerBrief(id); continue }
+                    // Nothing ran or was charged: none left (the person is asked), or short of the pack's price.
+                    ApiException.AI_EDIT_PACK_REQUIRED ->
+                        runCatching { store.update(require(id).id) { it.copy(aiEdits = AiEdits(0, it.aiEdits?.free ?: false)) } }
+                    ApiException.NETWORK, ApiException.INSUFFICIENT_CREDITS -> Unit
+                    else -> runCatching { refreshAiEdits(id) }
+                }
+                throw e
+            }
+        }
+    }
+
+    private suspend fun registerBrief(id: String): String {
+        val registered = ai.registerBrief()
+        store.update(require(id).id) { it.copy(briefId = registered.briefId, aiEdits = registered.aiEdits) }
+        return registered.briefId
+    }
+
+    /**
+     * What's left on this draft's brief, from the server (when the brief is opened). Free: no AI runs. An id the
+     * server no longer knows is dropped; the next AI edit gets a new one, with no free edits.
+     */
+    suspend fun refreshAiEdits(id: String) {
+        val draft = get(id) ?: return
+        val briefId = draft.briefId ?: return
+        if (draft.isSubmitted) return
+        val edits = try {
+            ai.aiEdits(briefId).edits(aiEditsConfig().freePerBrief)
+        } catch (e: ApiException) {
+            if (e.code != ApiException.BRIEF_NOT_FOUND) throw e
+            store.update(draft.id) { if (it.briefId == briefId) it.copy(briefId = null, aiEdits = AiEdits(0, false)) else it }
+            return
+        }
+        if (edits != draft.aiEdits) store.update(draft.id) { if (it.briefId == briefId) it.copy(aiEdits = edits) else it }
     }
 
     // ----- R-083: a job the app was closed during -----
@@ -224,9 +292,14 @@ class DraftRepository(
      * (and so does a failure); a cancelled call (the screen closed) or a killed app keeps it, and [resumePending]
      * collects the result the next time the draft or its quote opens.
      */
-    private suspend fun <T> tracked(id: String, pending: (String) -> PendingJob, call: suspend (suspend (String) -> Unit) -> T): T {
+    private suspend fun <T> tracked(id: String, pending: (String) -> PendingJob, call: suspend (suspend (JobEnvelope) -> Unit) -> T): T {
         try {
-            val result = call { jobId -> store.update(require(id).id) { it.copy(pendingJob = pending(jobId)) } }
+            // v0.16.0: the 202 also names the brief (a draft) and its AI edits left; kept at once, before the result.
+            val result = call { started ->
+                store.update(require(id).id) {
+                    it.copy(pendingJob = pending(started.job.jobId), briefId = started.briefId ?: it.briefId, aiEdits = started.aiEdits ?: it.aiEdits)
+                }
+            }
             clearPending(id)
             return result
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -262,7 +335,7 @@ class DraftRepository(
                     PendingJob.REGENERATE -> finishRegenerate(id, ai.resumeDocument(pending.jobId, onProgress), pending.sectionId.orEmpty())
                     PendingJob.APPEND -> {
                         val result = ai.resumeDocument(pending.jobId, onProgress)
-                        commit(id, result.document, "append", inputsUsed = pending.inputsUsed, notices = result.notices)
+                        commit(id, result.document, "append", inputsUsed = pending.inputsUsed, notices = result.notices, result = result)
                     }
                     else -> finishDraft(id, ai.resumeDocument(pending.jobId, onProgress), pending.inputsUsed)
                 }
@@ -283,7 +356,7 @@ class DraftRepository(
 
     private suspend fun finishDraft(id: String, result: com.raviga.app.data.api.AiDocumentResult, inputsUsed: List<String>): LocalDraft {
         analytics?.briefGenerated(inputsUsed.size, result.document.sections.count { it.body.isNotBlank() })
-        return commit(id, result.document, "draft", inputsUsed = inputsUsed, notices = result.notices)
+        return commit(id, result.document, "draft", inputsUsed = inputsUsed, notices = result.notices, result = result)
     }
 
     private suspend fun finishRegenerate(id: String, result: com.raviga.app.data.api.AiDocumentResult, sectionId: String): LocalDraft {
@@ -297,6 +370,7 @@ class DraftRepository(
             AiDocument(current.title, sections, result.document.changeSummary ?: "Regenerated $heading"),
             "regenerate",
             notices = result.notices,
+            result = result,
         )
     }
 
@@ -411,6 +485,8 @@ class DraftRepository(
         source: String,
         inputsUsed: List<String>? = null,
         notices: List<String> = emptyList(),
+        /** The AI call's result: its brief id and AI edits left (v0.16.0) are kept with the draft. */
+        result: com.raviga.app.data.api.AiDocumentResult? = null,
     ): LocalDraft = touch(id) { d ->
         if (notices.isNotEmpty()) _notices.update { it + (d.id to notices) }
         val number = (d.current?.version ?: 0) + 1
@@ -437,6 +513,8 @@ class DraftRepository(
             versions = d.versions + version,
             inputs = inputs,
             inputsInBrief = inputsUsed ?: d.inputsInBrief,
+            briefId = result?.briefId ?: d.briefId,
+            aiEdits = result?.aiEdits ?: d.aiEdits,
         )
     }
 

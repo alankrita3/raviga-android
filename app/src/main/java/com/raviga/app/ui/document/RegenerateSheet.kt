@@ -25,7 +25,10 @@ import com.raviga.app.ui.theme.Ra
 import com.raviga.app.ui.theme.RaType
 import com.raviga.app.ui.theme.Ink
 
-/** Optional instruction, then "Regenerate". Stays open while the job runs. */
+/**
+ * Optional instruction, then "Regenerate". Stays open while the job runs. [editsLine]: the brief's AI edits left
+ * (R-124, v0.16.0), e.g. "3 of 5 free AI edits left".
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegenerateSheet(
@@ -34,6 +37,7 @@ fun RegenerateSheet(
     busyProgress: Float?,
     onDismiss: () -> Unit,
     onRegenerate: (String) -> Unit,
+    editsLine: String? = null,
 ) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var instruction by rememberSaveable { mutableStateOf("") }   // review #3: kept through a rebuild
@@ -63,6 +67,12 @@ fun RegenerateSheet(
                     minLines = 2,
                 )
                 Spacer(Modifier.height(16.dp))
+                if (editsLine != null) {
+                    Text(
+                        editsLine, style = RaType.caption, color = Ink.graphite, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    )
+                }
                 PrimaryButton("Regenerate", onClick = { onRegenerate(instruction) })
             }
         }
