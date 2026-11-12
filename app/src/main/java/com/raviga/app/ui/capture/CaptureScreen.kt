@@ -402,12 +402,7 @@ private fun TranscriptPhase(nav: NavController, vm: CaptureViewModel, state: Cap
         onDismiss = { vm.dismissNeedCredits() },
     )
     com.raviga.app.ui.document.EditPackDialogs(
-        ask = state.editPack,
-        credits = com.raviga.app.ui.LocalAppContainer.current.session.config.collectAsStateWithLifecycle().value.credits,
-        onBuyEdits = { vm.confirmEditPack() },
-        onBuyCredits = { productId -> vm.dismissEditPack(); nav.navigate(com.raviga.app.ui.nav.Routes.creditsBuy(productId)) },
-        onAllPacks = { vm.dismissEditPack(); nav.navigate(com.raviga.app.ui.nav.Routes.CREDITS) },
-        onDismiss = { vm.dismissEditPack() },
+        vm.packs, com.raviga.app.ui.LocalAppContainer.current.session.config.collectAsStateWithLifecycle().value.credits, nav,
     )
     ScreenScaffold(
         topBar = { RaTopBar(onBack = { if (!state.saving) nav.popBackStack() }) },

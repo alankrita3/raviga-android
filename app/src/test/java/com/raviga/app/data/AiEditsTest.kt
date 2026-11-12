@@ -175,7 +175,7 @@ class AiEditsTest {
         server.enqueue(error(404, "brief_not_found"))
         drafts.refreshAiEdits(id)
         assertNull(drafts.get(id)?.briefId)
-        assertEquals(AiEdits(0, false), drafts.get(id)?.aiEdits)
+        assertNull("and the line hidden", drafts.get(id)?.aiEdits)
     }
 
     @Test fun aFailureOnOurSideReadsTheCountAgain() = runBlocking {

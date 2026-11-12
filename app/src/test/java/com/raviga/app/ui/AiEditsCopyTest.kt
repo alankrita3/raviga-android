@@ -16,18 +16,24 @@ class AiEditsCopyTest {
     private val c = AiEditsConfig()
 
     @Test fun theCountLine() {
+        // iOS's words (round-2 doc, "v0.16.0"; the PM approved them as built).
         assertEquals("3 of 5 free AI edits left", AiEditsCopy.countLine(AiEdits(3, true), c))
-        assertEquals("1 of 5 free AI edits left", AiEditsCopy.countLine(AiEdits(1, true), c))
-        assertEquals("4 AI edits left", AiEditsCopy.countLine(AiEdits(4, false), c))
-        assertEquals("1 AI edit left", AiEditsCopy.countLine(AiEdits(1, false), c))
-        assertEquals("5 more AI edits cost 1/12 credit", AiEditsCopy.countLine(AiEdits(0, true), c))
-        assertNull("not known yet: no line", AiEditsCopy.countLine(null, c))
+        assertEquals("0 of 5 free AI edits left", AiEditsCopy.countLine(AiEdits(0, true), c))
+        assertEquals("after a pack", "4 of 5 AI edits left", AiEditsCopy.countLine(AiEdits(4, false), c))
+        assertEquals("an old draft's new id", "0 of 5 AI edits left", AiEditsCopy.countLine(AiEdits(0, false), c))
+        assertNull("hidden until the server has said", AiEditsCopy.countLine(null, c))
+        assertEquals(
+            "3 of 5 free AI edits left. Typing your own changes is always free.",
+            AiEditsCopy.regenerateLine(AiEdits(3, true), c),
+        )
+        assertNull(AiEditsCopy.regenerateLine(null, c))
     }
 
     @Test fun theConfirm() {
         assertEquals("5 more AI edits for 1/12 credit?", AiEditsCopy.confirmTitle(c))
-        assertEquals("Buy 5 AI edits", AiEditsCopy.buyLabel(c))
-        assertEquals("Typing your own changes is always free.", AiEditsCopy.TYPING_IS_FREE)
+        assertEquals("Buy", AiEditsCopy.BUY)
+        assertEquals("Not now", AiEditsCopy.NOT_NOW)
+        assertEquals("Add credits for more AI edits", AiEditsCopy.NEED_TITLE)
     }
 
     @Test fun whatARefusalAsks() {

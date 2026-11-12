@@ -238,6 +238,8 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
                         )
                         Spacer(Modifier.height(8.dp))
                         StatusLine(state, nav)
+                        // R-124 (iOS): the brief's AI edits left, under the status line, while it can be edited.
+                        if (editable && document != null && editsLine != null) Text(editsLine, style = RaType.secondary, color = Ink.graphite)
                         state.notices.forEach { InlineNotice(it, color = Ink.graphite) }
                         if (pendingNotes.isNotEmpty()) {
                             Spacer(Modifier.height(16.dp))
@@ -343,19 +345,12 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
             busyProgress = state.busyProgress,
             onDismiss = { vm.closeRegenerate() },
             onRegenerate = { vm.regenerate(sectionId, it) },
-            editsLine = editsLine,
+            editsLine = AiEditsCopy.regenerateLine(draft?.aiEdits, credits.aiEdits),
         )
     }
 
     // R-124 (v0.16.0): the pack's confirm, or the short-of-credits sheet. Nothing ran or was charged.
-    EditPackDialogs(
-        ask = state.editPack,
-        credits = credits,
-        onBuyEdits = { vm.confirmEditPack() },
-        onBuyCredits = { productId -> vm.dismissEditPack(); nav.navigate(Routes.creditsBuy(productId)) },
-        onAllPacks = { vm.dismissEditPack(); nav.navigate(Routes.CREDITS) },
-        onDismiss = { vm.dismissEditPack() },
-    )
+    EditPackDialogs(vm.packs, credits, nav)
 
     if (chooser && draft != null) {
         DescribeChooserSheet(

@@ -27,7 +27,7 @@ import com.raviga.app.ui.theme.Ink
 
 /**
  * Optional instruction, then "Regenerate". Stays open while the job runs. [editsLine]: the brief's AI edits left
- * (R-124, v0.16.0), e.g. "3 of 5 free AI edits left".
+ * (R-124, v0.16.0, iOS's words), e.g. "3 of 5 free AI edits left. Typing your own changes is always free."
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +52,10 @@ fun RegenerateSheet(
             Text("Regenerate $heading", style = RaType.heading, color = Ink.ink)
             Spacer(Modifier.height(8.dp))
             Text("Tell the AI what to change, or leave it blank for a fresh take.", style = RaType.secondary, color = Ink.graphite)
+            if (editsLine != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(editsLine, style = RaType.secondary, color = Ink.graphite)
+            }
             Spacer(Modifier.height(16.dp))
             if (busyMessage != null) {
                 ProgressRule(progress = busyProgress?.takeIf { it > 0f })
@@ -67,12 +71,6 @@ fun RegenerateSheet(
                     minLines = 2,
                 )
                 Spacer(Modifier.height(16.dp))
-                if (editsLine != null) {
-                    Text(
-                        editsLine, style = RaType.caption, color = Ink.graphite, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                    )
-                }
                 PrimaryButton("Regenerate", onClick = { onRegenerate(instruction) })
             }
         }

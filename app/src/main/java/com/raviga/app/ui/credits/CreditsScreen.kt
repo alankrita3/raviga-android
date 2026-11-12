@@ -202,7 +202,9 @@ fun CreditsScreen(nav: NavController, buy: String? = null, forProject: String? =
 
     // R-113 (her yes, 3b): bought for a project: straight back to it, which asks to pay once the credits cover it.
     LaunchedEffect(state.purchased) {
-        if (state.purchased > 0 && forProject != null) {
+        // R-124: bought from the AI edits sheet: back to the edit, which goes again with the pack.
+        val forEdit = nav.previousBackStackEntry?.savedStateHandle?.get<Boolean>(PayCopy.RETURN_AFTER_BUY) == true
+        if (state.purchased > 0 && (forProject != null || forEdit)) {
             nav.previousBackStackEntry?.savedStateHandle?.set(PayCopy.CREDITS_ADDED, true)
             nav.popBackStack()
         }

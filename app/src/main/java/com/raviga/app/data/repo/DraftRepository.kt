@@ -269,7 +269,7 @@ class DraftRepository(
 
     /**
      * What's left on this draft's brief, from the server (when the brief is opened). Free: no AI runs. An id the
-     * server no longer knows is dropped; the next AI edit gets a new one, with no free edits.
+     * server no longer knows is dropped and the line hidden; the next AI edit gets a new one, with no free edits.
      */
     suspend fun refreshAiEdits(id: String) {
         val draft = get(id) ?: return
@@ -279,7 +279,7 @@ class DraftRepository(
             ai.aiEdits(briefId).edits(aiEditsConfig().freePerBrief)
         } catch (e: ApiException) {
             if (e.code != ApiException.BRIEF_NOT_FOUND) throw e
-            store.update(draft.id) { if (it.briefId == briefId) it.copy(briefId = null, aiEdits = AiEdits(0, false)) else it }
+            store.update(draft.id) { if (it.briefId == briefId) it.copy(briefId = null, aiEdits = null) else it }
             return
         }
         if (edits != draft.aiEdits) store.update(draft.id) { if (it.briefId == briefId) it.copy(aiEdits = edits) else it }

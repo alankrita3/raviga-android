@@ -42,8 +42,6 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         /** What the AI took out of the notes on the last write, shown once. */
         val notices: List<String> = emptyList(),
         val supportEmail: String = "",
-        /** R-124 (v0.16.0): the brief's AI edits are used up (buy 5 more?), or the account is short of the pack. */
-        val editPack: EditPackAsk? = null,
     ) {
         /**
          * The brief shown. R-092 #34 (iOS review): a submitted brief that can't be edited (cancelled, closed, or a
@@ -140,22 +138,8 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         }
     }
 
-    // ----- R-124 (v0.16.0): 5 more AI edits, only after a yes -----
-
-    private var packRetry: (() -> Unit)? = null
-
-    /** "Buy 5 AI edits": the same AI edit again, this time buying the pack. */
-    fun confirmEditPack() {
-        val retry = packRetry
-        packRetry = null
-        _state.update { it.copy(editPack = null) }
-        retry?.invoke()
-    }
-
-    fun dismissEditPack() {
-        packRetry = null
-        _state.update { it.copy(editPack = null) }
-    }
+    /** R-124 (v0.16.0): the brief's AI edits used up (buy 5 more?), or short of the pack; only "Buy" charges. */
+    val packs = EditPackFlow(container, viewModelScope)
 
     fun saveTitle(title: String) {
         val draft = _state.value.draft ?: return
@@ -294,19 +278,15 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
         viewModelScope.launch {
             _state.update { it.copy(busyMessage = message, busyProgress = null, error = null) }
             val failure = runCatching { block() }.exceptionOrNull()
-            val ask = failure?.let { EditPackAsk.from(it, buying, container.session.config.value.credits.aiEdits) }
-            if (ask is EditPackAsk.Confirm) packRetry = retry
+            val asked = packs.handle(failure, buying) { retry?.invoke() }
             _state.update {
                 it.copy(
                     busyMessage = null,
                     busyProgress = null,
-                    error = failure?.takeIf { ask == null }?.userLine(),
-                    editPack = ask,
-                    sheetSection = if (close && ask == null) null else it.sheetSection,
+                    error = failure?.takeIf { !asked }?.userLine(),
+                    sheetSection = if (close && !asked) null else it.sheetSection,
                 )
             }
-            // A bought pack (or one refunded on our side) changes the balance.
-            if (buying) container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
         }
     }
 }

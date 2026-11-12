@@ -77,7 +77,6 @@ class SectionEditorViewModel(
         val needsAiConsent: Boolean = false,
         /** R-124 (v0.16.0): this brief's AI edits left, and a pack to confirm (or credits to buy) when they're used up. */
         val aiEdits: com.raviga.app.data.api.AiEdits? = null,
-        val editPack: EditPackAsk? = null,
     ) {
         val changed: Boolean get() = document != null && body.trim() != savedBody.trim()
     }
@@ -174,20 +173,8 @@ class SectionEditorViewModel(
         regenerate(instruction)
     }
 
-    private var packInstruction: String? = null
-
-    /** R-124: "Buy 5 AI edits": the same rewrite, this time buying the pack. */
-    fun confirmEditPack() {
-        val instruction = packInstruction
-        packInstruction = null
-        _state.update { it.copy(editPack = null) }
-        if (instruction != null) regenerate(instruction, buyEditPack = true)
-    }
-
-    fun dismissEditPack() {
-        packInstruction = null
-        _state.update { it.copy(editPack = null) }
-    }
+    /** R-124 (v0.16.0): AI edits used up (buy 5 more?), or short of the pack; only "Buy" charges. */
+    val packs = EditPackFlow(container, viewModelScope)
 
     fun regenerate(instruction: String, buyEditPack: Boolean = false) {
         // The same checks as the brief's Regenerate: AI consent, then the length the AI call takes.
@@ -213,18 +200,14 @@ class SectionEditorViewModel(
                 val doc = draft.document
                 val body = doc?.section(sectionId)?.body.orEmpty()
                 _state.update { it.copy(document = doc, body = body, savedBody = body, busyMessage = null, busyProgress = null, sheet = false) }
+                packs.handle(null, buyEditPack) {}   // a bought pack: the balance is read again
             }.onFailure { e ->
                 // R-124: none left (or short of the pack): ask, with the sheet and what was typed in it kept.
-                val ask = EditPackAsk.from(e, buyEditPack, container.session.config.value.credits.aiEdits)
-                if (ask is EditPackAsk.Confirm) packInstruction = instruction
+                val asked = packs.handle(e, buyEditPack) { regenerate(instruction, buyEditPack = true) }
                 _state.update {
-                    it.copy(
-                        error = if (ask == null) e.userLine() else null, editPack = ask,
-                        busyMessage = null, busyProgress = null, sheet = ask != null && it.sheet,
-                    )
+                    it.copy(error = if (asked) null else e.userLine(), busyMessage = null, busyProgress = null, sheet = asked && it.sheet)
                 }
             }
-            if (buyEditPack) container.appScope.launch { runCatching { container.credits.refresh() }; runCatching { container.session.refreshMe() } }
         }
     }
 
@@ -312,16 +295,9 @@ fun SectionEditorScreen(nav: NavController, projectId: String, sectionId: String
             busyProgress = state.busyProgress,
             onDismiss = { vm.closeSheet() },
             onRegenerate = { vm.regenerate(it) },
-            editsLine = AiEditsCopy.countLine(state.aiEdits, credits.aiEdits),
+            editsLine = AiEditsCopy.regenerateLine(state.aiEdits, credits.aiEdits),
         )
     }
 
-    EditPackDialogs(
-        ask = state.editPack,
-        credits = credits,
-        onBuyEdits = { vm.confirmEditPack() },
-        onBuyCredits = { productId -> vm.dismissEditPack(); nav.navigate(Routes.creditsBuy(productId)) },
-        onAllPacks = { vm.dismissEditPack(); nav.navigate(Routes.CREDITS) },
-        onDismiss = { vm.dismissEditPack() },
-    )
+    EditPackDialogs(vm.packs, credits, nav)
 }
