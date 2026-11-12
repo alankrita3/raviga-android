@@ -39,7 +39,8 @@ object DeliveryCopy {
     const val SOMETHING_WRONG = "Something's wrong"
     const val REQUEST_CHANGE = "Request a change"
     const val APPROVE_TITLE = "Approve this app?"
-    const val APPROVE_BODY = "Next, we publish it to your App Store and Google Play accounts. Your brief is deleted from our servers."
+    /** R-119 / R-121 (as iOS): no brief sentence. */
+    const val APPROVE_BODY = "Next, we publish it to your App Store and Google Play accounts."
     /** R-113 (the PM's call 2, 2026-11-11): approving a fix or a change after the first approval. */
     const val APPROVE_AGAIN_TITLE = "Approve this version?"
     fun approveAgainBody(apple: Boolean, play: Boolean) = when {

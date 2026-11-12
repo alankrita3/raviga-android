@@ -6,13 +6,12 @@ object ConsentCopy {
     const val CAPTION =
         "By continuing you agree to the Terms of Use and Privacy Policy, and allow AI processing as described above."
 
-    /** Her static text (not /config.ai.providers): a heading, then four lines with a lead-in. No switch. */
+    /** Her static text (not /config.ai.providers): a heading, then three lines with a lead-in. No switch. */
     const val AI_TITLE = "AI processing"
     val AI_LINES = listOf(
         "What is sent." to "Only text about your project. Never your recordings or files.",
-        "Who processes it." to "Anthropic's Claude, under its business terms: deleted within 30 days, never used to train AI.",
-        // R-116 (6a, her call): the brief goes at approval.
-        "What we keep." to "Nothing, until you submit a project. Then we keep your brief to review and build it, and delete it when you approve your app.",
+        // R-121 (her rule 2026-11-12: no keep or delete words; the PM's pick, as iOS): retention lives in the policy.
+        "Who processes it." to "Anthropic's Claude, under its business terms. Never used to train AI.",
         "Your choice." to "Raviga can't work without it. You can withdraw your permission at any time by deleting your account in Settings.",
     )
 }

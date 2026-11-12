@@ -63,7 +63,10 @@ object GoLiveLogic {
 
     /** Settings shows "AWS account" only when a project with a backend has reached Make it live (R-109, G). */
     fun needsAwsRow(projects: Collection<Project>): Boolean =
-        projects.any { it.hasBackend && (it.status == ProjectStatus.ACCEPTED || it.status == ProjectStatus.LIVE) }
+        projects.any {
+            // v0.15.0: hasBackend is the builder's answer at the demo; Make it live's own word is handover.backend.
+            (it.hasBackend || hasBackendStep(it.delivery?.handover)) && (it.status == ProjectStatus.ACCEPTED || it.status == ProjectStatus.LIVE)
+        }
 
     /** A report's category in config's words; an id this build doesn't know shows as "Something else". */
     fun reportLabel(id: String, categories: List<ReportCategory>): String =

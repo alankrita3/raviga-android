@@ -148,14 +148,13 @@ class StatusCopyTest {
         assertEquals("This is taking longer than usual. Try again.", expired.userLine())
     }
 
-    /** R-092 #37, v0.10.0: cancel is only before payment, so nothing comes back; the copy only when there is one. */
+    /** R-121 (her rule 2026-11-12, as iOS): cancel says only that nothing was charged; a gone brief says only that. */
     @Test
-    fun `cancel and closed lines say what really happens`() {
-        assertEquals("Nothing was charged. The brief is deleted from our servers. Your copy stays on this phone.", StatusCopy.cancelConfirmLine(hasCopy = true))
-        assertEquals("Nothing was charged. The brief is deleted from our servers.", StatusCopy.cancelConfirmLine(hasCopy = false))
-        assertEquals("We deleted this brief from our servers on 3 Nov.", StatusCopy.deletedLine("3 Nov", hasCopy = false))
-        assertTrue(StatusCopy.deletedLine("3 Nov", hasCopy = true).endsWith(" Your copy stays on this phone."))
-        assertTrue(listOf(StatusCopy.cancelConfirmLine(true), StatusCopy.deletedLine("3 Nov", true)).none { "draft" in it || "comments" in it })
+    fun `cancel and closed lines say nothing about keeping or deleting`() {
+        assertEquals("Nothing was charged.", StatusCopy.CANCEL_CONFIRM)
+        assertEquals("This brief is no longer available.", StatusCopy.BRIEF_GONE)
+        assertEquals("The notes and brief are deleted from this phone for good.", StatusCopy.DELETE_DRAFT_CONFIRM)
+        assertEquals("It's deleted from this phone for good.", StatusCopy.DELETE_NOTE_CONFIRM)
     }
 
     /** As iOS a04dc61: a single credit is never "1 credits". */
@@ -169,7 +168,8 @@ class StatusCopyTest {
     @Test
     fun exportCaptionIsHerWordsAsOnIos() {
         assertEquals(
-            "The download adds the drafts kept on this phone, in a drafts folder. Our servers don't keep your drafts.",
+            // R-121: "Our servers don't keep your drafts." is gone; Android has no Save my drafts button to point to.
+            "The download adds the drafts kept on this phone, in a drafts folder.",
             StatusCopy.EXPORT_DRAFTS_CAPTION,
         )
     }

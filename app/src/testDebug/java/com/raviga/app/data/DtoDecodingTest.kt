@@ -256,14 +256,12 @@ class DtoDecodingTest {
             com.raviga.app.ui.status.StatusCopy.grievanceLine(demo.grievance))
     }
 
-    /** R-066: her words for "What we don't keep", on the consent screens and Privacy and data. */
+    /** Contract v0.15.0 (R-119): approval deletes nothing; only cancel and decline do. */
     @Test
-    fun `the local-first promise is her R-066 wording`() {
-        // R-109 (the PM, 2026-11-09): only the verb changed, "approve your app", as the store listing.
-        assertEquals(
-            "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to review and build it, and delete it when you approve your app.",
-            com.raviga.app.ui.status.StatusCopy.LOCAL_FIRST_PROMISE,
-        )
+    fun `the brief is deleted only on cancel and decline`() {
+        assertEquals(listOf("cancelled", "rejected"), com.raviga.app.data.api.RetentionConfig().briefDeletedOn)
+        val c = Json { ignoreUnknownKeys = true }.decodeFromString(com.raviga.app.data.api.RetentionConfig.serializer(), """{"briefDeletedOn":["cancelled","rejected"]}""")
+        assertEquals(listOf("cancelled", "rejected"), c.briefDeletedOn)
     }
 
     /** Contract v0.8.2: exactly one of fid or token goes up; the other key is left out, not sent as null. */

@@ -11,8 +11,12 @@ import kotlin.math.roundToInt
 
 /**
  * Stand-in for the backend's LLM while there is no backend: turns a client's
- * rambling description into the brief with plain heuristics. v0.14.0 (R-115): five sections in plain words a shop
- * owner understands, no technical names, as the server's drafter. Good enough to walk every screen.
+ * rambling description into the brief with plain heuristics. v0.15.0 (R-118): three sections in plain words a shop
+ * owner understands, no technical names, deciding nothing technical, as the server's drafter: the only build statement
+ * is "native iPhone and Android apps"; sign-in is Sign in with Apple or Google; payments go through the App Store and
+ * Google Play (digital things) or are made in person (goods and services); a service that needs a paid or separate
+ * account (text messages, one-time codes, WhatsApp, a map inside the app, emails, AI) isn't offered and is one plain
+ * sentence in Summary. Good enough to walk every screen.
  */
 object BriefWriter {
 
@@ -45,9 +49,9 @@ object BriefWriter {
     }
 
     private val signals = listOf(
-        Signal("\\b(log ?in|sign ?(in|up)|account|register|otp|password)\\b", "Sign in with a phone number and a one-time code", listOf("Sign in", "Verify code"), null, "user profiles"),
-        Signal("\\b(pay|payment|checkout|upi|razorpay|stripe|price|buy|purchase|wallet)\\b", "Takes UPI and card payments", listOf("Checkout", "Payment history"), "payments", "payments"),
-        Signal("\\b(subscription|subscribe|monthly plan|premium)\\b", "Subscription plans with a free tier", listOf("Plans"), "payments", "subscriptions"),
+        Signal("\\b(log ?in|sign ?(in|up)|account|register|otp|password)\\b", SIGN_IN, listOf("Sign in"), null, "user profiles"),
+        Signal("\\b(pay|payment|checkout|upi|razorpay|stripe|price|buy|purchase|wallet)\\b", PAYS_IN_STORES, listOf("Checkout", "Payment history"), "payments", "payments"),
+        Signal("\\b(subscription|subscribe|monthly plan|premium)\\b", "Subscription plans through the App Store and Google Play", listOf("Plans"), "payments", "subscriptions"),
         Signal("\\b(chat|message|messaging|dm|inbox)\\b", "In-app chat between users", listOf("Conversations", "Chat"), null, "messages"),
         Signal("\\b(notif|push|alert|remind)\\w*", "Sends notifications and reminders", listOf("Notifications"), "messages", null),
         Signal("\\b(map|location|gps|track|nearby|navigate|route)\\w*", "Shows places on a map, with live location", listOf("Map"), "maps", "locations"),
@@ -56,9 +60,9 @@ object BriefWriter {
         Signal("\\b(upload|photo|image|camera|picture|gallery)\\w*", "Add photos from the camera or gallery", listOf("Upload"), null, "media files"),
         Signal("\\b(video|stream|reel)\\w*", "Add and play videos", listOf("Video player"), null, "videos"),
         Signal("\\b(rating|review|feedback|star)\\w*", "Ratings and reviews", listOf("Reviews"), null, "reviews"),
-        Signal("\\b(order|cart|deliver|delivery|shop|store|product|catalog|menu|inventory|ecommerce|e-commerce)\\w*", "Catalogue, cart and order tracking", listOf("Catalogue", "Cart", "Order tracking"), null, "products and orders"),
+        Signal("\\b(order|cart|deliver|delivery|shop|store|product|catalog|menu|inventory|ecommerce|e-commerce)\\w*", "Catalogue, cart and order status", listOf("Catalogue", "Cart", "Order tracking"), null, "products and orders"),
         Signal("\\b(profile|bio|avatar)\\w*", "User profiles", listOf("Profile"), null, "user profiles"),
-        Signal("\\b(admin|dashboard|panel|backoffice|back-office|manage users)\\w*", "An admin screen to manage people and content", listOf("Admin"), null, null),
+        Signal("\\b(admin|dashboard|panel|backoffice|back-office|manage users)\\w*", "A place for the owner to manage people and content", listOf("Admin"), null, null),
         Signal("\\b(report|analytics|statistic|insight|chart|graph)\\w*", "Reports with simple charts", listOf("Reports"), null, null),
         Signal("\\b(social|share|feed|post|follow|like|comment|community)\\w*", "Social feed with posts, likes and follows", listOf("Feed", "Post details", "Create post"), null, "posts"),
         Signal("\\b(ai|chatbot|gpt|assistant|recommend|smart|llm)\\b", "An assistant that answers questions in the app", listOf("Assistant"), null, null),
@@ -66,7 +70,7 @@ object BriefWriter {
         Signal("\\b(qr|barcode|scan)\\w*", "QR code scanning", listOf("Scanner"), null, null),
         Signal("\\b(whatsapp)\\b", "Sends updates on WhatsApp", emptyList(), "messages", null),
         Signal("\\b(email|mail)\\b", "Sends confirmations by email", emptyList(), "messages", null),
-        Signal("\\b(google|apple|facebook) (sign|log)", "Sign in with Google or Apple", listOf("Sign in"), null, "user profiles"),
+        Signal("\\b(google|apple|facebook) (sign|log)", SIGN_IN, listOf("Sign in"), null, "user profiles"),
         Signal("\\b(invoice|bill|billing|gst|receipt)\\w*", "Invoices and receipts with GST", listOf("Invoices"), null, "invoices"),
         Signal("\\b(attendance|check-?in|shift|roster)\\w*", "Attendance and check-in", listOf("Attendance"), null, "attendance records"),
         Signal("\\b(document|pdf|file|form)\\w*", "Add and view documents", listOf("Documents"), null, "documents"),
@@ -111,12 +115,15 @@ object BriefWriter {
         val purpose = purpose(text)
         val apps = apps(text)
 
-        // One list of everything that is built (no nice-to-have: later wishes are paid changes).
-        val features = (clientLines.take(6) + found.map { it.feature }).distinctBy { it.lowercase() }.take(12)
-        val screens = (listOf("Welcome", "Home") + found.flatMap { it.screens } + listOf("Settings")).distinct()
+        // One list of everything that is built (no nice-to-have: later wishes are paid changes), only what is offered;
+        // sign-in and payments in the standard words (v0.15.0).
+        val inPerson = PAYS_IN_PERSON_WORDS.containsMatchIn(text)
+        val features = (offered(clientLines.take(6)).filterNot { STANDARD_WORDS.containsMatchIn(it) } + offered(found.map { it.feature }))
+            .map { if (it == PAYS_IN_STORES && inPerson) PAYS_IN_PERSON else plain(it) }
+            .distinctBy { it.lowercase() }.take(12)
 
         val summary = buildString {
-            append(title).append(" is ").append(apps).append(" app")
+            append(title).append(" is ").append(apps)
             if (users.isNotEmpty()) append(" for ").append(naturalJoin(users))
             val cleanPurpose = purpose.replace(Regex("\\s+(called|named)\\s+\\S+$", RegexOption.IGNORE_CASE), "").trim()
             if (cleanPurpose.isNotBlank()) {
@@ -126,9 +133,11 @@ object BriefWriter {
             append(".")
             val focus = features.filterNot { it.equals(cleanPurpose, true) }.take(2)
             if (focus.isNotEmpty()) append(" It focuses on ").append(naturalJoin(focus.map { f -> f.replaceFirstChar { c -> c.lowercase() } })).append(".")
-            // v0.14.0: what Raviga doesn't build is said in one plain sentence.
-            if (Regex("\\b(website|web app|webapp|desktop)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) {
-                append(" We build the iPhone and Android apps; the website isn't part of this.")
+            // v0.14.0, widened in v0.15.0: what was asked for and isn't offered is one plain sentence.
+            val other = notOffered(text)
+            if (other.isNotEmpty()) {
+                append(" We build native iPhone and Android apps; ").append(naturalJoin(other))
+                append(if (other.size == 1) " isn't" else " aren't").append(" part of this.")
             }
         }
 
@@ -139,15 +148,10 @@ object BriefWriter {
             } else {
                 append("- People who ").append(purpose.ifBlank { "use it day to day" })
             }
-            if (found.any { it.feature.startsWith("An admin") }) append("\n- The owner, who manages it from the admin screen")
+            if (found.any { it.feature.startsWith("A place for the owner") } || Regex("\\b(owner|staff)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) {
+                append("\n- The owner or staff, who run things day to day")
+            }
         }
-
-        // R-109/R-111/R-112 (as the server's drafter): no source code, no revision rounds; ends with the free-fix rule.
-        val deliverables = listOf(
-            "Your app, published in your App Store and Google Play accounts",
-            "Backend running in your AWS account (only if your app needs one)",
-            com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE,
-        )
 
         fun section(id: String, body: String) = Section(id = id, heading = headings.getValue(id), body = body, hint = hints[id])
         fun bullets(items: List<String>) = items.joinToString("\n") { "- $it" }
@@ -158,8 +162,6 @@ object BriefWriter {
                 section(SectionIds.SUMMARY, summary),
                 section(SectionIds.TARGET_USERS, targetUsers),
                 section(SectionIds.FEATURES, bullets(features)),
-                section(SectionIds.SCREENS, bullets(screens)),
-                section(SectionIds.DELIVERABLES, bullets(deliverables)),
             ),
         )
     }
@@ -194,7 +196,8 @@ object BriefWriter {
 
     fun quote(doc: Document, config: AppConfig): QuoteParts {
         fun lines(id: String) = doc.section(id)?.body?.lines()?.count { it.trim().startsWith("-") } ?: 0
-        // v0.14.0: the server prices from the same text (apps, features, screens, services, admin screens).
+        // v0.15.0: the server prices from the same text (apps, features, services, what the owner manages); the client
+        // sees only the price (DemoApi sends the breakdown and drivers empty, as the server).
         val text = (doc.title + "\n" + doc.sections.joinToString("\n") { it.body }).lowercase()
         val drivers = mutableListOf<String>()
         var apps = 0
@@ -202,7 +205,7 @@ object BriefWriter {
         val android = Regex("\\bandroid\\b").containsMatchIn(text)
         if (android || !ios) { apps += 6; drivers += "Android app" }
         if (ios || !android) { apps += 6; drivers += "iPhone app" }
-        if (Regex("\\badmin\\b").containsMatchIn(text)) { apps += 6; drivers += "Admin screens" }
+        if (Regex("\\b(admin|owner to manage)\\b").containsMatchIn(text)) { apps += 6; drivers += "Admin screens" }
         val featureCount = lines(SectionIds.FEATURES).coerceAtMost(12)
         val features = featureCount * 3
         if (featureCount >= 6) drivers += "$featureCount features"
@@ -222,8 +225,7 @@ object BriefWriter {
         val days = timeline.maxWeeks * 5
         val score = (personDays / 40.0 * 10).roundToInt().coerceIn(1, 10)
         val assumptions = buildList {
-            // R-111 (as iOS's mock): no asks of the client; the merchant-account question stays parked.
-            add("Third-party services (payments, SMS, maps) are billed to your own accounts.")
+            // R-111 (as iOS's mock): no asks of the client. R-121 (the PM, 2026-11-12): no third-party billing line.
             if (!text.contains("language")) add("One language (English) in the first release")
             // R-112: the assumptions end with the free-fix rule.
             add(com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE)
@@ -245,17 +247,62 @@ object BriefWriter {
 
     // ----- helpers -----
 
-    /** Which apps the words ask for, in plain words: "an iPhone and Android", "an Android", "an iPhone". */
+    /** Which apps the words ask for, in the one build statement (v0.15.0, as iOS's mock). */
     private fun apps(text: String): String {
         val t = text.lowercase()
         val android = Regex("\\bandroid\\b").containsMatchIn(t)
-        val ios = Regex("\\b(ios|iphone|ipad|apple)\\b").containsMatchIn(t)
+        val ios = Regex("\\b(ios|iphone|ipad)\\b").containsMatchIn(t)
         return when {
-            android && !ios -> "an Android"
-            ios && !android -> "an iPhone"
-            else -> "an iPhone and Android"
+            android && !ios -> "a native Android app"
+            ios && !android -> "a native iPhone app"
+            else -> "a pair of native iPhone and Android apps"
         }
     }
+
+    private const val SIGN_IN = "Sign in with Apple or Google"
+    private const val PAYS_IN_STORES = "Takes payments through the App Store and Google Play"
+    private const val PAYS_IN_PERSON = "Customers pay in person"
+
+    /** Goods and services are paid in person (v0.15.0); only digital things go through the stores. */
+    private val PAYS_IN_PERSON_WORDS = Regex(
+        "\\b(book|booking|appointment|salon|order|deliver|delivery|food|shop|product|service|store|restaurant)\\w*", RegexOption.IGNORE_CASE,
+    )
+
+    /** A client's own line about signing in or paying gives way to the standard words. */
+    private val STANDARD_WORDS = Regex("\\b(sign ?in|sign ?up|log ?in|login|pay|payment|upi|checkout|otp|password)\\w*", RegexOption.IGNORE_CASE)
+
+    /** Words for what isn't offered (v0.15.0): a website or desktop app, and services that need a paid or separate account. */
+    private val UNOFFERED = Regex(
+        "\\b(sms|otp|one-time code|text message|whatsapp|maps?|gps|live location|live tracking|e-?mails?|website|web app|desktop|ai|chatbot|gpt|assistant|llm)\\b",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Features keep only what is offered; the rest is the Summary sentence. */
+    private fun offered(items: List<String>): List<String> = items.filterNot { UNOFFERED.containsMatchIn(it) }
+
+    /** Asked for but not offered, as the server says in Summary (v0.15.0; iOS's mock says the same). */
+    private fun notOffered(text: String): List<String> {
+        val t = text.lowercase()
+        fun has(pattern: String) = Regex(pattern).containsMatchIn(t)
+        return buildList {
+            if (has("\\b(website|web app|webapp)\\b")) add("the website")
+            if (has("\\bdesktop\\b")) add("the desktop app")
+            if (has("\\b(sms|otp|text messages?|one-time code)\\b")) add("text messages")
+            if (has("\\bwhatsapp\\b")) add("WhatsApp messages")
+            if (has("\\b(maps?|gps|live location|live tracking)\\b")) add("a map inside the app")
+            if (has("\\be-?mails?\\b")) add("emails")
+            if (has("\\b(ai|chatbot|gpt|llm)\\b")) add("an AI assistant")
+        }
+    }
+
+    /** No technical names (v0.14.0), and no admin panel or dashboard (v0.15.0: what the owner does is a Feature). */
+    private fun plain(item: String): String = item
+        .replace(Regex("\\b[Aa]n? admin (panel|dashboard|screen)\\b"), "a place for the owner to manage things")
+        .replace(Regex("\\badmin (panel|dashboard|screen)\\b", RegexOption.IGNORE_CASE), "a place for the owner to manage things")
+        .replace(Regex("\\bdashboard\\b"), "view")
+        .replace(Regex("\\bDashboard\\b"), "View")
+        .replace(Regex("\\b[Pp]ush notifications\\b"), "notifications")
+        .replaceFirstChar { it.uppercase() }
 
     private fun purpose(text: String): String {
         val first = text.split(Regex("[.!?\\n]")).map { it.trim() }.firstOrNull { it.length > 12 } ?: return ""

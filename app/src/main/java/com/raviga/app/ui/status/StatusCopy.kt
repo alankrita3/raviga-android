@@ -69,17 +69,12 @@ object StatusCopy {
     @Volatile var supportEmail: String = ""
 
     /**
-     * The local-first promise in one paragraph (R-066 wording, founder 2026-10-30): "What we don't keep" on the consent
-     * screens and on Privacy and data. Same words on iOS (`ServiceConfig.Retention.promise`).
+     * Under "Download my data" (her copy, 2026-11-03; same words as iOS). The zip carries drafts/ from [ExportBuilder].
+     * R-121 (her rule 2026-11-12: no keep or delete words): "Our servers don't keep your drafts." is gone. iOS goes on
+     * "To save only your drafts:" before its Save my drafts button; Android has no drafts-only save, so it stops here.
      */
-    const val LOCAL_FIRST_PROMISE =
-        "Recordings and files never leave your phone. Drafts are stored only on your phone. To write or price a brief, " +
-            "its text is sent to an AI service, used once, and not stored by us. When you submit, we keep the brief to " +
-            "review and build it, and delete it when you approve your app."
-
-    /** Under "Download my data" (her copy, 2026-11-03; same words as iOS). The zip carries drafts/ from [ExportBuilder]. */
     const val EXPORT_DRAFTS_CAPTION =
-        "The download adds the drafts kept on this phone, in a drafts folder. Our servers don't keep your drafts."
+        "The download adds the drafts kept on this phone, in a drafts folder."
 
     /** On a written brief: notes saved on the phone that the brief doesn't reflect yet (PM spec, 2026-11-02). */
     fun notesNotInBrief(count: Int): String = if (count == 1) "1 note not in the brief yet" else "$count notes not in the brief yet"
@@ -95,18 +90,19 @@ object StatusCopy {
 
     /** Screening paused new descriptions (429 rate_limited, reason "paused"), as iOS: for how long, in plain words. */
     /**
-     * R-092 #37 (iOS review, iOS 26900b8): cancel makes no draft, and "Your copy stays on this phone" only when there is
-     * one (after a restore there may be none). The confirm says beforehand what the closed screen says after.
+     * The cancel confirm, on the project screen and the brief screen (v0.10.0: cancel is only before payment). R-121
+     * (her rule 2026-11-12: nothing about keeping or deleting the brief; as iOS): no brief sentence, no copy line.
      */
-    fun cancelConfirmLine(hasCopy: Boolean): String =
-        // v0.10.0: cancel is only before payment, so nothing comes back; the brief goes.
-        "Nothing was charged. The brief is deleted from our servers." + copyLine(hasCopy)
+    const val CANCEL_CONFIRM = "Nothing was charged."
 
-    /** The line under a closed project whose brief the server deleted. */
-    fun deletedLine(day: String, hasCopy: Boolean): String =
-        "We deleted this brief from our servers on $day." + copyLine(hasCopy)
+    /** R-121 (as iOS): only when the server no longer has the brief and this phone has no copy of it. */
+    const val BRIEF_GONE = "This brief is no longer available."
 
-    private fun copyLine(hasCopy: Boolean) = if (hasCopy) " Your copy stays on this phone." else ""
+    /** Delete draft, on Home and the brief screen (R-121, the PM's pick 2026-11-12; iOS's words). */
+    const val DELETE_DRAFT_CONFIRM = "The notes and brief are deleted from this phone for good."
+
+    /** Delete note (iOS's words, kept by the PM 2026-11-12). */
+    const val DELETE_NOTE_CONFIRM = "It's deleted from this phone for good."
 
     fun pausedLine(retryAfterSec: Int?): String =
         "Several descriptions were turned down, so new ones are paused" +

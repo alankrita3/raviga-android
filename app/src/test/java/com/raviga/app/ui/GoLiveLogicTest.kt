@@ -137,7 +137,8 @@ class DeliveryCopyTest {
         assertEquals("Accept the invite we sent to c@d.co, then install the app from Google Play.", DeliveryCopy.playReady("c@d.co"))
         assertEquals("We're building. You'll get TestFlight and Play invites to try it.", DeliveryCopy.BUILDING_LINE)
         assertEquals(
-            "Next, we publish it to your App Store and Google Play accounts. Your brief is deleted from our servers.",
+            // R-119 / R-121 (as iOS): no brief sentence.
+            "Next, we publish it to your App Store and Google Play accounts.",
             DeliveryCopy.APPROVE_BODY,
         )
     }

@@ -39,7 +39,9 @@ class ConsentBodyTest {
         )
         // Her static text, verbatim as iOS (not /config.ai.providers).
         assertEquals("AI processing", ConsentCopy.AI_TITLE)
-        assertEquals(listOf("What is sent.", "Who processes it.", "What we keep.", "Your choice."), ConsentCopy.AI_LINES.map { it.first })
+        // R-121 (her rule 2026-11-12, as iOS): "What we keep." is gone; retention lives in the policy.
+        assertEquals(listOf("What is sent.", "Who processes it.", "Your choice."), ConsentCopy.AI_LINES.map { it.first })
+        assertEquals("Anthropic's Claude, under its business terms. Never used to train AI.", ConsentCopy.AI_LINES[1].second)
         assertEquals(
             "Raviga can't work without it. You can withdraw your permission at any time by deleting your account in Settings.",
             ConsentCopy.AI_LINES.last().second,

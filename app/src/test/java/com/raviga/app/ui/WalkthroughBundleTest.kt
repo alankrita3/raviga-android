@@ -30,15 +30,16 @@ class WalkthroughBundleTest {
 
     // ----- 1. Brief: no open questions; an old draft drops the section quietly -----
 
-    /** R-116 item 8 (contract v0.14.0): five plain sections. */
-    @Test fun theBriefHasFiveSections() {
-        assertEquals(listOf("summary", "target_users", "features", "screens", "deliverables"), SectionIds.ordered)
-        assertEquals(listOf("Summary", "Who it's for", "Features", "Screens", "What you get"), SectionIds.ordered.map { SectionIds.headings.getValue(it) })
-        assertEquals("iPhone and Android apps, backend, admin panel, store listings.", SectionIds.hints[SectionIds.DELIVERABLES])
-        assertFalse(SectionIds.headings.containsValue("Open questions"))
+    /** R-121 (contract v0.15.0, R-118): three plain sections. */
+    @Test fun theBriefHasThreeSections() {
+        assertEquals(listOf("summary", "target_users", "features"), SectionIds.ordered)
+        assertEquals(listOf("Summary", "Who it's for", "Features"), SectionIds.ordered.map { SectionIds.headings.getValue(it) })
+        assertEquals("Everything that is built, in plain words.", SectionIds.hints[SectionIds.FEATURES])
+        assertFalse(SectionIds.headings.containsValue("Open questions") || SectionIds.headings.containsValue("Screens") || SectionIds.headings.containsValue("What you get"))
+        assertTrue(SectionIds.RETIRED.containsAll(listOf("screens", "deliverables")))
     }
 
-    @Test fun anElevenSectionDraftLoadsAsFive() {
+    @Test fun anElevenSectionDraftLoadsAsThree() {
         val old = Document(title = "Salon", sections = listOf(
             Section("summary", "Summary", "A salon app"),
             Section("target_users", "Target users", "- Customers"),
@@ -51,11 +52,11 @@ class WalkthroughBundleTest {
             Section("out_of_scope", "Out of scope", "- A website"),
         ))
         val now = old.withoutRetired()
-        assertEquals(listOf("summary", "target_users", "features", "screens", "deliverables"), now.sections.map { it.id })
+        assertEquals(listOf("summary", "target_users", "features"), now.sections.map { it.id })
         assertEquals("must-have is read as Features", "- Book a slot", now.section(SectionIds.FEATURES)?.body)
         assertEquals("Features", now.section(SectionIds.FEATURES)?.heading)
-        assertEquals("today's headings", listOf("Summary", "Who it's for", "Features", "Screens", "What you get"), now.sections.map { it.heading })
-        assertFalse("the retired sections' text isn't moved", now.sections.any { "Loyalty" in it.body || "website" in it.body })
+        assertEquals("today's headings", listOf("Summary", "Who it's for", "Features"), now.sections.map { it.heading })
+        assertFalse("the retired sections' text isn't moved", now.sections.any { "Loyalty" in it.body || "website" in it.body || "Home" in it.body || "Your app" in it.body })
         val both = old.copy(sections = old.sections + Section("features", "Features", "- Already here")).withoutRetired()
         assertEquals("a draft with Features keeps it; must-have goes", "- Already here", both.section(SectionIds.FEATURES)?.body)
         assertEquals(1, both.sections.count { it.id == SectionIds.FEATURES })
@@ -103,9 +104,9 @@ class WalkthroughBundleTest {
         assertEquals("Pay 30 credits to start building?", PayCopy.creditsAddedMessage(30.0))
     }
 
-    /** The PM, 2026-11-11: the lock line says when the brief really goes (contract: at approval). */
-    @Test fun theLockLineSaysWhenTheBriefGoes() {
-        assertEquals("Private. We delete your brief from our servers once you approve your app.", com.raviga.app.ui.quote.LOCK_LINE)
+    /** R-121 (her rule 2026-11-12; the PM's R-119 line, as iOS): nothing about keeping or deleting. */
+    @Test fun theLockLineSaysOnlyWhoSeesTheBrief() {
+        assertEquals("Private. Only our team sees your brief.", com.raviga.app.ui.quote.LOCK_LINE)
     }
 
     private val packs = listOf(
@@ -218,7 +219,12 @@ class WalkthroughBundleTest {
         val demo = HowItWorks.steps[5]
         assertEquals(listOf("It works, approved", "Something's wrong", "Request a change"), demo.choices.map { it.label })
         assertEquals(listOf(false, true, false), demo.choices.map { it.free })
-        assertTrue(HowItWorks.steps[6].note!!.startsWith("Apple and Google charge their own account fees."))
+        // v0.15.0 (as iOS): no backend or AWS line, and the brief names no screens.
+        assertEquals("Apple and Google charge their own account fees.", HowItWorks.steps[6].note)
+        assertEquals(
+            "Your idea becomes a clear plan: the features and what the app does. Read it and change anything that isn't right.",
+            HowItWorks.steps[1].body,
+        )
         // Sentence case (no all-caps labels), and the PM's words for the entry points.
         assertEquals("How Raviga works", HowItWorks.LABEL)
         assertEquals("Fixed free", HowItWorks.FIXED_FREE)
@@ -237,12 +243,9 @@ class WalkthroughBundleTest {
 
     // ----- R-116: her walkthrough, round 2 (items 1-7) -----
 
-    /** 7: no screen but the Quote says we keep the code; 6a: the brief goes at approval. */
+    /** 7: no screen but the Quote says we keep the code. R-121: "What we keep." is gone from the AI lines. */
     @Test fun onlyTheQuoteSaysWhoKeepsTheCode() {
         assertTrue(HowItWorks.steps.none { (it.note.orEmpty() + it.body).contains("code") })
-        assertEquals(
-            "Nothing, until you submit a project. Then we keep your brief to review and build it, and delete it when you approve your app.",
-            com.raviga.app.ui.onboarding.ConsentCopy.AI_LINES.first { it.first == "What we keep." }.second,
-        )
+        assertTrue(com.raviga.app.ui.onboarding.ConsentCopy.AI_LINES.none { it.first == "What we keep." })
     }
 }
