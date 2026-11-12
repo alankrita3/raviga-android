@@ -5,9 +5,19 @@ The PM reads this file if the session has closed. Updated 2026-11-12.
 
 ## In flight
 
-- **R-124 (her decisions 11-12; keep open while building): contract v0.16.0 (briefId, 5 free AI edits, then a
-  pack for 1/12 credit with a confirm) and the 11-12 Welcome copy.** Building on a branch; unit tests and non-AI checks
-  only today (dev AI cap nearly used); the AI live check is tomorrow.
+- **R-124 on main (3b4c4aa, 4ae0fc5, merged f3d3dfb; her decisions 2026-11-12): contract v0.16.0 AI edits and the
+  11-12 Welcome copy.** briefId kept from the draft's 202 (on the draft, in exports), sent on append and regenerate;
+  an old draft gets one from POST /briefs; brief_not_found swaps it once; GET ai-edits on opening a brief. Count line in
+  iOS's final words (round-2 doc "v0.16.0", the PM approved them as built) under the brief's status line, on the
+  Regenerate sheets (+ "Typing your own changes is always free."), Capture's add and the not-in-the-brief sheet; the
+  402 confirm "5 more AI edits for 1/12 credit?" (server's message, Buy / Not now); short of credits, the credits
+  sheet, and a purchase from it resends the edit with the flag; ledger "More AI edits". Welcome step 2 body and step
+  3 note, How it works step 3. Tests debug 299, release 261. OnePlus: dev (old draft IPhone Android Dog: POST
+  /briefs, then the 402 confirm, Not now, nothing charged, so that draft now holds a dev briefId with 0 edits; How it
+  works step 3) and demo (5 free counted down, confirm, Not now keeps the instruction, Buy, Add more, ledger,
+  header). Not on device: the short-of-credits sheet (demo account had 27 credits; unit tests cover it) and the
+  Welcome pages (first launch only; unit test on the words). **Next: the AI live check on dev tomorrow** (no AI spend
+  today, her $3 cap): a new brief's 5 free edits, the pack bought, one ledger line, to log in the paid-run ledger first.
 
 - **R-121 on main (4aaf253, merged d149763; her decisions 2026-11-12): contract v0.15.0 and "no keep or delete
   words".** Brief in three sections (Screens and What you get retired; old drafts and earlier projects show three);
