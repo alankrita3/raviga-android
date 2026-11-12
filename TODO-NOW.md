@@ -5,9 +5,15 @@ The PM reads this file if the session has closed. Updated 2026-11-12.
 
 ## In flight
 
-- **Keep open: building R-121 (branch r-121)**: contract v0.15.0 (three-section brief, one-price Quote, hasBackend
-  from the builder, approval deletes nothing) and her rule "no keep or delete words" (iOS doc walkthrough-round2,
-  sections R-119 and No keep or delete words). Next: tests, OnePlus pass on dev, merge, report to the PM.
+- **R-121 on main (4aaf253, merged d149763; her decisions 2026-11-12): contract v0.15.0 and "no keep or delete
+  words".** Brief in three sections (Screens and What you get retired; old drafts and earlier projects show three);
+  one-price Quote (no chip, drivers, breakdown or Assumes; free-fix line under the ownership line; step 4 "You get a
+  demo on your phone to try…"); every keep/delete line gone or replaced word for word with iOS's doc (lock line,
+  card, consent, Privacy, cancel "Nothing was charged.", "This brief is no longer available.", approve confirm,
+  Delete draft/note); hasBackend false until the builder says; demo drafter on the v0.15.0 rules. Tests debug 287,
+  release 251. OnePlus on dev: all of it seen, incl. RA-0NA02Y paid, demo with --backend yes, approved, AWS step.
+  Android-only call: the download caption stops at "…in a drafts folder." (no Save my drafts button here).
+  RA-0NA02Y now sits approved on dev (Make it live, AWS connected); cleanup list.
 
 - **R-116 items 1-7 on main (her walkthrough round 2; iOS docs/walkthrough-round2-2026-11-11.md).** Welcome (no
   brief-price line, step 3 body, "By Raviga Apps", page 1 body), Home's empty line, keep/delete wording (AI "What we
