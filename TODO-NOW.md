@@ -5,6 +5,10 @@ The PM reads this file if the session has closed. Updated 2026-11-12.
 
 ## In flight
 
+- **R-124 (her decisions 11-12; keep open while building): contract v0.16.0 (briefId, 5 free AI edits, then a
+  pack for 1/12 credit with a confirm) and the 11-12 Welcome copy.** Building on a branch; unit tests and non-AI checks
+  only today (dev AI cap nearly used); the AI live check is tomorrow.
+
 - **R-121 on main (4aaf253, merged d149763; her decisions 2026-11-12): contract v0.15.0 and "no keep or delete
   words".** Brief in three sections (Screens and What you get retired; old drafts and earlier projects show three);
   one-price Quote (no chip, drivers, breakdown or Assumes; free-fix line under the ownership line; step 4 "You get a
