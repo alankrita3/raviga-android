@@ -1,9 +1,13 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-11 23:00.
+The PM reads this file if the session has closed. Updated 2026-11-12.
 
 ## In flight
+
+- **Keep open: building R-121 (branch r-121)**: contract v0.15.0 (three-section brief, one-price Quote, hasBackend
+  from the builder, approval deletes nothing) and her rule "no keep or delete words" (iOS doc walkthrough-round2,
+  sections R-119 and No keep or delete words). Next: tests, OnePlus pass on dev, merge, report to the PM.
 
 - **R-116 items 1-7 on main (her walkthrough round 2; iOS docs/walkthrough-round2-2026-11-11.md).** Welcome (no
   brief-price line, step 3 body, "By Raviga Apps", page 1 body), Home's empty line, keep/delete wording (AI "What we
