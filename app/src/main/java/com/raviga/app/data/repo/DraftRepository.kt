@@ -293,6 +293,8 @@ class DraftRepository(
      * collects the result the next time the draft or its quote opens.
      */
     private suspend fun <T> tracked(id: String, pending: (String) -> PendingJob, call: suspend (suspend (JobEnvelope) -> Unit) -> T): T {
+        val key = require(id).id
+        running.add(key)
         try {
             // v0.16.0: the 202 also names the brief (a draft) and its AI edits left; kept at once, before the result.
             val result = call { started ->
@@ -308,8 +310,19 @@ class DraftRepository(
             // Offline while it ran: the job goes on at the server; keep it to collect on the next try or open.
             if ((e as? ApiException)?.code != ApiException.NETWORK) clearPending(id)
             throw e
+        } finally {
+            running.remove(key)
         }
     }
+
+    /**
+     * Drafts whose AI job this app is waiting on right now. R-130 (live on dev): Add more from an open brief ran its
+     * job in Capture while the brief screen underneath saw the job on the draft and collected it too, so the result
+     * landed twice (two identical versions). A screen that picks up a job from before the app closed checks this first.
+     */
+    private val running: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    fun isRunning(id: String): Boolean = get(id)?.id?.let { it in running } ?: false
 
     private suspend fun clearPending(id: String) {
         val draft = get(id) ?: return
