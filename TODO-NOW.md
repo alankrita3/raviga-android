@@ -5,6 +5,10 @@ The PM reads this file if the session has closed. Updated 2026-11-13.
 
 ## In flight
 
+- **Keep open: R-132 in progress (2026-11-13, her yes via the PM): build 9 (versionCode 9, main c9939ef + the
+  bump, dev server like build 8) to Play's internal track only; Meenakshi as an internal tester; license-tester
+  check. Upload goes as a draft; the rollout and the tester-list save wait for her yes typed in this window.**
+
 - **R-130 done (2026-11-13, the PM; Testing Full): the v0.16.0 AI-edit live check on the OnePlus against dev**, QA
   account (paid-run ledger: 1 brief + 8 AI edits, est. $0.35). New brief "Car Wash Booking App": 5 of 5 → 0 of 5 free
   (4 Regenerate + 1 Add more, the count also above Capture's add button), the 402 confirm in the server's words, Not
