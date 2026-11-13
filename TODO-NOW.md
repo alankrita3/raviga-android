@@ -5,8 +5,16 @@ The PM reads this file if the session has closed. Updated 2026-11-13.
 
 ## In flight
 
-- **Keep open: R-130 in progress (2026-11-13, the PM): the v0.16.0 AI-edit live check on the OnePlus against dev**
-  (QA account; real money, my share $0.60, logged in the paid-run ledger first). Report to the PM at the end.
+- **R-130 done (2026-11-13, the PM; Testing Full): the v0.16.0 AI-edit live check on the OnePlus against dev**, QA
+  account (paid-run ledger: 1 brief + 8 AI edits, est. $0.35). New brief "Car Wash Booking App": 5 of 5 → 0 of 5 free
+  (4 Regenerate + 1 Add more, the count also above Capture's add button), the 402 confirm in the server's words, Not
+  now (instruction kept, nothing charged), Buy → "4 of 5 AI edits left", then Add more (3) and Regenerate (2) worked.
+  Credits history: one "More AI edits −1/12 credit" (+ "Brief written −1/12"), 150.66 → 150.50. Short-of-credits
+  sheet not reached (account has 150.50; no cheap way to be short). **Bug found and fixed (28ff184, merged):** Add
+  more from an open brief was collected twice (the brief screen underneath resumed the same job, R-083 since 11-03):
+  two identical versions per Add more (charged once) and a blank body until reopened. Demo on the OnePlus: before the
+  fix, two versions; after, one. Tests debug 300, release 262. The dev Car Wash draft keeps its duplicate versions
+  (6/7, 9/10). Play internal track: build 8 (versionCode 8, 11-03, contract v0.9.7, talks to dev) only.
 
 - **R-124 on main (3b4c4aa, 4ae0fc5, merged f3d3dfb; her decisions 2026-11-12): contract v0.16.0 AI edits and the
   11-12 Welcome copy.** briefId kept from the draft's 202 (on the draft, in exports), sent on append and regenerate;
