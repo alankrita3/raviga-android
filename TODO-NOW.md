@@ -5,9 +5,14 @@ The PM reads this file if the session has closed. Updated 2026-11-13.
 
 ## In flight
 
-- **Keep open: R-132 in progress (2026-11-13, her yes via the PM): build 9 (versionCode 9, main c9939ef + the
-  bump, dev server like build 8) to Play's internal track only; Meenakshi as an internal tester; license-tester
-  check. Upload goes as a draft; the rollout and the tester-list save wait for her yes typed in this window.**
+- **Keep open: R-132 in progress (2026-11-13, her yes via the PM): build 9 to Play's internal track only.** Build 9
+  (versionCode 9, 6cbc6bf merged e094a4c, sha256 38df8ab6298b, dev server, release notes 462 characters) uploaded
+  by the API as a **draft**; build 8 stays live for testers. **Waiting on her yes typed in this window** for two
+  Console-level steps: (1) roll out 9 to internal testing (`tools/play_release.py rollout 9`), (2) add Meenakshi to
+  the "Raviga internal" email list (Console, admin account, Chrome Profile 27). Lists in the account: Raviga
+  internal (1, the only one ticked for Raviga), claude test (1), License testers (auto-generated) (4), Testers1 (3),
+  Testing (2). She is already on the account-wide license-tester list. Opt-in link:
+  https://play.google.com/apps/internaltest/4700044944112014609
 
 - **R-130 done (2026-11-13, the PM; Testing Full): the v0.16.0 AI-edit live check on the OnePlus against dev**, QA
   account (paid-run ledger: 1 brief + 8 AI edits, est. $0.35). New brief "Car Wash Booking App": 5 of 5 → 0 of 5 free
