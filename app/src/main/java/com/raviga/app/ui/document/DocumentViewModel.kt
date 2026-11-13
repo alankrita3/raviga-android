@@ -254,8 +254,10 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     /** R-083: a job this draft started before the app closed: its result, with the usual progress. Once per opening. */
     private fun resumeOnce(kind: String) {
         if (resumed || kind == com.raviga.app.data.drafts.PendingJob.QUOTE || _state.value.busyMessage != null) return
-        resumed = true
         val draftId = _state.value.draft?.id ?: return
+        // R-130: a job another screen is waiting on right now (Add more from this brief) lands from there, once.
+        if (container.drafts.isRunning(draftId)) return
+        resumed = true
         val message = if (kind == com.raviga.app.data.drafts.PendingJob.REGENERATE) "Rereading the section" else "Reading your notes"
         busy(message) {
             container.drafts.resumePending(draftId, { st ->

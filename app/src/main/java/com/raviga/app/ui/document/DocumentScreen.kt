@@ -121,11 +121,15 @@ fun DocumentScreen(nav: NavController, projectId: String, reveal: Boolean) {
     var revealed by remember { mutableIntStateOf(if (reveal) -1 else Int.MAX_VALUE) }
     LaunchedEffect(reveal, document?.version) {
         if (reveal && document != null && revealed < 0) {
-            for (i in 0..document.sections.size) {
-                revealed = i
-                delay(90)
+            try {
+                for (i in 0..document.sections.size) {
+                    revealed = i
+                    delay(90)
+                }
+            } finally {
+                // R-130: a newer version mid-reveal restarts this effect; show every section rather than stop part-way.
+                revealed = Int.MAX_VALUE
             }
-            revealed = Int.MAX_VALUE
         }
     }
 

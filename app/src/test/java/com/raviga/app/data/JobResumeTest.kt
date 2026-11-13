@@ -20,6 +20,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -91,6 +92,36 @@ class JobResumeTest {
         assertEquals("Dog Walking Booking App", landed?.displayTitle)
         assertNull("cleared once collected", drafts.get(id)?.pendingJob)
         assertEquals("the notes count as in the brief", drafts.get(id)?.inputs?.map { it.id }, drafts.get(id)?.inputsInBrief)
+    }
+
+    /**
+     * R-130 (live on dev): Add more from an open brief ran its job in Capture while the brief screen underneath saw it
+     * on the draft and collected it too, so it landed twice. While this app waits on a job it says so, and only then.
+     */
+    @Test fun aJobThisAppIsWaitingOnIsMarkedRunningUntilItLands() = runBlocking {
+        val drafts = repo()
+        val id = draftWithNote(drafts)
+        assertFalse(drafts.isRunning(id))
+        server.enqueue(started())
+        server.enqueue(done())
+        val call = launch { drafts.writeBrief(id) }
+        repeat(50) { if (drafts.get(id)?.pendingJob == null) delay(20) }
+        assertNotNull("the job is on the draft, where another screen sees it", drafts.get(id)?.pendingJob)
+        assertTrue("and this app is already waiting on it", drafts.isRunning(id))
+        call.join()
+        assertFalse(drafts.isRunning(id))
+        assertNull(drafts.get(id)?.pendingJob)
+        assertEquals("landed once", 1, drafts.get(id)?.versions?.size)
+
+        // A call cancelled midway (the screen closed) isn't running any more: the next open collects it.
+        val other = draftWithNote(drafts)
+        server.enqueue(started("j2"))
+        val closed = launch { runCatching { drafts.writeBrief(other) } }
+        repeat(50) { if (drafts.get(other)?.pendingJob == null) delay(20) }
+        closed.cancel()
+        closed.join()
+        assertNotNull(drafts.get(other)?.pendingJob)
+        assertFalse(drafts.isRunning(other))
     }
 
     @Test fun aFinishedCallLeavesNothingPending() = runBlocking {
