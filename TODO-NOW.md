@@ -1,9 +1,12 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-12.
+The PM reads this file if the session has closed. Updated 2026-11-13.
 
 ## In flight
+
+- **Keep open: R-130 in progress (2026-11-13, the PM): the v0.16.0 AI-edit live check on the OnePlus against dev**
+  (QA account; real money, my share $0.60, logged in the paid-run ledger first). Report to the PM at the end.
 
 - **R-124 on main (3b4c4aa, 4ae0fc5, merged f3d3dfb; her decisions 2026-11-12): contract v0.16.0 AI edits and the
   11-12 Welcome copy.** briefId kept from the draft's 202 (on the draft, in exports), sent on append and regenerate;
