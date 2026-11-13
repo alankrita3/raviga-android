@@ -7,6 +7,7 @@ The account can release to testing tracks and manage in-app products for Raviga,
     .venv/bin/python tools/play_release.py tracks
     .venv/bin/python tools/play_release.py upload app/build/outputs/bundle/release/app-release.aab [--track internal] [--notes docs/store/release-notes-build8.md]
     .venv/bin/python tools/play_release.py notes docs/store/release-notes-build8.md   # print what --notes would send
+    .venv/bin/python tools/play_release.py rollout 9 [--track internal]   # a draft to the track's testers (her typed yes only)
     .venv/bin/python tools/play_release.py data-safety docs/store/data-safety.csv     # set the Data safety form (Play's CSV)
     .venv/bin/python tools/play_release.py images phoneScreenshots 01.png 02.png …   # replace a listing image set (en-US), in order
     .venv/bin/python tools/play_release.py products            # list one-time products
@@ -93,11 +94,30 @@ def upload(s, aab, track, notes_path=None):
         b = check(s.post(f"{UPLOAD}/edits/{edit}/bundles", params={"uploadType": "media"},
                          headers={"Content-Type": "application/octet-stream"}, data=f, timeout=900))
     vc = str(b["versionCode"])
+    # The release testers have now (completed, or a staged one) stays as it is; only an older draft is replaced.
+    live = [r for r in check(s.get(f"{API}/edits/{edit}/tracks/{track}")).get("releases", []) if r.get("status") != "draft"]
     check(s.put(f"{API}/edits/{edit}/tracks/{track}", json={"track": track, "releases": [
         {"name": f"{vc} {track} test", "versionCodes": [vc], "status": "draft",
-         "releaseNotes": [{"language": "en-US", "text": notes}]}]}))
+         "releaseNotes": [{"language": "en-US", "text": notes}]}] + live}))
     check(s.post(f"{API}/edits/{edit}:commit"))
     print(f"uploaded versionCode {vc} (sha256 {b['sha256'][:12]}…) as a draft {track} release")
+
+
+def rollout(s, vc, track):
+    """A draft release to everyone on the track (it replaces the release they have). Only on her yes typed here."""
+    edit = check(s.post(f"{API}/edits", json={}))["id"]
+    try:
+        releases = check(s.get(f"{API}/edits/{edit}/tracks/{track}")).get("releases", [])
+        draft = next((r for r in releases if r.get("status") == "draft" and vc in r.get("versionCodes", [])), None)
+        if draft is None:
+            sys.exit(f"no draft release with versionCode {vc} on {track}")
+        check(s.put(f"{API}/edits/{edit}/tracks/{track}", json={"track": track, "releases": [{**draft, "status": "completed"}]}))
+        check(s.post(f"{API}/edits/{edit}:commit"))
+        edit = None
+        print(f"rolled out versionCode {vc} to {track}")
+    finally:
+        if edit:
+            s.delete(f"{API}/edits/{edit}")
 
 
 def products(s):
@@ -252,6 +272,7 @@ def main():
     sub = a.add_subparsers(dest="cmd", required=True)
     sub.add_parser("tracks")
     u = sub.add_parser("upload"); u.add_argument("aab"); u.add_argument("--track", default="internal"); u.add_argument("--notes")
+    ro = sub.add_parser("rollout"); ro.add_argument("versionCode"); ro.add_argument("--track", default="internal")
     n = sub.add_parser("notes"); n.add_argument("path")
     ds = sub.add_parser("data-safety"); ds.add_argument("csv")
     im = sub.add_parser("images"); im.add_argument("kind"); im.add_argument("paths", nargs="+")
@@ -267,7 +288,8 @@ def main():
         print(text); print(f"({len(text)} characters)")
         return
     s = session()
-    {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track, args.notes), "products": lambda: products(s),
+    {"tracks": lambda: tracks(s), "upload": lambda: upload(s, args.aab, args.track, args.notes),
+     "rollout": lambda: rollout(s, args.versionCode, args.track), "products": lambda: products(s),
      "product": lambda: product(s, args.id, args.title, args.usd),
      "add-region": lambda: add_region(s, args.id, args.region),
      "withdraw-region": lambda: withdraw_region(s, args.id, args.region),
