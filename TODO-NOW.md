@@ -1,18 +1,18 @@
 # Raviga Android: what's pending now
 
 Kept current by the Android session (the founder's rule, 2026-10-28: nothing pending lives only inside a session).
-The PM reads this file if the session has closed. Updated 2026-11-13.
+The PM reads this file if the session has closed. Updated 2026-11-14.
 
 ## In flight
 
-- **Keep open: R-132 in progress (2026-11-13, her yes via the PM): build 9 to Play's internal track only.** Build 9
-  (versionCode 9, 6cbc6bf merged e094a4c, sha256 38df8ab6298b, dev server, release notes 462 characters) uploaded
-  by the API as a **draft**; build 8 stays live for testers. **Waiting on her yes typed in this window** for two
-  Console-level steps: (1) roll out 9 to internal testing (`tools/play_release.py rollout 9`), (2) add Meenakshi to
-  the "Raviga internal" email list (Console, admin account, Chrome Profile 27). Lists in the account: Raviga
-  internal (1, the only one ticked for Raviga), claude test (1), License testers (auto-generated) (4), Testers1 (3),
-  Testing (2). She is already on the account-wide license-tester list. Opt-in link:
-  https://play.google.com/apps/internaltest/4700044944112014609
+- **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
+  internal track.** versionCode 9 (6cbc6bf, merged e094a4c; sha256 38df8ab6298b; dev server like build 8; release
+  notes 462 characters) uploaded as a draft, then rolled out by `tools/play_release.py rollout 9`: the track reads
+  only "9 internal test" completed (it replaced 8). Nothing on alpha, beta or production; no listing changes.
+  Meenakshi added to the "Raviga internal" list (now 2 users: the admin account and her), the only list ticked
+  for Raviga. She was already on the account-wide license-tester list (4 addresses; the admin account can't edit
+  it), so her purchases in build 9 are test purchases. Opt-in link:
+  https://play.google.com/apps/internaltest/4700044944112014609. The store build will be versionCode 10.
 
 - **R-130 done (2026-11-13, the PM; Testing Full): the v0.16.0 AI-edit live check on the OnePlus against dev**, QA
   account (paid-run ledger: 1 brief + 8 AI edits, est. $0.35). New brief "Car Wash Booking App": 5 of 5 → 0 of 5 free
