@@ -5,6 +5,9 @@ The PM reads this file if the session has closed. Updated 2026-11-14.
 
 ## In flight
 
+- **The OnePlus is lent to Mirakee QA on 14-15 Nov (the PM), including an overnight run.** Don't use it until the PM
+  says it's back; ask the PM first if a check needs it.
+
 - **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
   internal track.** versionCode 9 (6cbc6bf, merged e094a4c; sha256 38df8ab6298b; dev server like build 8; release
   notes 462 characters) uploaded as a draft, then rolled out by `tools/play_release.py rollout 9`: the track reads
