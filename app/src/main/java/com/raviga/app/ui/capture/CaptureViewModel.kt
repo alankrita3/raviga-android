@@ -194,6 +194,13 @@ class CaptureViewModel(
     private var addingMore = false
 
     init {
+        // R-149: the updated terms were agreed over this screen; its line saying to agree goes (the action stays offered).
+        viewModelScope.launch {
+            container.session.legalAccepted.collect { _state.update { it.copy(error = com.raviga.app.ui.AfterTerms.clearedLine(it.error)) } }
+        }
+    }
+
+    init {
         viewModelScope.launch { container.draftStore.saveFailing.collect { f -> _state.update { it.copy(saveFailing = f) } } }
     }
 

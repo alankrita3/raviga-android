@@ -10,8 +10,7 @@ fun Throwable.userLine(): String = when (this) {
         val server = message?.takeIf { it.isNotBlank() && it != code }
         when {
             // The terms changed: the app shows them again; the line just says why the action stopped.
-            code == ApiException.CONSENT_REQUIRED && detailStrings("missing").any { it == "terms" || it == "privacy" } ->
-                "Agree to the updated terms to continue."
+            isTermsRefusal() -> TERMS_REFUSED_LINE
             // A paused account (QA O4, iOS's words): how long, from details.retryAfterSec.
             code == ApiException.RATE_LIMITED && detailString("reason") == "paused" -> StatusCopy.pausedLine(detailInt("retryAfterSec"))
             // v0.10.0: the fair-use cap on new briefs; the server's line ("You've reached today's limit...") as it comes.

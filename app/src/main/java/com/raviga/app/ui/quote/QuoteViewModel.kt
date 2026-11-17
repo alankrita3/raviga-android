@@ -189,6 +189,13 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
         }
         viewModelScope.launch { container.credits.credits.collect { c -> if (c != null) _state.update { it.copy(balance = c.balance) } } }
         viewModelScope.launch { container.session.config.collect { c -> _state.update { it.copy(config = c) } } }
+        // R-149: the updated terms were agreed over this screen: the terms line goes and a refused quote carries on.
+        viewModelScope.launch {
+            container.session.legalAccepted.collect {
+                _state.update { it.copy(error = com.raviga.app.ui.AfterTerms.clearedLine(it.error)) }
+                afterTerms.agreed()
+            }
+        }
         // Signed out on this phone (R-079): nothing to refresh until the account comes back with the next AI step.
         if (container.session.hasAccount) viewModelScope.launch {
             serverId.value?.let { sid -> runCatching { container.projects.refresh(sid) } }
@@ -216,6 +223,8 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     }
 
     private var resumedQuote = false
+
+    private val afterTerms = com.raviga.app.ui.AfterTerms()
 
     private fun resumeQuoteOnce() {
         if (resumedQuote || _state.value.quoting) return
@@ -257,7 +266,7 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
     /** Also on return to the screen. */
     fun tick() = _state.update { it.copy(clock = System.currentTimeMillis()) }
 
-    private fun requestQuoteNow() = withAiConsent {
+    private fun requestQuoteNow(): Unit = withAiConsent {
         val draftId = _state.value.draft?.id ?: return@withAiConsent
         if (_state.value.quoting) return@withAiConsent
         quotedOnce = true
@@ -267,7 +276,11 @@ class QuoteViewModel(private val container: AppContainer, val projectId: String)
                 container.drafts.quote(draftId) { st ->
                     _state.update { it.copy(progressMessage = st.message ?: it.progressMessage, progress = st.progress) }
                 }
-            }.onFailure { e -> _state.update { it.copy(error = e.userLine()) } }
+            }.onFailure { e ->
+                // R-149: refused because the terms changed: asked again by itself once they're agreed.
+                afterTerms.refused(e) { requestQuoteNow() }
+                _state.update { it.copy(error = e.userLine()) }
+            }
             _state.update { it.copy(quoting = false, progressMessage = null, progress = null) }
         }
     }
