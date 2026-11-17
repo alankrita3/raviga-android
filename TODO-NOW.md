@@ -9,8 +9,16 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
   builds"): the store build, versionCode 10, release, prod server.** Prepare now (bump, bundle, pre-upload checks,
   release notes); upload to Play's internal track as a DRAFT only after the PM says "prod is live", build 9 stays live
   for testers. No production track, rollout, listing/settings changes or review submit.
-  - **Ready to upload (main 2011f0b; bump 3458511).** Bundle sha256 104c479471a6, 13.7 MB, a copy in the session
-    scratchpad (raviga-10.aab). Checks: versionCode 10, versionName 1.0.0, min 26 / target 36, permissions as build 9;
+  - **R-149 (the PM, Full): rebuilt from main f364810 (fix e5afafd).** New bundle sha256 d02372f7de80 (the old
+    104c479471a6 is superseded), same checks passed, lint 0 errors. Stale-terms bug reproduced on the OnePlus (pre-fix
+    debug build, backend's `fault terms_new` per-client switch: 403 → sheet → PUT 400 twice, stuck) and fixed (sheet
+    reads /config, "We've updated our terms" with Not now, PUT 200; second pass after the switch ended too). /config
+    read part by part (ConfigDecoder), logged, debug Settings "Config (debug)". Release build (versionCode 10, dev) on
+    the OnePlus: "config from the server: terms 2026-11-17, 5 packs", packs ₹209/8,499/21,249/42,499, free-fix line.
+    The OnePlus's com.raviga.app is now this versionCode 10 dev release (was 8, same dev account). Follow-up: after
+    agreeing, the Quote screen still says "Agree to the updated terms to continue." until Try again.
+  - **Ready to upload (was main 2011f0b; bump 3458511).** First bundle sha256 104c479471a6 (superseded), a copy in the
+    session scratchpad (raviga-10.aab, now the R-149 one). Checks: versionCode 10, versionName 1.0.0, min 26 / target 36, permissions as build 9;
     prod host in the dex, dev host not; RevenueCat key present (compared); no demo backend; signed with the upload key
     (jar verified); 64-bit .so LOAD segments at 16 KB; lint release 0 errors (24 warnings); no `!!`; unit tests debug
     303, release 264 (same code as c29401c). Notes `docs/store/release-notes-build10.md` (497): the PM says fine for
