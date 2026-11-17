@@ -5,10 +5,17 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
 
 ## In flight
 
-- **KEEP OPEN: R-145 in progress (the PM, 2026-11-17; her "okay go ahead with the production deploy and store
-  builds"): the store build, versionCode 10, release, prod server.** Prepare now (bump, bundle, pre-upload checks,
-  release notes); upload to Play's internal track as a DRAFT only after the PM says "prod is live", build 9 stays live
-  for testers. No production track, rollout, listing/settings changes or review submit.
+- **R-145 done (2026-11-17, ~22:1x; the PM's word after R-149): build 10 uploaded to Play's internal track as a
+  DRAFT.** From main e36061c (the R-149 fixes), prod server, sha256 3902f62fbbf1 (13.7 MB). Track read back:
+  internal = "10 internal test" draft + "9 internal test" completed (9 stays live for testers); production, beta,
+  alpha empty. No rollout, listing, settings or review changes; production and review are hers. Checks: versionCode
+  10, target 36, 10 permissions as build 9, prod host in / dev host out, RevenueCat key present (compared), no demo
+  backend, jar verified (upload key), 16 KB OK, lint 0 errors (24 warnings), no `!!`, tests debug 318 / release 279.
+  Notes `docs/store/release-notes-build10.md` (497): fine for the internal draft; before public use she approves them.
+  - R-149 follow-up (27bb21c): after the updated terms are agreed, the Quote screen clears the line and asks for the
+    refused quote again (AfterTerms); OnePlus on dev: 403 → sheet → Allow → consent 200 → quote 202 → 21 credits.
+    The QA account is back on the 2026-11-17 terms; switch off.
+  - Earlier R-149 notes below (the bundles 104c479471a6 and d02372f7de80 are superseded).
   - **R-149 (the PM, Full): rebuilt from main f364810 (fix e5afafd).** New bundle sha256 d02372f7de80 (the old
     104c479471a6 is superseded), same checks passed, lint 0 errors. Stale-terms bug reproduced on the OnePlus (pre-fix
     debug build, backend's `fault terms_new` per-client switch: 403 → sheet → PUT 400 twice, stuck) and fixed (sheet
