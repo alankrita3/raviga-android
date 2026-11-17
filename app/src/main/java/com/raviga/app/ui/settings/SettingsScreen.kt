@@ -102,6 +102,11 @@ fun SettingsScreen(nav: NavController) {
             RaRow(title = "How Raviga works", onClick = { nav.navigate(Routes.HOW_IT_WORKS) })
             RaRow(title = "Fonts", subtitle = "Bricolage Grotesque and Figtree, open font licence", onClick = { nav.navigate(Routes.FONTS) })
             if (com.raviga.app.BuildConfig.DEBUG) DebugBackendRow(context, vm.isDemo)
+            if (com.raviga.app.BuildConfig.DEBUG) {
+                // R-149: where /config came from, so a fallback is never silent in a debug build.
+                val source by com.raviga.app.ui.LocalAppContainer.current.session.configSource.collectAsStateWithLifecycle()
+                RaRow(title = "Config (debug)", subtitle = configSourceLine(source, legal.termsVersion), chevron = false)
+            }
             if (com.raviga.app.BuildConfig.DEBUG && vm.isDemo) {
                 Spacer(Modifier.height(24.dp))
                 Text("Demo controls", style = RaType.secondary, color = Ink.graphite, modifier = Modifier.padding(horizontal = Ra.gutter, vertical = 4.dp))
@@ -144,6 +149,21 @@ fun SettingsScreen(nav: NavController) {
 }
 
 /** Debug builds only: flip between the dev API and the in-app demo backend. Takes effect on next launch. */
+/** R-149, debug Settings only: where /config came from (never a silent fallback). */
+internal fun configSourceLine(source: com.raviga.app.data.repo.SessionRepository.ConfigSource, terms: String): String {
+    val SOURCE = com.raviga.app.data.repo.SessionRepository.ConfigSource
+    val from = when (source.from) {
+        SOURCE.SERVER -> "From the server" + (source.at?.let { " at " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.UK).format(java.util.Date(it)) } ?: "")
+        SOURCE.SAVED -> "This phone's saved copy"
+        else -> "The app's built-in defaults"
+    }
+    return listOfNotNull(
+        "$from, terms ${terms.ifBlank { "none" }}.",
+        source.dropped.takeIf { it.isNotEmpty() }?.let { "Unreadable, defaults used: ${it.joinToString()}." },
+        source.lastError?.let { "Last refresh failed: $it." },
+    ).joinToString(" ")
+}
+
 @Composable
 private fun DebugBackendRow(context: Context, isDemo: Boolean) {
     var useDemo by remember { mutableStateOf(DebugFlags.useDemoBackend(context)) }

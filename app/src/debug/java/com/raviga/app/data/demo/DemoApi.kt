@@ -436,7 +436,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun health() = HealthResponse(ok = true, version = "demo", stage = "demo")
 
-    override suspend fun config(): AppConfig = config
+    override suspend fun config(): kotlinx.serialization.json.JsonObject =
+        json.encodeToJsonElement(AppConfig.serializer(), config) as kotlinx.serialization.json.JsonObject
 
     override suspend fun registerDevice(body: RegisterDeviceRequest): RegisterDeviceResponse = readState {
         RegisterDeviceResponse(it.clientId, "dv_demo", it.accessToken, it.recoveryKey, isNewClient = it.projects.isEmpty() && it.ledger.isEmpty())
