@@ -22,9 +22,13 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
   null and canReport true; fixed for that project by republishing and `free-fixes-end`. Prod has no such project.
   Paid-run ledger: 1 change pricing + 1 report screening, est. $0.10. Backend fixed that dev window case in 5d19468
   (no backfill needed).
-- **KEEP OPEN: R-142 in progress (the PM, 2026-11-17; Testing Medium): contract v0.17.1, `project.freeFixesLine`** by
-  the report and change buttons (config line as the fallback). Tests, then one OnePlus look at a change demo after the
-  window; no Play upload.
+- **R-142 done (the PM, 2026-11-17; Testing Medium): contract v0.17.1 on main (c29401c, merged e8507db).** The line by
+  "Something's wrong" and "Request a change" is `project.freeFixesLine`, else the config line, else the built-in one.
+  Change brief items show as they come (no special case). Demo backend as the server. Tests debug 303, release 264.
+  OnePlus on dev, RA-EY2BXV (window over): a new change "Instructor photo on class cards" (2 dev credits): its brief
+  ends "Bugs in this change are fixed free until you approve it."; after team.py demo the same line shows by the
+  buttons. RA-0NA02Y still shows the usual line. RA-EY2BXV is left on that change's demo (delivered, not approved).
+  Paid-run ledger: 1 change pricing, est. $0.05. No Play upload.
 - The OnePlus is back from Mirakee QA (17 Nov); take the device lock before using it.
 
 - **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
