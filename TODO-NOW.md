@@ -13,7 +13,8 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
     scratchpad (raviga-10.aab). Checks: versionCode 10, versionName 1.0.0, min 26 / target 36, permissions as build 9;
     prod host in the dex, dev host not; RevenueCat key present (compared); no demo backend; signed with the upload key
     (jar verified); 64-bit .so LOAD segments at 16 KB; lint release 0 errors (24 warnings); no `!!`; unit tests debug
-    303, release 264 (same code as c29401c). Notes draft `docs/store/release-notes-build10.md` (497), with the PM.
+    303, release 264 (same code as c29401c). Notes `docs/store/release-notes-build10.md` (497): the PM says fine for
+    the internal draft as written; before any public use she approves them (the PM brings them at submit time).
   - **Waiting on the PM: "prod is live".** Then check prod /config (legal 2026-11-17, v0.17.1), upload with
     `tools/play_release.py upload <aab> --notes docs/store/release-notes-build10.md` (draft "10 internal test"; 9 stays
     completed), read the tracks back, report. Prod /config at 21:2x still had legal 2026-10-31 (before the deploy).
