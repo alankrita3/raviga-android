@@ -5,6 +5,11 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
 
 ## In flight
 
+- **KEEP OPEN: R-145 in progress (the PM, 2026-11-17; her "okay go ahead with the production deploy and store
+  builds"): the store build, versionCode 10, release, prod server.** Prepare now (bump, bundle, pre-upload checks,
+  release notes); upload to Play's internal track as a DRAFT only after the PM says "prod is live", build 9 stays live
+  for testers. No production track, rollout, listing/settings changes or review submit.
+
 - **R-140 done (the PM, 2026-11-17; Testing Full): contract v0.17.0 on main (46c8eab, merged 49ff9e6).** Tests debug
   302, release 263. No Play upload or store build (the PM asks her).
   1. "Something's wrong" follows `project.canReport` (null from an older server: the freeFixesUntil rule as before);
