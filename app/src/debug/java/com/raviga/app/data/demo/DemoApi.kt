@@ -126,8 +126,26 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         s.projects[id] ?: throw ApiException(ApiException.NOT_FOUND, 404, "No such project.")
 
     private fun put(s: State, project: Project, touch: Boolean = true): State {
-        val p = if (touch) project.copy(updatedAt = Time.nowIso()) else project
+        val p = withCanReport(if (touch) project.copy(updatedAt = Time.nowIso()) else project)
         return s.copy(projects = s.projects + (p.id to p))
+    }
+
+    /**
+     * v0.17.0 (R-137): reports are taken in delivered, accepted and live while the free-fix window is open (or not
+     * started), and on a paid change's demo until it's approved, even after the window.
+     */
+    private fun withCanReport(p: Project): Project {
+        val windowOpen = p.freeFixesUntil?.let { Time.parse(it)?.isAfter(Instant.now()) ?: false } ?: true
+        val open = p.status in setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE) &&
+            (windowOpen || changeDemoWaiting(p))
+        return if (p.canReport == open) p else p.copy(canReport = open)
+    }
+
+    /** A demo with a paid change in it, delivered since the last approval and not approved yet. */
+    private fun changeDemoWaiting(p: Project): Boolean {
+        if (p.status != ProjectStatus.DELIVERED) return false
+        val approved = p.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at ?: return false
+        return p.delivery?.changes.orEmpty().any { it.status == Change.DELIVERED && (it.deliveredAt ?: "") > approved }
     }
 
     private fun transition(s: State, project: Project, status: String, by: String): Pair<State, Project> {
@@ -147,7 +165,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
         }
         val withMilestones = p.copy(timeline = p.timeline?.copy(milestones = milestones(status, p)))
         val lined = withMilestones.copy(statusLine = statusLine(withMilestones))
-        return put(s, lined).copy(statusChangedAt = s.statusChangedAt + (p.id to now)) to lined
+        val next = put(s, lined)
+        // The stored copy (canReport worked out, v0.17.0) is what the call answers with.
+        return next.copy(statusChangedAt = s.statusChangedAt + (p.id to now)) to next.projects.getValue(p.id)
     }
 
     /** Contract v0.10.0 section 5: the fixed line per status, credits and dates filled in. */
@@ -498,7 +518,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     override suspend fun project(id: String): Project = mutate { s ->
         val (next, p) = advance(s, requireProject(s, id))
-        next to p
+        // The window can close between writes: canReport is worked out again on every read.
+        next to withCanReport(p)
     }
 
     override suspend fun cancelProject(id: String, body: Empty): Project = mutate { s ->
@@ -815,7 +836,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             throw ApiException(ApiException.INVALID_STATE, 409, "Reports are for a delivered project.", details = buildJsonObject { put("status", p.status) })
         }
         val until = p.freeFixesUntil
-        if (until != null && Time.parse(until)?.isBefore(Instant.now()) == true) throw ApiException(
+        // v0.17.0 (R-137): a paid change's demo takes reports after the window too, until it's approved.
+        if (until != null && Time.parse(until)?.isBefore(Instant.now()) == true && !changeDemoWaiting(p)) throw ApiException(
             ApiException.FREE_FIXES_ENDED, 409,
             "Free fixes ended on ${Time.shortDate(until)}, ${config.report.freeFixDays} days after launch. Request a change and we'll price it.",
             details = buildJsonObject { put("freeFixesUntil", until); put("status", p.status) },
@@ -1097,7 +1119,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
             limits = LimitsConfig(),
             ai = AiConfig(
                 // One provider, the Claude API; no promise of human review of every project (her attorney, 2026-11-04).
-                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and builds submitted projects with automated quality checks and developer oversight when needed; deleted within 30 days, longer only if flagged for abuse; never trains on it)"),
+                // v0.17.0 (R-137): no retention period here; the privacy policy has it.
+                listOf("Anthropic (Claude writes, prices and checks briefs from text only, and builds submitted projects with automated quality checks and developer oversight when needed; never trains on it)"),
             ),
             analytics = AnalyticsConfig(
                 listOf("Google Analytics for Firebase (counts how the app is used, such as which steps you reach; never your project's content, never for ads)"),
@@ -1121,9 +1144,10 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 companyName = "Raviga Apps Private Limited",
                 // The legal site on Raviga's domain (dev /config since backend 5fe84e0); demo mode opens the same pages.
                 termsUrl = "https://legal.ravigaapps.com/terms-of-use",
-                termsVersion = "2026-11-04",
+                // v0.17.0 (R-137, her legal round): everyone accepts again.
+                termsVersion = "2026-11-17",
                 privacyUrl = "https://legal.ravigaapps.com/privacy-policy",
-                privacyVersion = "2026-11-04",
+                privacyVersion = "2026-11-17",
                 // One public address (her yes, backend a934b4c, 2026-11-04).
                 grievance = Grievance("support@ravigaapps.com", 15),
                 supportEmail = "support@ravigaapps.com",

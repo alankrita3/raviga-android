@@ -176,6 +176,18 @@ class WalkthroughBundleTest {
         assertFalse("the server said it ended", state(ProjectStatus.LIVE, iso(now + 60_000)).copy(freeFixesEnded = true).freeFixesOpen)
     }
 
+    /** v0.17.0 (R-140): the server's canReport decides; the date only matters on a server that doesn't send it. */
+    @Test fun somethingsWrongFollowsCanReport() {
+        fun with(canReport: Boolean?, status: String, until: String?) =
+            state(status, until).let { it.copy(project = it.project!!.copy(canReport = canReport)) }
+        assertTrue("a paid change's demo after the window", with(true, ProjectStatus.DELIVERED, iso(now - 60_000)).freeFixesOpen)
+        assertFalse("the server says no, inside the window", with(false, ProjectStatus.LIVE, iso(now + 60_000)).freeFixesOpen)
+        assertFalse("the demo, the server says no", with(false, ProjectStatus.DELIVERED, null).freeFixesOpen)
+        assertFalse("after a 409 free_fixes_ended", with(true, ProjectStatus.DELIVERED, iso(now - 60_000)).copy(freeFixesEnded = true).freeFixesOpen)
+        assertFalse("an older server: the date still rules", with(null, ProjectStatus.LIVE, iso(now - 60_000)).freeFixesOpen)
+        assertTrue("an older server, inside the window", with(null, ProjectStatus.LIVE, iso(now + 60_000)).freeFixesOpen)
+    }
+
     @Test fun theChangeSheetPointsToSomethingsWrongOnlyInTheWindow() {
         assertEquals(DeliveryCopy.CHANGE_LINE, DeliveryCopy.changeLine(freeFixesOpen = true))
         assertEquals("Describe what's new or different.", DeliveryCopy.changeLine(freeFixesOpen = false))

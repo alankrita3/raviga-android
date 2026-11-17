@@ -15,6 +15,7 @@ import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -165,10 +166,16 @@ class DtoDecodingTest {
         assertEquals("2026-10-31", config.legal.privacyVersion)
     }
 
-    /** Contract v0.10.1 (dev /config 2026-11-04): the demo mirrors dev's current config, one public address included. */
+    /**
+     * The demo mirrors dev's current config, one public address included: contract v0.17.0 (dev /config 2026-11-17,
+     * R-140), with the 2026-11-17 legal versions and an AI line that names no retention period (was v0.10.1's).
+     */
     @Test
     fun `the demo matches dev's current config`() {
-        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v0101.json")!!)
+        val config = json.decodeFromString(AppConfig.serializer(), fixture("config-v0170.json")!!)
+        assertEquals("2026-11-17", config.legal.termsVersion)
+        assertEquals("2026-11-17", config.legal.privacyVersion)
+        assertFalse(config.ai.providers.single().contains("days"))
         val demo = com.raviga.app.data.demo.DemoApi.demoConfig()
         assertEquals(config.ai.providers, demo.ai.providers)
         // The URLs differ on purpose: dev serves its draft pages from its own site; the demo opens the public legal domain.
@@ -309,6 +316,16 @@ class DtoDecodingTest {
         assertEquals(25.0, me.credits.balance, 0.0)
         assertEquals(false, me.consent.aiGranted)
         assertEquals("an older server's githubUsername is ignored (v0.11.0)", null, me.deliveryTargets.aws)
+    }
+
+    /** Contract v0.17.0 (R-140): canReport decodes; a server before it leaves it null (the app falls back to the date). */
+    @Test
+    fun `canReport decodes, and is null from an older server`() {
+        val now = json.decodeFromString(Project.serializer(),
+            """{"id":"pr_1","status":"delivered","freeFixesUntil":"2026-11-10T00:00:00Z","canReport":true}""")
+        assertEquals(true, now.canReport)
+        val older = json.decodeFromString(Project.serializer(), """{"id":"pr_1","status":"live","freeFixesUntil":null}""")
+        assertNull(older.canReport)
     }
 
     /** Contract v0.10.0 (R-103): statusLine, payment, reports, the new milestones; no comments, revisions or notes. */

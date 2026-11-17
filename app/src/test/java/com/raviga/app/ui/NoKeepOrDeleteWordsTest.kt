@@ -51,6 +51,11 @@ class NoKeepOrDeleteWordsTest {
             "we keep", "we delete", "we deleted", "keep your brief", "keeps your brief", "brief is deleted", "deleted this brief",
             "delete it from our servers", "don't keep", "not stored by us", "while we hold", "deleted within", "never on our servers",
             "servers don't keep", "deleted its copy", "retain",
+            // R-140 (contract v0.17.0, her rule again): nothing deleted at approval, no "keep your own copy", no
+            // retention period from the AI line. Delete my data's confirm and the phone-only "Your copy, on this
+            // phone." (R-121, her words) stay.
+            "deleted from our servers when", "deleted from our servers once", "deleted at approval", "delete it when you approve",
+            "deleted when you approve", "keep your own copy", "keep your copy", "keep a copy", "save a copy", "30 days",
         )
     }
 }

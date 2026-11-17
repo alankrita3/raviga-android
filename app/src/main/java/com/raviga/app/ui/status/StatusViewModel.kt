@@ -60,13 +60,15 @@ class StatusViewModel(
         val freeFixesEndedMessage: String? = null,
     ) {
         /**
-         * R-113 (her decision 5b; contract v0.13.0): "Something's wrong" is offered from the demo until 7 days after
-         * launch: in delivered, accepted and live while the server's `freeFixesUntil` is missing or still ahead. The app
-         * never works the date out itself.
+         * "Something's wrong" is offered while the server takes reports. v0.17.0 (R-140): from `project.canReport`,
+         * which also stays true on a paid change's demo after the window, until that demo is approved. A server before
+         * v0.17.0 doesn't send it: then R-113's rule (her decision 5b; v0.13.0), in delivered, accepted and live while
+         * `freeFixesUntil` is missing or still ahead. The app never works the date out itself. Hidden after a
+         * `409 free_fixes_ended` until the server's project says otherwise.
          */
         val freeFixesOpen: Boolean
-            get() = project?.status in REPORT_STATUSES && !freeFixesEnded &&
-                (project?.freeFixesUntil?.let { Time.parse(it)?.toEpochMilli()?.let { end -> end > clock } ?: false } ?: true)
+            get() = !freeFixesEnded && (project?.canReport ?: (project?.status in REPORT_STATUSES &&
+                (project?.freeFixesUntil?.let { Time.parse(it)?.toEpochMilli()?.let { end -> end > clock } ?: false } ?: true)))
         /** Live in a store (the free-fix clock has started): the tile reads "Your app is live". */
         val launched: Boolean get() = project?.status == ProjectStatus.LIVE || project?.freeFixesUntil != null
         /** A fix or a change approved after the first approval: "Approve this version?" (the PM's call 2). */
@@ -106,7 +108,13 @@ class StatusViewModel(
     val state: StateFlow<State> = _state.asStateFlow()
 
     init {
-        viewModelScope.launch { container.projects.project(projectId).collect { p -> _state.update { it.copy(project = p) } } }
+        viewModelScope.launch {
+            container.projects.project(projectId).collect { p ->
+                // R-140: after a 409 free_fixes_ended the button stays hidden until the server's project says reports
+                // are closed (the refresh); from then on canReport alone decides, so a change's demo shows it again.
+                _state.update { it.copy(project = p, freeFixesEnded = it.freeFixesEnded && p?.canReport != false) }
+            }
+        }
         viewModelScope.launch { container.session.config.collect { c -> _state.update { it.copy(config = c) } } }
         viewModelScope.launch {
             container.credits.credits.collect { c -> if (c != null) _state.update { it.copy(balance = c.balance) } }
