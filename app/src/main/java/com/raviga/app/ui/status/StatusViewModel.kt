@@ -115,6 +115,13 @@ class StatusViewModel(
     val state: StateFlow<State> = _state.asStateFlow()
 
     init {
+        // R-149: the updated terms were agreed over this screen; its line saying to agree goes (the action stays offered).
+        viewModelScope.launch {
+            container.session.legalAccepted.collect { _state.update { it.copy(error = com.raviga.app.ui.AfterTerms.clearedLine(it.error)) } }
+        }
+    }
+
+    init {
         viewModelScope.launch {
             container.projects.project(projectId).collect { p ->
                 // R-140: after a 409 free_fixes_ended the button stays hidden until the server's project says reports

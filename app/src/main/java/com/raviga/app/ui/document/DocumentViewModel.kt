@@ -79,6 +79,13 @@ class DocumentViewModel(private val container: AppContainer, val id: String) : V
     private val serverId = MutableStateFlow(id.takeIf { it.startsWith("pr_") })
 
     init {
+        // R-149: the updated terms were agreed over this screen; its line saying to agree goes (the action stays offered).
+        viewModelScope.launch {
+            container.session.legalAccepted.collect { _state.update { it.copy(error = com.raviga.app.ui.AfterTerms.clearedLine(it.error)) } }
+        }
+    }
+
+    init {
         val drafts = container.drafts
         viewModelScope.launch {
             drafts.draft(id).collect { d ->

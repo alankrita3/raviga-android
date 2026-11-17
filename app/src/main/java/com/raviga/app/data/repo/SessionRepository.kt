@@ -284,7 +284,12 @@ class SessionRepository(
         prefs.setAiAccepted(legal.privacyVersion, allowed = true)
         guard.agreed = true
         updateMe { it.copy(consent = consent) }
+        _legalAccepted.tryEmit(Unit)
     }
+
+    /** R-149: the terms were agreed again (the sheet's tap went through); refused screens carry on (AfterTerms). */
+    private val _legalAccepted = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val legalAccepted: kotlinx.coroutines.flow.SharedFlow<Unit> = _legalAccepted
 
     /** v0.9: usage analytics. Never gates anything; AnalyticsGate follows the result. */
     suspend fun setAnalytics(granted: Boolean): ConsentState {
