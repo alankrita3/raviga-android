@@ -5,11 +5,23 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
 
 ## In flight
 
-- **KEEP OPEN: R-140 in progress (the PM, 2026-11-17; Testing Full): contract v0.17.0 on main.** (1) the report
-  button from `project.canReport`, 409 free_fixes_ended handling kept; (2) remove copy saying the brief or reports are
-  deleted at approval, or "keep your own copy"; (3) consent shows the server's ai.providers, no local retention period;
-  (4) legal versions 2026-11-17 on dev: the re-accept shows once and works. OnePlus check of 1 and 4; no Play upload.
-  The OnePlus is back from Mirakee QA (17 Nov); take the device lock before using it.
+- **R-140 done (the PM, 2026-11-17; Testing Full): contract v0.17.0 on main (46c8eab, merged 49ff9e6).** Tests debug
+  302, release 263. No Play upload or store build (the PM asks her).
+  1. "Something's wrong" follows `project.canReport` (null from an older server: the freeFixesUntil rule as before);
+     409 free_fixes_ended handling kept, the button then hidden until the server's project says reports are closed.
+     OnePlus on dev: RA-0NA02Y (approved, window not started) shown; RA-EY2BXV (live, window over) hidden; a paid
+     change there ("Waitlist for full classes", 4 dev credits) delivered by team.py: shown after the window, a report
+     accepted (200, "Being fixed"), fix delivered, approved; after `team.py free-fixes-end`, live and hidden.
+  2. No app line said the brief or reports are deleted at approval or asked for an own copy (all removed by R-121,
+     11-12); NoKeepOrDeleteWordsTest now bans those phrases and "30 days" too.
+  3. The consent sheet shows her fixed AI text (R-107), not `ai.providers`; none of it names a retention period. Demo
+     backend: the AI line and the 2026-11-17 legal versions match dev's /config (fixture config-v0170.json).
+  4. OnePlus on dev: "We've updated our terms" once; Allow AI and continue: PUT /me/consent 200; not asked again after
+     a restart.
+  Found on dev (told backend): RA-EY2BXV predates firstPublishedAt, so approving the change put its window back to
+  null and canReport true; fixed for that project by republishing and `free-fixes-end`. Prod has no such project.
+  Paid-run ledger: 1 change pricing + 1 report screening, est. $0.10.
+- The OnePlus is back from Mirakee QA (17 Nov); take the device lock before using it.
 
 - **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
   internal track.** versionCode 9 (6cbc6bf, merged e094a4c; sha256 38df8ab6298b; dev server like build 8; release
