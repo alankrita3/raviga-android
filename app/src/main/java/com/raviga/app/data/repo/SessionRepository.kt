@@ -25,6 +25,9 @@ import com.raviga.app.data.api.Me
 import com.raviga.app.data.api.PushTokenRequest
 import com.raviga.app.data.api.RecoverDeviceRequest
 import com.raviga.app.data.api.apiCall
+import com.raviga.app.data.api.ConfigDecoder
+import com.raviga.app.data.api.LegalConfig
+import android.util.Log
 import com.raviga.app.data.local.CacheStore
 import com.raviga.app.data.local.PrefsStore
 import com.raviga.app.data.local.SessionStore
@@ -47,6 +50,30 @@ internal fun consentBody(legal: com.raviga.app.data.api.LegalConfig, ai: Boolean
     termsVersion = legal.termsVersion, privacyVersion = legal.privacyVersion,
     aiProcessing = true.takeIf { ai }, analytics = analytics,
 )
+
+/**
+ * R-149 (iOS found it; Android had it too): the terms can change while the app is open, so the versions the person
+ * agrees to come from a fresh /config ([fresh], falling back to [cached] when offline). If the server still refuses
+ * them (`400 invalid_argument`: not the current version), /config is read once more and, when its versions moved, the
+ * same agreement is sent again with them. Anything else is the caller's error to show. Returns the versions agreed.
+ */
+internal suspend fun <T> agreeToCurrentVersions(
+    cached: LegalConfig,
+    fresh: suspend () -> LegalConfig,
+    put: suspend (LegalConfig) -> T,
+): Pair<LegalConfig, T> {
+    val first = runCatching { fresh() }.getOrNull()?.takeIf { it.termsVersion.isNotBlank() } ?: cached
+    return try {
+        first to put(first)
+    } catch (e: ApiException) {
+        if (e.code != ApiException.INVALID_ARGUMENT) throw e
+        val again = runCatching { fresh() }.getOrNull() ?: throw e
+        if (again.termsVersion == first.termsVersion && again.privacyVersion == first.privacyVersion) throw e
+        again to put(again)
+    }
+}
+
+private const val TAG = "RavigaSession"
 
 class SessionRepository(
     private val api: RavigaApi,
@@ -94,7 +121,10 @@ class SessionRepository(
     }
 
     suspend fun warmFromCache() {
-        cache.read(CacheStore.CONFIG, AppConfig.serializer())?.let { _config.value = it }
+        cache.read(CacheStore.CONFIG, AppConfig.serializer())?.let {
+            _config.value = it
+            _configSource.value = ConfigSource(ConfigSource.SAVED)
+        }
         cache.read(CacheStore.ME, Me.serializer())?.let { _me.value = it }
         // Installs from before R-056 agreed on the server and kept the version; they never see the first consent again.
         val p = prefs.current()
@@ -126,11 +156,45 @@ class SessionRepository(
     }
 
     suspend fun refreshConfig(): AppConfig {
-        val config = apiCall(json) { api.config() }
+        val raw = try {
+            apiCall(json) { api.config() }
+        } catch (e: ApiException) {
+            // The phone's copy (or the built-in one) stands; said, never silent (R-149).
+            _configSource.value = _configSource.value.copy(lastError = e.code)
+            Log.w(TAG, "GET /config failed (${e.code}); still on the ${_configSource.value.from} config")
+            throw e
+        }
+        val (config, dropped) = ConfigDecoder.decode(json, raw)
         _config.value = config
+        _configSource.value = ConfigSource(ConfigSource.SERVER, System.currentTimeMillis(), dropped, lastError = null)
+        if (dropped.isEmpty()) {
+            Log.i(TAG, "config from the server: terms ${config.legal.termsVersion}, ${config.credits.packs.size} packs")
+        } else {
+            Log.w(TAG, "config from the server, but these parts were unreadable and use the app's defaults: $dropped")
+        }
         cache.write(CacheStore.CONFIG, AppConfig.serializer(), config)
         return config
     }
+
+    /**
+     * R-149: where [config] came from, for logs and debug Settings: the server (and when, and any parts it couldn't
+     * read), this phone's saved copy, or the app's built-in defaults; and the last refresh's error, if it failed.
+     */
+    data class ConfigSource(
+        val from: String = BUILT_IN,
+        val at: Long? = null,
+        val dropped: List<String> = emptyList(),
+        val lastError: String? = null,
+    ) {
+        companion object {
+            const val SERVER = "server"
+            const val SAVED = "saved"
+            const val BUILT_IN = "built-in"
+        }
+    }
+
+    private val _configSource = MutableStateFlow(ConfigSource())
+    val configSource: StateFlow<ConfigSource> = _configSource.asStateFlow()
 
     suspend fun refreshMe(): Me {
         val me = apiCall(json) { api.me() }
@@ -165,6 +229,9 @@ class SessionRepository(
      * made.
      */
     suspend fun agree(analytics: Boolean, restoring: Boolean) {
+        // R-149: the versions agreed are the server's now (the Welcome pages may have been open a while); offline, the
+        // copy the sheet showed.
+        runCatching { refreshConfig() }
         if (_config.value.legal.termsVersion.isBlank()) refreshConfig()
         val legal = _config.value.legal
         prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
@@ -208,8 +275,10 @@ class SessionRepository(
     suspend fun acceptLegal(analytics: Boolean? = null) {
         // After a deletion the device starts over without an identity.
         if (!sessionStore.isRegistered) ensureRegistered()
-        val legal = _config.value.legal
-        val consent = apiCall(json) { api.putConsent(consentBody(ai = true, analytics = analytics)) }
+        // R-149: the versions on the server now, not the ones cached when the app opened.
+        val (legal, consent) = agreeToCurrentVersions(_config.value.legal, fresh = { refreshConfig().legal }) { current ->
+            apiCall(json) { api.putConsent(consentBody(current, ai = true, analytics = analytics)) }
+        }
         prefs.setTermsAccepted(legal.termsVersion)
         prefs.setAgreed(legal.termsVersion, legal.privacyVersion)
         prefs.setAiAccepted(legal.privacyVersion, allowed = true)

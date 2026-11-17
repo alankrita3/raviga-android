@@ -21,8 +21,9 @@ interface RavigaApi {
     @GET("health")
     suspend fun health(): HealthResponse
 
+    /** R-149: the raw object; [ConfigDecoder] reads it part by part, so one bad field can't drop the rest. */
     @GET("config")
-    suspend fun config(): AppConfig
+    suspend fun config(): kotlinx.serialization.json.JsonObject
 
     // Identity
     @POST("devices/register")

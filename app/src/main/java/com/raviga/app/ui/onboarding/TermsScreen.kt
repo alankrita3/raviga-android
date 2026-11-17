@@ -72,6 +72,9 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
     // Contract v0.9: usage analytics is its own choice, off until the client turns it on.
     val analyticsGranted = me?.consent?.analyticsGranted == true
     var analyticsOn by remember(analyticsGranted) { mutableStateOf(analyticsGranted) }
+    // R-149: the terms may have changed while the app was open (a 403 consent_required brought this sheet up): read
+    // /config again so the heading, the links and the versions agreed to are the server's now.
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { container.session.refreshConfig() } }
 
     ScreenScaffold(
         bottomBar = {
@@ -116,8 +119,10 @@ fun TermsScreen(nav: NavController, next: String? = null, aiReask: Boolean = fal
                     style = RaType.caption, color = Ink.ash,
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
-                // On the first sheet and the AI-call re-ask; the updated-terms screen at launch has none (as iOS).
-                if ((next != null || aiReask) && nav.previousBackStackEntry != null) {
+                // On the first sheet, the AI-call re-ask and (R-149, as iOS) the updated terms shown over a screen while
+                // the app is open; the updated-terms screen at launch has nothing under it, so none (as iOS).
+                val under = nav.previousBackStackEntry?.destination?.route
+                if ((next != null || aiReask || (updating && under != Routes.WELCOME)) && under != null) {
                     TertiaryButton("Not now", enabled = !busy, onClick = { nav.popBackStack() })
                 }
             }
