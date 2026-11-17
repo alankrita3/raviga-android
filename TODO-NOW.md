@@ -5,8 +5,11 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
 
 ## In flight
 
-- **Nothing in flight (2026-11-17).** The OnePlus is back from Mirakee QA (the PM, 17 Nov); take the device lock
-  before using it, as always. Next work comes from the PM.
+- **KEEP OPEN: R-140 in progress (the PM, 2026-11-17; Testing Full): contract v0.17.0 on main.** (1) the report
+  button from `project.canReport`, 409 free_fixes_ended handling kept; (2) remove copy saying the brief or reports are
+  deleted at approval, or "keep your own copy"; (3) consent shows the server's ai.providers, no local retention period;
+  (4) legal versions 2026-11-17 on dev: the re-accept shows once and works. OnePlus check of 1 and 4; no Play upload.
+  The OnePlus is back from Mirakee QA (17 Nov); take the device lock before using it.
 
 - **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
   internal track.** versionCode 9 (6cbc6bf, merged e094a4c; sha256 38df8ab6298b; dev server like build 8; release
