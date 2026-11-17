@@ -9,6 +9,14 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
   builds"): the store build, versionCode 10, release, prod server.** Prepare now (bump, bundle, pre-upload checks,
   release notes); upload to Play's internal track as a DRAFT only after the PM says "prod is live", build 9 stays live
   for testers. No production track, rollout, listing/settings changes or review submit.
+  - **Ready to upload (main 2011f0b; bump 3458511).** Bundle sha256 104c479471a6, 13.7 MB, a copy in the session
+    scratchpad (raviga-10.aab). Checks: versionCode 10, versionName 1.0.0, min 26 / target 36, permissions as build 9;
+    prod host in the dex, dev host not; RevenueCat key present (compared); no demo backend; signed with the upload key
+    (jar verified); 64-bit .so LOAD segments at 16 KB; lint release 0 errors (24 warnings); no `!!`; unit tests debug
+    303, release 264 (same code as c29401c). Notes draft `docs/store/release-notes-build10.md` (497), with the PM.
+  - **Waiting on the PM: "prod is live".** Then check prod /config (legal 2026-11-17, v0.17.1), upload with
+    `tools/play_release.py upload <aab> --notes docs/store/release-notes-build10.md` (draft "10 internal test"; 9 stays
+    completed), read the tracks back, report. Prod /config at 21:2x still had legal 2026-10-31 (before the deploy).
 
 - **R-140 done (the PM, 2026-11-17; Testing Full): contract v0.17.0 on main (46c8eab, merged 49ff9e6).** Tests debug
   302, release 263. No Play upload or store build (the PM asks her).
