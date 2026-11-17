@@ -188,6 +188,17 @@ class WalkthroughBundleTest {
         assertTrue("an older server, inside the window", with(null, ProjectStatus.LIVE, iso(now + 60_000)).freeFixesOpen)
     }
 
+    /** v0.17.1 (R-142): the line by the buttons is the project's own, then the config's, then the built-in one. */
+    @Test fun theFreeFixLineByTheButtonsIsTheProjects() {
+        val change = "Bugs in this change are fixed free until you approve it."
+        val base = state(ProjectStatus.DELIVERED)
+        assertEquals(change, base.copy(project = base.project!!.copy(freeFixesLine = change)).freeFixesLine)
+        assertEquals("an older server: the config line", ReportConfig.FREE_FIXES_LINE, base.freeFixesLine)
+        val custom = base.copy(config = base.config.copy(report = ReportConfig(freeFixesLine = "Config line.")))
+        assertEquals("Config line.", custom.freeFixesLine)
+        assertEquals("a blank one counts as none", "Config line.", custom.copy(project = custom.project!!.copy(freeFixesLine = " ")).freeFixesLine)
+    }
+
     @Test fun theChangeSheetPointsToSomethingsWrongOnlyInTheWindow() {
         assertEquals(DeliveryCopy.CHANGE_LINE, DeliveryCopy.changeLine(freeFixesOpen = true))
         assertEquals("Describe what's new or different.", DeliveryCopy.changeLine(freeFixesOpen = false))

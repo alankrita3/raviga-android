@@ -122,10 +122,11 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
             val status = project?.status ?: return@ScreenScaffold
             if (status == ProjectStatus.DELIVERED || state.freeFixesOpen || state.canRequestChange) BottomBar {
                 InlineNotice(state.error.takeIf { !reportSheet }, Modifier.padding(bottom = 8.dp))
-                // R-113 (the PM's call 1): the free-fix rule once, by the buttons, while fixes are free.
+                // R-113 (the PM's call 1): the free-fix rule once, by the buttons, while fixes are free. R-142: the
+                // project's own line (a paid change's after the window).
                 if (state.freeFixesOpen) {
                     Text(
-                        state.config.report.freeFixesLine.ifBlank { com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE },
+                        state.freeFixesLine,
                         style = RaType.caption, color = Ink.graphite,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),

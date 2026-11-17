@@ -125,15 +125,21 @@ class DemoLifecycleTest {
         // v0.17.0 (R-137, R-140): a paid change's demo takes reports after the window, until that demo is approved.
         var changeJob = started.job
         while (changeJob.status != "done") { delay(300); changeJob = api.job(changeJob.jobId) }
+        val configLine = DemoApi.demoConfig().report.freeFixesLine
+        assertEquals("v0.17.1: the window is over, so the change brief ends with the change's line",
+            DemoApi.CHANGE_FIXES_LINE, api.project(p.id).delivery?.openChange?.brief?.items?.last())
+        assertEquals("priced, not paid: the usual line", configLine, api.project(p.id).freeFixesLine)
         api.demoAddCredits(5)
         p = api.payChange(p.id, change.id, "change-1", com.raviga.app.data.api.Empty())
         assertEquals(ProjectStatus.BUILDING, p.status)
         assertEquals("not while it's built", false, p.canReport)
+        assertEquals("paid: the change's line", DemoApi.CHANGE_FIXES_LINE, p.freeFixesLine)
         api.demoAdvanceLatest()
         p = api.project(p.id)
         assertEquals(ProjectStatus.DELIVERED, p.status)
         assertTrue("the window is over", Instant.parse(p.freeFixesUntil!!).isBefore(Instant.now()))
         assertEquals("the change's demo takes reports", true, p.canReport)
+        assertEquals(DemoApi.CHANGE_FIXES_LINE, p.freeFixesLine)
         p = api.report(p.id, ReportRequest("bug", "The loyalty card doesn't add a stamp."))
         assertEquals("fixed free", ProjectStatus.REVISION_REQUESTED, p.status)
         api.demoAdvanceLatest()
@@ -143,6 +149,7 @@ class DemoLifecycleTest {
         p = api.accept(p.id)
         assertEquals(ProjectStatus.ACCEPTED, p.status)
         assertEquals("approved: fixes are change requests again", false, p.canReport)
+        assertEquals("approved: the usual line again", configLine, p.freeFixesLine)
         try {
             api.report(p.id, ReportRequest("bug", "Another one."))
             fail("expected 409 free_fixes_ended")

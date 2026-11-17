@@ -135,18 +135,28 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
      * started), and on a paid change's demo until it's approved, even after the window.
      */
     private fun withCanReport(p: Project): Project {
-        val windowOpen = p.freeFixesUntil?.let { Time.parse(it)?.isAfter(Instant.now()) ?: false } ?: true
+        val windowOpen = !windowOver(p)
         val open = p.status in setOf(ProjectStatus.DELIVERED, ProjectStatus.ACCEPTED, ProjectStatus.LIVE) &&
             (windowOpen || changeDemoWaiting(p))
-        return if (p.canReport == open) p else p.copy(canReport = open)
+        // v0.17.1 (R-141): after the window, from a change's payment until its approval, the change's own line.
+        val line = if (!windowOpen && changeUnapproved(p)) CHANGE_FIXES_LINE else config.report.freeFixesLine
+        return if (p.canReport == open && p.freeFixesLine == line) p else p.copy(canReport = open, freeFixesLine = line)
+    }
+
+    private fun windowOver(p: Project): Boolean =
+        p.freeFixesUntil?.let { Time.parse(it)?.isAfter(Instant.now()) == false } ?: false
+
+    /** A paid change not approved yet: paid (being built), or in a demo delivered since the last approval. */
+    private fun changeUnapproved(p: Project): Boolean {
+        val approved = p.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at ?: ""
+        return p.delivery?.changes.orEmpty().any {
+            it.status == Change.PAID || it.status == Change.DELIVERED && (it.deliveredAt ?: "") > approved
+        }
     }
 
     /** A demo with a paid change in it, delivered since the last approval and not approved yet. */
-    private fun changeDemoWaiting(p: Project): Boolean {
-        if (p.status != ProjectStatus.DELIVERED) return false
-        val approved = p.history.lastOrNull { it.status == ProjectStatus.ACCEPTED }?.at ?: return false
-        return p.delivery?.changes.orEmpty().any { it.status == Change.DELIVERED && (it.deliveredAt ?: "") > approved }
-    }
+    private fun changeDemoWaiting(p: Project): Boolean =
+        p.status == ProjectStatus.DELIVERED && p.history.any { it.status == ProjectStatus.ACCEPTED } && changeUnapproved(p)
 
     private fun transition(s: State, project: Project, status: String, by: String): Pair<State, Project> {
         val now = Time.nowIso()
@@ -874,7 +884,9 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
                 val quoted = change.copy(
                     status = Change.QUOTED,
                     statusLine = "Change requested",
-                    brief = ChangeBrief(title = words.replaceFirstChar { it.uppercase() }, items = listOf(text, config.report.freeFixesLine)),
+                    // v0.17.1 (R-141): after the window the brief ends with the change's own free-fix line.
+                    brief = ChangeBrief(title = words.replaceFirstChar { it.uppercase() },
+                        items = listOf(text, if (windowOver(p)) CHANGE_FIXES_LINE else config.report.freeFixesLine)),
                     quote = ChangeQuote(credits = 2.0, usd = 2 * config.credits.creditValueUsd, estimatedWorkingDays = 3,
                         expiresAt = Instant.now().plusSeconds(config.quote.validDays * 86_400L).toString()),
                 )
@@ -1080,6 +1092,8 @@ class DemoApi(private val cache: CacheStore, private val json: Json) : RavigaApi
 
     companion object {
         private const val STATE = "demo_state"
+        /** v0.17.1 (R-141): the server's line for a paid change after the free-fix window, until it's approved. */
+        const val CHANGE_FIXES_LINE = "Bugs in this change are fixed free until you approve it."
         /** Demo exports have no server part; [com.raviga.app.data.files.ExportBuilder] adds only the drafts. */
         const val DEMO_EXPORT_URL = "demo:export"
 

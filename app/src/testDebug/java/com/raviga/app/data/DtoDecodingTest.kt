@@ -326,6 +326,11 @@ class DtoDecodingTest {
         assertEquals(true, now.canReport)
         val older = json.decodeFromString(Project.serializer(), """{"id":"pr_1","status":"live","freeFixesUntil":null}""")
         assertNull(older.canReport)
+        // v0.17.1 (R-142): the project's own free-fix line; null from an older server.
+        val line = json.decodeFromString(Project.serializer(),
+            """{"id":"pr_1","status":"delivered","canReport":true,"freeFixesLine":"Bugs in this change are fixed free until you approve it."}""")
+        assertEquals("Bugs in this change are fixed free until you approve it.", line.freeFixesLine)
+        assertNull(older.freeFixesLine)
     }
 
     /** Contract v0.10.0 (R-103): statusLine, payment, reports, the new milestones; no comments, revisions or notes. */
