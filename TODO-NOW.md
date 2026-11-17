@@ -22,8 +22,9 @@ The PM reads this file if the session has closed. Updated 2026-11-17.
   null and canReport true; fixed for that project by republishing and `free-fixes-end`. Prod has no such project.
   Paid-run ledger: 1 change pricing + 1 report screening, est. $0.10. Backend fixed that dev window case in 5d19468
   (no backfill needed).
-- **Coming (backend, 11-17): R-141, contract v0.17.1, `project.freeFixesLine`** for the line by the report and change
-  buttons. Waits for the PM's announcement; nothing started.
+- **KEEP OPEN: R-142 in progress (the PM, 2026-11-17; Testing Medium): contract v0.17.1, `project.freeFixesLine`** by
+  the report and change buttons (config line as the fallback). Tests, then one OnePlus look at a change demo after the
+  window; no Play upload.
 - The OnePlus is back from Mirakee QA (17 Nov); take the device lock before using it.
 
 - **R-132 done (2026-11-14; her yes 11-13 via the PM, and "Yes, both" in this window): build 9 live on Play's
