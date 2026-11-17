@@ -69,6 +69,13 @@ class StatusViewModel(
         val freeFixesOpen: Boolean
             get() = !freeFixesEnded && (project?.canReport ?: (project?.status in REPORT_STATUSES &&
                 (project?.freeFixesUntil?.let { Time.parse(it)?.toEpochMilli()?.let { end -> end > clock } ?: false } ?: true)))
+        /**
+         * The free-fix line by the buttons (R-113's call 1): the project's own line (v0.17.1, R-142; a paid change's line
+         * after the window), else the config's, else the built-in copy of it.
+         */
+        val freeFixesLine: String
+            get() = project?.freeFixesLine?.takeIf { it.isNotBlank() }
+                ?: config.report.freeFixesLine.ifBlank { com.raviga.app.data.api.ReportConfig.FREE_FIXES_LINE }
         /** Live in a store (the free-fix clock has started): the tile reads "Your app is live". */
         val launched: Boolean get() = project?.status == ProjectStatus.LIVE || project?.freeFixesUntil != null
         /** A fix or a change approved after the first approval: "Approve this version?" (the PM's call 2). */

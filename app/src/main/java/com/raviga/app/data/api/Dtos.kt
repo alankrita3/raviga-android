@@ -467,6 +467,12 @@ data class Project(
      * a server before v0.17.0, where the app falls back to [freeFixesUntil].
      */
     val canReport: Boolean? = null,
+    /**
+     * v0.17.1 (R-141): the free-fix line by this project's report and change buttons. After the window, from a change's
+     * payment until its approval, "Bugs in this change are fixed free until you approve it."; otherwise the same as
+     * `config.report.freeFixesLine`. Null from an older server: the config line.
+     */
+    val freeFixesLine: String? = null,
     /** v0.10.0: null until paid. */
     val payment: Payment? = null,
     /** When the project was accepted or declined. */
