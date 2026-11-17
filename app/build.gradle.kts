@@ -47,8 +47,9 @@ android {
         minSdk = 26
         targetSdk = 36
         // Build 8 (the PM, 2026-11-03): versionCode 8, matching iOS's build numbers, then +1 per upload.
-        // Build 9 (R-132, her yes 2026-11-13): an internal test build on the dev server; the store build will be 10.
-        versionCode = 9
+        // Build 9 (R-132, her yes 2026-11-13): an internal test build on the dev server.
+        // Build 10 (R-145, her go 2026-11-17 via the PM): the store build, on the prod server.
+        versionCode = 10
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
