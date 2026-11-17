@@ -116,9 +116,39 @@ class DemoLifecycleTest {
             assertTrue(e.message.orEmpty().contains("Request a change"))
             assertEquals(ProjectStatus.LIVE, e.detailString("status"))
         }
-        val change = api.requestChange(p.id, ChangeRequest("Add a loyalty card")).change
+        assertEquals("v0.17.0: reports closed with the window", false, api.project(p.id).canReport)
+        val started = api.requestChange(p.id, ChangeRequest("Add a loyalty card"))
+        val change = started.change
         assertEquals("pricing", change.status)
         assertNotNull("live keeps the brief", api.project(p.id).document)
+
+        // v0.17.0 (R-137, R-140): a paid change's demo takes reports after the window, until that demo is approved.
+        var changeJob = started.job
+        while (changeJob.status != "done") { delay(300); changeJob = api.job(changeJob.jobId) }
+        api.demoAddCredits(5)
+        p = api.payChange(p.id, change.id, "change-1", com.raviga.app.data.api.Empty())
+        assertEquals(ProjectStatus.BUILDING, p.status)
+        assertEquals("not while it's built", false, p.canReport)
+        api.demoAdvanceLatest()
+        p = api.project(p.id)
+        assertEquals(ProjectStatus.DELIVERED, p.status)
+        assertTrue("the window is over", Instant.parse(p.freeFixesUntil!!).isBefore(Instant.now()))
+        assertEquals("the change's demo takes reports", true, p.canReport)
+        p = api.report(p.id, ReportRequest("bug", "The loyalty card doesn't add a stamp."))
+        assertEquals("fixed free", ProjectStatus.REVISION_REQUESTED, p.status)
+        api.demoAdvanceLatest()
+        p = api.project(p.id)
+        assertEquals(ProjectStatus.DELIVERED, p.status)
+        assertEquals("still the change's demo, still open", true, p.canReport)
+        p = api.accept(p.id)
+        assertEquals(ProjectStatus.ACCEPTED, p.status)
+        assertEquals("approved: fixes are change requests again", false, p.canReport)
+        try {
+            api.report(p.id, ReportRequest("bug", "Another one."))
+            fail("expected 409 free_fixes_ended")
+        } catch (e: ApiException) {
+            assertEquals(ApiException.FREE_FIXES_ENDED, e.code)
+        }
     }
 
     /** v0.15.0 (R-118): the builder says at the first demo whether there's a backend; Make it live follows handover.backend. */

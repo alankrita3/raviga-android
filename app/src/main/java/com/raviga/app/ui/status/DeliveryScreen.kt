@@ -136,7 +136,8 @@ fun DeliveryScreen(nav: NavController, projectId: String) {
                     PrimaryButton(DeliveryCopy.APPROVE, loading = state.busy, onClick = { confirmAccept = true })
                     Spacer(Modifier.height(8.dp))
                 }
-                // R-113 (5b): from the demo until 7 days after launch; after that, Request a change alone.
+                // R-113 (5b): from the demo until 7 days after launch; after that, Request a change alone. R-140: the
+                // server's canReport decides, so a paid change's demo keeps it after the window until it's approved.
                 if (state.freeFixesOpen) SecondaryButton(DeliveryCopy.SOMETHING_WRONG, enabled = !state.busy, onClick = { reportSheet = true })
                 if (state.canRequestChange) TertiaryButton(DeliveryCopy.REQUEST_CHANGE, enabled = !state.busy, onClick = { changeSheet = true })
             }

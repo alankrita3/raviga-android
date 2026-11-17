@@ -461,6 +461,12 @@ data class Project(
      * free throughout the demo and handover). It never moves.
      */
     val freeFixesUntil: String? = null,
+    /**
+     * v0.17.0 (R-137): whether a problem report is taken now: in delivered, accepted and live while free fixes last,
+     * and on a paid change's demo until it is approved, even after the window. The report button follows it. Null from
+     * a server before v0.17.0, where the app falls back to [freeFixesUntil].
+     */
+    val canReport: Boolean? = null,
     /** v0.10.0: null until paid. */
     val payment: Payment? = null,
     /** When the project was accepted or declined. */
